@@ -24,11 +24,9 @@ export function dibujarInventarios() {
         const j = estadoUI.jugadorInv;
         const term = (estadoUI.busquedaInv || "").toLowerCase();
 
-        // Cálculo de Afinidad Máxima y Descripción
         const afins = objGlobal[j]?.afinidades || {};
         const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
         
-        // Ficha de Personaje: Iconos desde img/imgpersonajes/
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${j.toLowerCase()}icon.png" class="player-icon" onerror="this.src='../img/icon.png'">
@@ -40,7 +38,6 @@ export function dibujarInventarios() {
         </div>
         <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
 
-        // Objetos Destacados: Top 5 por rareza con imágenes .png
         const destacados = Object.keys(invGlobal[j])
             .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
             .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
@@ -49,7 +46,8 @@ export function dibujarInventarios() {
         if (destacados.length > 0) {
             html += `<div class="top-items-grid">`;
             destacados.forEach(o => {
-                const imgFile = o.toLowerCase().replace(/\s+/g, '_');
+                // NORMALIZACIÓN: Elimina tildes y convierte a minúsculas con guiones bajos
+                const imgFile = o.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_');
                 html += `
                 <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
                     <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/objetos.png'">
@@ -59,7 +57,6 @@ export function dibujarInventarios() {
             html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
         }
 
-        // Tabla general con scroll para móvil
         html += `<div class="table-responsive"><table class='container-hex'><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
         ordenarItems(j).forEach(o => {
             if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
@@ -108,7 +105,7 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = estadoUI.busquedaOP.toLowerCase();
@@ -134,3 +131,4 @@ export function dibujarMenuOP() {
             <button onclick="window.mostrarPagina('inventarios')" style="padding: 20px; background:#444;">Cerrar OP</button>
         </div>`;
 }
+
