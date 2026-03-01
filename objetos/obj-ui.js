@@ -19,7 +19,6 @@ export function dibujarControl() {
     });
     html += `<br><br><button onclick="window.mostrarPagina('op-menu')" style="background:#444;">⬅ Menú OP</button></div><br>`;
     if (estadoUI.jugadorControl) {
-        const j = estadoUI.jugadorControl;
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
                     <div style="display:flex; gap:10px;">
@@ -30,10 +29,10 @@ export function dibujarControl() {
         html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar..." value="${estadoUI.busquedaOP}" oninput="window.setBusqueda(this.value)">`;
         html += `<div class="grid-control">`;
         const term = estadoUI.busquedaOP.toLowerCase();
-        ordenarItems(j).forEach(o => {
+        ordenarItems(estadoUI.jugadorControl).forEach(o => {
             if (!term || o.toLowerCase().includes(term)) {
-                const c = invGlobal[j][o] || 0; const cl = c > 0 ? "item-con-stock" : "";
-                html += `<div class="control-card ${cl}"><span class="item-name">${o} (<b>${c}</b>)</span><div class="item-btns"><button onclick="window.hexMod('${j}','${o}',1)">+1</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button></div><div class="item-btns" style="margin-top:5px"><button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)" style="background:#4a0000">-5</button></div></div>`;
+                const c = invGlobal[estadoUI.jugadorControl][o] || 0; const cl = c > 0 ? "item-con-stock" : "";
+                html += `<div class="control-card ${cl}"><span class="item-name">${o} (<b>${c}</b>)</span><div class="item-btns"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)">+1</button><button class="btn-neg" onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)">-1</button></div><div class="item-btns" style="margin-top:5px"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',5)" style="background:#004a4a">+5</button><button class="btn-neg" onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-5)" style="background:#4a0000">-5</button></div></div>`;
             }
         });
         html += "</div>";
@@ -58,7 +57,7 @@ export function dibujarCreacionObjeto() {
     html += `</div>
         <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
             <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:100px; font-size:0.85em; margin-bottom:10px; text-align:left;"></textarea>
-            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO DE CREACIÓN</button>
+            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
         </div>
         <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">CREAR Y DEFINIR DUEÑO</button>
         <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
