@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal, historial, guardar } from './obj-state.js';
+oimport { invGlobal, objGlobal, historial, guardar } from 'objetos/obj-state.js';
 
 export function modificar(j, o, c, callback) {
     if (!invGlobal[j]) invGlobal[j] = {};
@@ -54,4 +54,5 @@ export function importarLog(contenido, callback) {
         }
     });
     guardar(); callback();
+
 }
