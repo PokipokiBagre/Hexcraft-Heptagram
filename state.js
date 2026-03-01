@@ -4,6 +4,7 @@ export let estadoUI = {
     jugadorInv: null,
     filtroRar: 'Todos',
     filtroMat: 'Todos',
+    busquedaOP: "", // NUEVO: Guarda el texto buscado
     esAdmin: false
 };
 export function guardar() { 
