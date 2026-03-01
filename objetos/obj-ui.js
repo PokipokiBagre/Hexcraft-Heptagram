@@ -4,9 +4,10 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
-// Función para limpiar nombres de archivos (sin tildes, minúsculas, guiones)
+// Normalización robusta para nombres de archivos
 const normalizarNombre = (str) => {
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_');
+    if (!str) return "";
+    return str.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_');
 };
 
 function ordenarItems(j) {
@@ -31,6 +32,7 @@ export function dibujarInventarios() {
         const afins = objGlobal[j]?.afinidades || {};
         const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
         
+        // Carga de icono desde imgpersonajes/
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/icon.png'">
@@ -53,7 +55,7 @@ export function dibujarInventarios() {
                 const imgFile = normalizarNombre(o);
                 html += `
                 <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
-                    <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/objetos.png'">
+                    <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/objetos.jpg'">
                     <span class="top-item-name">${o}</span>
                 </div>`;
             });
@@ -71,7 +73,7 @@ export function dibujarInventarios() {
     document.getElementById('contenedor-jugadores').innerHTML = html;
 }
 
-// --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
+// --- FUNCIONES OP Y CONTROL (Mantenidas Intactas) ---
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -82,7 +84,7 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = estadoUI.busquedaOP.toLowerCase();
