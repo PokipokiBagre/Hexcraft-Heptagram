@@ -1,5 +1,25 @@
 import { invGlobal, objGlobal, historial, guardar } from './obj-state.js';
 
+export function agregarObjetoManual(datos, reparticion, callback) {
+    const { nombre, tipo, mat, eff, rar } = datos;
+    if (!nombre) return alert("El objeto necesita un nombre.");
+
+    objGlobal[nombre] = { tipo, mat, eff, rar };
+
+    Object.keys(reparticion).forEach(j => {
+        const cant = parseInt(reparticion[j]) || 0;
+        if (cant > 0) {
+            if (!invGlobal[j]) invGlobal[j] = {};
+            invGlobal[j][nombre] = (invGlobal[j][nombre] || 0) + cant;
+            historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: nombre, cambio: cant, total: invGlobal[j][nombre] });
+        }
+    });
+
+    guardar();
+    alert("Objeto creado y repartido con éxito.");
+    callback();
+}
+
 export function modificar(j, o, c, callback) {
     if (!invGlobal[j]) invGlobal[j] = {};
     invGlobal[j][o] = Math.max(0, (invGlobal[j][o] || 0) + c);
@@ -59,3 +79,4 @@ export function importarLog(contenido, callback) {
     });
     guardar(); callback();
 }
+
