@@ -1,6 +1,10 @@
 import { invGlobal, objGlobal, estadoUI } from './state.js';
 
-export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujarControl(); }
+export function refrescarUI() { 
+    dibujarInventarios(); 
+    dibujarCatalogo(); 
+    dibujarControl(); 
+}
 
 function ordenarItems(j) {
     if (!j || !invGlobal[j]) return Object.keys(objGlobal).sort();
@@ -12,27 +16,13 @@ function ordenarItems(j) {
     });
 }
 
-export function dibujarMenuOP() {
-    document.getElementById('menu-op-central').innerHTML = `
-        <h2>Acceso OP</h2>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 650px; margin: 0 auto;">
-            <button onclick="window.mostrarPagina('control')">Editor de Stock</button>
-            <button onclick="window.sincronizarSheet()" style="background:#006400">Sincronizar Sheet</button>
-            <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar JPGs</button>
-            <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log</button>
-            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024"><b>Descargar CSV</b></button>
-            <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
-            <button onclick="window.reset()" style="background:#444">Reset Database</button>
-        </div>`;
-}
-
 export function dibujarInventarios() {
     let html = "<h2>Inventarios</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => html += `<button class="btn-player" onclick="window.setInv('${j}')">${j}</button> `);
     html += "</div><br>";
     if (estadoUI.jugadorInv) {
         const j = estadoUI.jugadorInv;
-        html += `<div class='container-hex'><h3>${j}</h3><table><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
+        html += `<div class='container-hex'><h3>Inventario de ${j}</h3><table><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
         ordenarItems(j).forEach(o => {
             if(invGlobal[j][o] > 0) html += `<tr><td>${o}</td><td style="font-size:0.8em">${objGlobal[o]?.eff || '-'}</td><td>${invGlobal[j][o]}</td></tr>`;
         });
@@ -73,4 +63,18 @@ export function dibujarControl() {
         html += "</div>";
     }
     document.getElementById('panel-interactivo').innerHTML = html;
+}
+
+export function dibujarMenuOP() {
+    document.getElementById('menu-op-central').innerHTML = `
+        <h2>Acceso OP</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 650px; margin: 0 auto;">
+            <button onclick="window.mostrarPagina('control')">Editor de Stock</button>
+            <button onclick="window.sincronizarSheet()" style="background:#006400">Sincronizar Sheet</button>
+            <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar JPGs</button>
+            <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log</button>
+            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024"><b>Descargar CSV</b></button>
+            <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
+            <button onclick="window.reset()" style="background:#444">Reset Database</button>
+        </div>`;
 }
