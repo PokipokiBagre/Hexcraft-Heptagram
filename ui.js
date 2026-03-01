@@ -8,7 +8,7 @@ function ordenarItems(j) {
         const sA = invGlobal[j][a] || 0;
         const sB = invGlobal[j][b] || 0;
         if (sB !== sA) return sB - sA;
-        return a.localeCompare(b); // A-Z
+        return a.localeCompare(b);
     });
 }
 
@@ -23,19 +23,17 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         const j = estadoUI.jugadorControl;
         
-        // RECUPERAMOS LO QUE EL USUARIO ESCRIBIÓ PARA NO BORRARLO AL REDIBUJAR
-        const busqVal = document.getElementById('busq-op')?.value || "";
-        
-        // AGREGAMOS EL BUSCADOR CON LA CLASE "search-bar"
-        html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." 
-                    value="${busqVal}" oninput="window.refrescarUI()">`;
+        // BUSCADOR DINÁMICO
+        html += `<input type="text" id="busq-op" class="search-bar" 
+                    placeholder="🔍 Escribe para filtrar al instante..." 
+                    value="${estadoUI.busquedaOP}" 
+                    oninput="window.setBusqueda(this.value)">`;
 
-        // CONTENEDOR CON LA CLASE "grid-control"
         html += `<div class="grid-control">`;
         
-        const term = busqVal.toLowerCase();
+        const term = estadoUI.busquedaOP.toLowerCase();
         ordenarItems(j).forEach(o => {
-            // FILTRADO DINÁMICO
+            // Lógica de filtrado inmediata
             if (term && !o.toLowerCase().includes(term)) return;
 
             const c = invGlobal[j][o] || 0;
@@ -57,14 +55,16 @@ export function dibujarControl() {
     }
     document.getElementById('panel-interactivo').innerHTML = html;
     
-    // MANTIENE EL CURSOR EN EL BUSCADOR DESPUÉS DE SUMAR O RESTAR
+    // RE-ENFOCAR EL BUSCADOR: Crucial para que sea dinámico
     const input = document.getElementById('busq-op');
-    if (input && document.activeElement.id !== 'busq-op') {
+    if (input) {
         input.focus();
+        // Coloca el cursor al final del texto
         input.setSelectionRange(input.value.length, input.value.length);
     }
 }
 
+// Mantener el resto de funciones (dibujarMenuOP, dibujarInventarios, dibujarCatalogo) igual...
 export function dibujarMenuOP() {
     document.getElementById('menu-op-central').innerHTML = `
         <h2>Acceso OP</h2>
