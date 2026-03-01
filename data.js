@@ -10,30 +10,30 @@ export async function cargarTodoDesdeCSV() {
         const texto = await res.text();
         const filas = texto.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
         
-        // LIMPIEZA DE MEMORIA ANTES DE CARGAR
-        Object.keys(invGlobal).forEach(k => delete invGlobal[k]);
-        Object.keys(objGlobal).forEach(k => delete objGlobal[k]);
+        for (let k in invGlobal) delete invGlobal[k];
+        for (let k in objGlobal) delete objGlobal[k];
 
         const mapaNorm = {}; 
 
         filas.slice(1).forEach(f => {
-            const nombre = f[0]; if (!nombre) return; // Columna A
+            const nombre = f[0]; if (!nombre) return;
             const id = normalizar(nombre);
             
-            // Catálogo (Columnas A a E)
+            // Catálogo (A-E)
             objGlobal[nombre] = { tipo: f[1] || '-', mat: f[2] || '-', eff: f[3] || 'Sin descripción', rar: f[4] || 'Común' };
             mapaNorm[id] = nombre;
 
-            // Inventarios (Columnas F y G)
+            // Inventarios (F-G)
             const jugs = f[5] ? f[5].split(',').map(j => j.trim()) : [];
             const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
 
             jugs.forEach((jRaw, i) => {
                 let j = jRaw.includes("Corvin") ? "Corvin Vaelen" : jRaw;
                 if (!invGlobal[j]) invGlobal[j] = {};
-                invGlobal[j][nombre] = (invGlobal[j][nombre] || 0) + (cants[i] || 0);
+                // ASIGNACIÓN DIRECTA: No sumamos, asignamos el valor del Sheet
+                invGlobal[j][nombre] = (cants[i] || 0);
             });
         });
         guardar();
-    } catch (e) { console.error("Error Sheet:", e); }
+    } catch (e) { console.error("Error cargando datos:", e); }
 }
