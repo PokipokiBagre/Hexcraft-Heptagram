@@ -46,5 +46,4 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
-iniciar();
 
