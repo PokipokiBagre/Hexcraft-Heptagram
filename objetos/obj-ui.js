@@ -94,10 +94,43 @@ export function dibujarMenuOP() {
         <h2>Acceso OP</h2>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 650px; margin: 0 auto;">
             <button onclick="window.mostrarPagina('control')">Editor de Stock</button>
+            <button onclick="window.mostrarAgregarObjeto()" style="background:#4a004a">Agregar Nuevo Objeto</button>
             <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar JPGs</button>
             <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log</button>
             <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024">Descargar CSV</button>
             <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
         </div>`;
 }
+
+export function dibujarFormularioObjeto() {
+    let html = `<h2>Forjar Nuevo Objeto</h2>
+    <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px;">
+        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre del objeto..." style="width:95%">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+            <select id="new-obj-tipo" class="search-bar" style="width:100%"><option value="Consumible">Consumible</option><option value="Herramienta">Herramienta</option><option value="Accesorio">Accesorio</option><option value="Equipo">Equipo</option></select>
+            <select id="new-obj-mat" class="search-bar" style="width:100%"><option value="Cristal">Cristal</option><option value="Metal">Metal</option><option value="Orgánico">Orgánico</option><option value="Sagrado">Sagrado</option></select>
+        </div>
+
+        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto del objeto..." style="width:95%; height:60px; margin-top:10px;"></textarea>
+
+        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option value="Común">Común</option><option value="Raro">Raro</option><option value="Legendario">Legendario</option></select>
+
+        <h3 style="margin-top:20px; font-size:1em;">Definir Dueños y Cantidades</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
+    
+    Object.keys(invGlobal).sort().forEach(j => {
+        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;">
+            <label>${j}:</label>
+            <input type="number" class="cant-input" data-player="${j}" value="0" min="0" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;">
+        </div>`;
+    });
+
+    html += `</div>
+        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">Agregar objeto y definir dueños</button>
+        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">Cancelar</button>
+    </div>`;
+    document.getElementById('panel-interactivo').innerHTML = html;
+}
+
 
