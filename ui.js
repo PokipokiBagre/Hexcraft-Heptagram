@@ -66,11 +66,9 @@ export function dibujarMenuOP() {
         <h2>Acceso OP</h2>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 650px; margin: 0 auto;">
             <button onclick="window.mostrarPagina('control')">Editor de Stock</button>
-            <button onclick="window.sincronizarSheet()" style="background:#006400">Sincronizar Sheet</button>
             <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar JPGs</button>
             <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log</button>
-            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024"><b>Descargar CSV</b></button>
+            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024">Descargar CSV</button>
             <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
-            <button onclick="window.reset()" style="background:#444">Reset Database</button>
         </div>`;
 }
