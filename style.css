@@ -44,27 +44,23 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
 .player-header {
     display: flex; align-items: center; gap: 20px; background: rgba(30, 0, 60, 0.6);
     padding: 20px; border: 1px solid #d4af37; border-radius: 8px; margin-bottom: 20px;
-    animation: fadeInHEX 0.5s ease-out; /* Suavizado de carga */
+    animation: fadeInHEX 0.5s ease-out; /* Suavizado para evitar parpadeo */
 }
-.player-icon { 
-    width: 80px; height: 80px; border-radius: 50%; border: 2px solid #d4af37; 
-    object-fit: cover; background: #000; 
-}
+.player-icon { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #d4af37; object-fit: cover; background: #000; }
 .player-info { text-align: left; flex: 1; }
 .afinidad-tag { font-size: 0.8em; color: #aaa; margin: 5px 0; }
 .afinidad-tag span { color: #d4af37; font-weight: bold; text-transform: uppercase; }
 .player-desc { font-size: 0.85em; color: #eee; line-height: 1.4; }
 
-/* --- GALERÍA TOP 5 (AJUSTE DE CONTRASTE DINÁMICO) --- */
+/* --- GALERÍA TOP 5 (AJUSTE DE CONTRASTE INTELIGENTE) --- */
 .top-items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
 .top-item-card { 
-    background: #000; /* Fondo negro para absorber brillo de imágenes blancas */
-    border: 1px solid rgba(212, 175, 55, 0.3); padding: 8px; 
-    text-align: center; border-radius: 4px; overflow: hidden;
+    background: #000; /* Fondo negro para absorber brillo */
+    border: 1px solid rgba(212, 175, 55, 0.3); padding: 8px; text-align: center; border-radius: 4px; overflow: hidden;
 }
 .top-item-card img { 
     width: 100%; aspect-ratio: 1/1; object-fit: cover; margin-bottom: 5px; border-radius: 2px;
-    opacity: 0.75; /* Atenuación inicial para evitar deslumbramiento */
+    opacity: 0.75; /* Atenuación para imágenes blancas */
     transition: opacity 0.3s, transform 0.3s;
 }
 .top-item-card:hover img { opacity: 1; transform: scale(1.05); }
@@ -115,3 +111,4 @@ td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: cente
     .player-header { flex-direction: column; text-align: center; }
     .top-items-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
