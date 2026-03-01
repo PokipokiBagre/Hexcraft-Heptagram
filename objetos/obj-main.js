@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal, historial, estadoUI } from './obj-state.js';
+import { invGlobal, objGlobal, historial, estadoUI } from 'objetos/obj-state.js';
 import { cargarTodoDesdeCSV } from './obj-data.js';
 import { modificar, descargarLog, importarLog, descargarEstadoCSV, descargarInventariosJPG } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP } from './obj-ui.js';
@@ -43,4 +43,5 @@ async function iniciar() {
     });
     refrescarUI();
 }
+
 iniciar();
