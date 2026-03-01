@@ -4,7 +4,7 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
-// Normalización robusta para nombres de archivos
+// Normalización agresiva: limpia espacios invisibles y tildes
 const normalizarNombre = (str) => {
     if (!str) return "";
     return str.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_');
@@ -32,10 +32,10 @@ export function dibujarInventarios() {
         const afins = objGlobal[j]?.afinidades || {};
         const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
         
-        // Carga de icono desde imgpersonajes/
+        // Carga de icono de personaje con respaldo
         html += `
         <div class="player-header">
-            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/icon.png'">
+            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
             <div class="player-info">
                 <h3>${j}</h3>
                 <p class="afinidad-tag">Afinidad Máxima: <span>${maxAf}</span></p>
@@ -53,9 +53,10 @@ export function dibujarInventarios() {
             html += `<div class="top-items-grid">`;
             destacados.forEach(o => {
                 const imgFile = normalizarNombre(o);
+                // Respaldo de imagen de objeto
                 html += `
                 <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
-                    <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/objetos.jpg'">
+                    <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <span class="top-item-name">${o}</span>
                 </div>`;
             });
@@ -73,7 +74,7 @@ export function dibujarInventarios() {
     document.getElementById('contenedor-jugadores').innerHTML = html;
 }
 
-// --- FUNCIONES OP Y CONTROL (Mantenidas Intactas) ---
+// --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -135,3 +136,4 @@ export function dibujarCatalogo() {
     });
     document.getElementById('tabla-todos-objetos').innerHTML = html + "</table></div>";
 }
+
