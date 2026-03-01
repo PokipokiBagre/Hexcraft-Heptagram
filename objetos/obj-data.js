@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal, guardar } from './obj-state.js';
+import { invGlobal, objGlobal, guardar } from 'objetos/obj-state.js';
 
 const normalizar = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
@@ -8,8 +8,10 @@ export async function cargarTodoDesdeCSV() {
         const res = await fetch(sheetURL);
         const texto = await res.text();
         const filas = texto.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
+        
         for (let k in invGlobal) delete invGlobal[k];
         for (let k in objGlobal) delete objGlobal[k];
+
         filas.slice(1).forEach(f => {
             const nombre = f[0]; if (!nombre) return;
             objGlobal[nombre] = { tipo: f[1] || '-', mat: f[2] || '-', eff: f[3] || 'Sin descripción', rar: f[4] || 'Común' };
