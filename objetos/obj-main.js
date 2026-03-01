@@ -8,10 +8,11 @@ async function iniciar() {
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
+    window.limpiarLog = () => { estadoUI.logCopy = ""; refrescarUI(); };
     window.updateCreationLog = () => {
         const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
         let l = []; document.querySelectorAll('.cant-input').forEach(i => {
-            const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}`);
+            const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
         });
         const out = document.getElementById('copy-log-crea'); if (out) out.value = l.join('\n');
     };
@@ -33,7 +34,8 @@ async function iniciar() {
     window.mostrarPagina = (id) => { estadoUI.busquedaCat = ""; estadoUI.busquedaInv = ""; document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); document.getElementById('pag-' + id).style.display = 'block'; refrescarUI(); };
     window.hexMod = (j, o, c) => { 
         const tag = c > 0 ? "OO" : "OP"; const mult = Math.abs(c) > 1 ? ` x${Math.abs(c)}` : "";
-        estadoUI.logCopy = `<${j} | ${tag}: ${o}${mult} | ${objGlobal[o]?.eff || "Sin efecto"}`; 
+        const nuevaLinea = `<${j} | ${tag}: ${o}${mult} | ${objGlobal[o]?.eff || "Sin efecto"}>`; 
+        estadoUI.logCopy = (estadoUI.logCopy ? estadoUI.logCopy + '\n' : "") + nuevaLinea;
         modificar(j, o, c, refrescarUI); 
     };
     window.setInv = (j) => { estadoUI.jugadorInv = j; refrescarUI(); };
@@ -46,4 +48,3 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
-
