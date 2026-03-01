@@ -54,9 +54,24 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
 
 /* --- GALERÍA TOP 5 (OBJETOS DESTACADOS) --- */
 .top-items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
-.top-item-card { background: #1a0033; border: 1px solid rgba(212, 175, 55, 0.3); padding: 8px; text-align: center; border-radius: 4px; }
-.top-item-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; margin-bottom: 5px; border-radius: 2px; }
-.top-item-name { font-size: 0.65em; display: block; height: 2.4em; overflow: hidden; line-height: 1.2; color: #d4af37; }
+.top-item-card img, .player-icon {
+    filter: brightness(0.85) contrast(0.9); 
+    transition: opacity 0.3s ease-in-out, filter 0.3s;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.top-item-card img:hover {
+    filter: brightness(1) contrast(1);
+}
+
+.pagina {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0.8; }
+    to { opacity: 1; }
+}
 
 /* COLORES DE RAREZA */
 .rarity-legendario { border-color: #ff4500 !important; box-shadow: 0 0 8px rgba(255, 69, 0, 0.4); }
@@ -98,3 +113,4 @@ td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: cente
     td, th { font-size: 0.8em; padding: 8px 4px; }
 }
 @media (min-width: 1200px) { .grid-control { grid-template-columns: repeat(5, 1fr); } }
+
