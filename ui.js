@@ -8,13 +8,12 @@ function ordenarItems(j) {
         const sA = invGlobal[j][a] || 0;
         const sB = invGlobal[j][b] || 0;
         if (sB !== sA) return sB - sA;
-        return a.localeCompare(b); // A-Z arriba
+        return a.localeCompare(b); // A-Z
     });
 }
 
 export function dibujarControl() {
-    let html = "<h2>Editor de Stock (Acceso OP)</h2><div style='text-align:center'>";
-    // 1. Selector de Jugadores
+    let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
         const active = estadoUI.jugadorControl === j ? 'style="border: 2px solid #d4af37"' : '';
         html += `<button onclick="window.setCtrl('${j}')" ${active}>${j}</button> `;
@@ -24,34 +23,33 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         const j = estadoUI.jugadorControl;
         
-        // 2. BUSCADOR DE OBJETOS
+        // RECUPERAMOS LO QUE EL USUARIO ESCRIBIÓ PARA NO BORRARLO AL REDIBUJAR
         const busqVal = document.getElementById('busq-op')?.value || "";
-        html += `<div style="text-align:center; margin-bottom: 20px;">
-                    <input type="text" id="busq-op" placeholder="🔍 Buscar objeto en el inventario..." 
-                    value="${busqVal}" oninput="window.refrescarUI()" 
-                    style="width: 80%; padding: 12px; border-radius: 8px; border: 1px solid #d4af37; background: #1a0033; color: white;">
-                 </div>`;
+        
+        // AGREGAMOS EL BUSCADOR CON LA CLASE "search-bar"
+        html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." 
+                    value="${busqVal}" oninput="window.refrescarUI()">`;
 
-        // 3. GRID DE 5 COLUMNAS
-        html += `<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 10px;">`;
+        // CONTENEDOR CON LA CLASE "grid-control"
+        html += `<div class="grid-control">`;
         
         const term = busqVal.toLowerCase();
         ordenarItems(j).forEach(o => {
-            // Lógica de filtrado
+            // FILTRADO DINÁMICO
             if (term && !o.toLowerCase().includes(term)) return;
 
             const c = invGlobal[j][o] || 0;
-            const bg = c > 0 ? "background: #2e004f; border: 1px solid #d4af37;" : "background: #120024; opacity: 0.6;";
+            const extraClass = c > 0 ? "item-con-stock" : "";
             
-            html += `<div style="${bg} padding: 10px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
-                <span style="font-size: 0.85em; display: block; margin-bottom: 8px; height: 35px; overflow: hidden;">${o} (<b>${c}</b>)</span>
-                <div style="display: flex; gap: 4px; justify-content: center;">
-                    <button onclick="window.hexMod('${j}','${o}',1)" style="padding: 5px 8px; font-size: 0.8em;">+1</button>
-                    <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)" style="padding: 5px 8px; font-size: 0.8em;">-1</button>
+            html += `<div class="control-card ${extraClass}">
+                <span class="item-name">${o} (<b>${c}</b>)</span>
+                <div class="item-btns">
+                    <button onclick="window.hexMod('${j}','${o}',1)">+1</button>
+                    <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button>
                 </div>
-                <div style="display: flex; gap: 4px; justify-content: center; margin-top: 4px;">
-                    <button onclick="window.hexMod('${j}','${o}',5)" style="padding: 4px; font-size: 0.7em; background: #004a4a;">+5</button>
-                    <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)" style="padding: 4px; font-size: 0.7em; background: #4a0000;">-5</button>
+                <div class="item-btns" style="margin-top:5px">
+                    <button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button>
+                    <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)">-5</button>
                 </div>
             </div>`;
         });
@@ -59,7 +57,7 @@ export function dibujarControl() {
     }
     document.getElementById('panel-interactivo').innerHTML = html;
     
-    // Mantener el foco en el buscador después de redibujar
+    // MANTIENE EL CURSOR EN EL BUSCADOR DESPUÉS DE SUMAR O RESTAR
     const input = document.getElementById('busq-op');
     if (input && document.activeElement.id !== 'busq-op') {
         input.focus();
