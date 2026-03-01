@@ -100,16 +100,20 @@ export function dibujarInventarios() {
 
 export function dibujarCatalogo() {
     let html = "<h2>Catálogo</h2><div style='text-align:center'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => html += `<button onclick="window.setRar('${r}')">${r}</button> `);
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
+        const active = estadoUI.filtroRar === r ? 'style="background:#d4af37; color:#120024"' : '';
+        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
+    });
     html += `<br><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)"></div>`;
     html += `<br><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Rareza</th></tr>`;
-    const term = estadoUI.busquedaCat.toLowerCase();
+    const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
-        if (estadoUI.filtroRar === 'Todos' || item.rar.includes(estadoUI.filtroRar)) {
+        if (estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar) {
             if (!term || o.toLowerCase().includes(term)) html += `<tr><td>${o}</td><td style="font-size:0.8em">${item.eff}</td><td>${item.rar}</td></tr>`;
         }
     });
     document.getElementById('tabla-todos-objetos').innerHTML = html + "</table>";
 }
+
 
