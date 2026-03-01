@@ -4,9 +4,9 @@ export let estadoUI = {
     jugadorInv: null,
     filtroRar: 'Todos',
     filtroMat: 'Todos',
-    busquedaOP: "", // NUEVO: Guarda el texto buscado
+    busquedaOP: "",
+    busquedaCat: "", // NUEVO: Filtro para el catálogo
+    busquedaInv: "", // NUEVO: Filtro para inventarios
     esAdmin: false
 };
-export function guardar() { 
-    localStorage.setItem('hex_db_v4', JSON.stringify({ inv: invGlobal, obj: objGlobal, his: historial })); 
-}
+export function guardar() { localStorage.setItem('hex_db_v4', JSON.stringify({ inv: invGlobal, obj: objGlobal, his: historial })); }
