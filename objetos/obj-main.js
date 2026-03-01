@@ -10,6 +10,7 @@ async function iniciar() {
     
     const _session = 'Y2FuZXk=';
 
+    // Funciones Globales para los botones
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
 
@@ -26,7 +27,8 @@ async function iniciar() {
     };
 
     window.updateCreationLog = () => {
-        const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
+        const n = document.getElementById('new-obj-name').value || "Objeto"; 
+        const e = document.getElementById('new-obj-eff').value || "Efecto";
         let l = []; document.querySelectorAll('.cant-input').forEach(i => {
             const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x' + c : ''} | ${e}>`);
         });
@@ -40,11 +42,12 @@ async function iniciar() {
         window.actualizarBitacoraTexto(); modificar(j, o, c, refrescarUI);
     };
 
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("Sincronización Exitosa"); } };
+    
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
         const i = prompt("System Validation Code:");
-        if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); } else alert("Error.");
+        if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); } else alert("Acceso Denegado.");
     };
 
     window.mostrarCreacionObjeto = () => { window.mostrarPagina('control'); dibujarCreacionObjeto(); };
@@ -54,14 +57,19 @@ async function iniciar() {
         agregarObjetoManual(datos, rep, () => { dibujarMenuOP(); window.mostrarPagina('op-menu'); });
     };
 
-    window.setBusqueda = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
-    window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; refrescarUI(); };
-    window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; refrescarUI(); };
+    // Estas funciones son VITALES para que los botones de jugadores funcionen
     window.mostrarPagina = (id) => { document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); document.getElementById('pag-' + id).style.display = 'block'; refrescarUI(); };
     window.setInv = (j) => { estadoUI.jugadorInv = j; refrescarUI(); };
     window.setCtrl = (j) => { estadoUI.jugadorControl = j; refrescarUI(); };
     window.setRar = (r) => { estadoUI.filtroRar = r; refrescarUI(); };
-    window.descargarEstadoCSV = descargarEstadoCSV; window.descargarInventariosJPG = descargarInventariosJPG; window.descargarLog = descargarLog;
+    window.setBusqueda = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
+    window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; refrescarUI(); };
+    window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; refrescarUI(); };
+    
+    window.descargarEstadoCSV = descargarEstadoCSV; 
+    window.descargarInventariosJPG = descargarInventariosJPG; 
+    window.descargarLog = descargarLog;
+    
     refrescarUI();
 }
 iniciar();
