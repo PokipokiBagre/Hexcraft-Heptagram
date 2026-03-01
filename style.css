@@ -1,9 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
 
-/* --- BASES DE MAGIA ANTIGUA --- */
 body { 
     font-family: 'Cinzel', serif; 
-    background-color: #120024; /* Violeta Gwyndolin */
+    background-color: #120024; 
     color: #ffffff; 
     margin: 0; padding: 20px;
     background-image: radial-gradient(circle, #1a0033 0%, #000 100%);
@@ -12,19 +11,35 @@ body {
 
 h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text-align: center; }
 
-/* Contenedor: Lo subimos al 90% para que la triple columna respire */
-.container-hex { width: 90%; margin: 0 auto; max-width: 1400px; }
+.container-hex { width: 95%; margin: 0 auto; max-width: 1600px; }
 
 nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
 
 button { 
     background: #2e004f; color: #d4af37; border: 1px solid #d4af37;
     padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.3s;
+    border-radius: 4px;
 }
 
 button:hover { background: #d4af37; color: #120024; box-shadow: 0 0 15px #d4af37; }
 
-/* --- TABLAS DE INVENTARIO Y CATÁLOGO --- */
+/* ESTILO PARA EL NUEVO BUSCADOR */
+.search-bar {
+    width: 80%;
+    max-width: 600px;
+    display: block;
+    margin: 0 auto 25px auto;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #d4af37;
+    background: #1a0033;
+    color: white;
+    font-family: 'Cinzel';
+    text-align: center;
+}
+
+.search-bar:focus { outline: none; box-shadow: 0 0 10px #d4af37; }
+
 table { 
     width: 100%; border-collapse: collapse; background: rgba(30, 0, 60, 0.8);
     border: 1px solid #d4af37; margin-bottom: 20px;
@@ -33,40 +48,56 @@ table {
 th { background: #d4af37; color: #120024; padding: 12px; border: 1px solid #120024; }
 td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center; }
 
-/* --- TRIPLE COLUMNA (ACCESO OP) --- */
+/* GRID DE 5 COLUMNAS DINÁMICO */
 .grid-control {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* Divide en 3 partes iguales */
-    gap: 15px;
+    /* Intenta poner 5 columnas, pero si no caben (en móvil), pone las que pueda */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+    gap: 12px;
     margin-top: 20px;
 }
 
 .control-card {
     background: rgba(30, 0, 60, 0.9);
-    border: 1px solid #d4af37;
-    padding: 15px;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    padding: 12px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     align-items: center;
     border-radius: 8px;
     transition: 0.2s;
+    min-height: 110px;
 }
 
-/* --- ESTILO ROJIZO: OBJETOS OBTENIDOS --- */
+/* RESALTADO DE STOCK */
 .item-con-stock { 
-    background: rgba(139, 0, 0, 0.5) !important; /* Rojo vino más visible */
-    border: 2px solid #ff4d4d !important; /* Borde rojo brillante */
-    box-shadow: 0 0 15px rgba(255, 77, 77, 0.3);
+    background: rgba(139, 0, 0, 0.4) !important; 
+    border: 2px solid #ff4d4d !important; 
+    box-shadow: 0 0 10px rgba(255, 77, 77, 0.2);
 }
 
-.item-name { margin-bottom: 10px; font-size: 0.9em; text-align: center; font-weight: bold; }
+.item-name { 
+    margin-bottom: 8px; 
+    font-size: 0.85em; 
+    text-align: center; 
+    font-weight: bold; 
+    line-height: 1.2;
+    height: 32px; /* Mantiene los botones alineados aunque el nombre sea largo */
+    overflow: hidden;
+}
 
-/* --- BOTONES ESPECÍFICOS --- */
-.item-btns { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
-.item-btns button { padding: 5px 10px; font-size: 0.75em; margin: 2px; }
+.item-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; width: 100%; }
+.item-btns button { 
+    padding: 4px 8px; 
+    font-size: 0.7em; 
+    margin: 1px; 
+    flex: 1; /* Hace que los botones llenen el ancho disponible */
+}
 
-.btn-plus { background: #004d00; border-color: #00ff00; color: white; }
 .btn-neg { background: #4a0000 !important; border-color: #ff4d4d !important; color: white; }
 
-/* Seguridad */
-.solo-admin { display: none; }
+/* MEDIA QUERY PARA PC (FUERZA 5 COLUMNAS) */
+@media (min-width: 1200px) {
+    .grid-control { grid-template-columns: repeat(5, 1fr); }
+}
