@@ -69,6 +69,37 @@ async function iniciar() {
     window.descargarEstadoCSV = descargarEstadoCSV;
     window.descargarInventariosJPG = descargarInventariosJPG;
     window.descargarLog = descargarLog;
+    window.copyToClipboard = (id) => {
+        const area = document.getElementById(id);
+        area.select();
+        document.execCommand('copy');
+        const btnOriginalText = event.target.innerText;
+        event.target.innerText = "¡Copiado!";
+        setTimeout(() => event.target.innerText = btnOriginalText, 2000);
+    };
+    window.updateForgeLog = () => {
+        const nombre = document.getElementById('new-obj-name').value || "Objeto";
+        const efecto = document.getElementById('new-obj-eff').value || "Sin efecto";
+        let lineas = [];
+        
+        document.querySelectorAll('.cant-input').forEach(input => {
+            const cant = parseInt(input.value) || 0;
+            if (cant > 0) {
+                const jugador = input.dataset.player;
+                const multiplicador = cant > 1 ? ` x${cant}` : "";
+                lineas.push(`<${jugador} | OO: ${nombre}${multiplicador} | ${efecto}`);
+            }
+        });
+        
+        document.getElementById('copy-log-forge').value = lineas.join('\n');
+    };
+    const originalHexMod = window.hexMod;
+    window.hexMod = (j, o, c) => {
+        const tag = c > 0 ? "OO" : "OP"; // Objeto Obtenido o Perdido
+        const efecto = objGlobal[o]?.eff || "Sin efecto";
+        estadoUI.logCopy = `<${j} | ${tag}: ${o} | ${efecto}`;
+        modificar(j, o, c, refrescarUI);
+    };
     window.subirLogManual = () => document.getElementById('input-log').click();
     document.getElementById('input-log')?.addEventListener('change', (e) => {
         const reader = new FileReader();
@@ -78,3 +109,4 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
+
