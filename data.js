@@ -11,16 +11,15 @@ export async function cargarTodoDesdeCSV() {
         const filas = texto.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
         const mapaNorm = {}; 
 
+        // 1. PROCESAR CATÁLOGO (A-E)
         filas.slice(1).forEach(f => {
-            const nombre = f[0]; // Columna A
+            const nombre = f[0]; // COLUMNA A
             if (!nombre) return;
             const id = normalizar(nombre);
-            
-            // Catálogo (A a E)
             objGlobal[nombre] = { tipo: f[1] || '-', mat: f[2] || '-', eff: f[3] || 'Sin descripción', rar: f[4] || 'Común' };
             mapaNorm[id] = nombre;
 
-            // Inventarios (F y G)
+            // 2. PROCESAR INVENTARIOS (F-G)
             const jugs = f[5] ? f[5].split(',').map(j => j.trim()) : [];
             const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
 
@@ -31,5 +30,5 @@ export async function cargarTodoDesdeCSV() {
             });
         });
         guardar();
-    } catch (e) { console.error("Error cargando Sheet:", e); }
+    } catch (e) { console.error("ERROR CARGANDO SHEET:", e); }
 }
