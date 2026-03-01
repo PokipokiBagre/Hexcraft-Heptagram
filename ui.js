@@ -8,8 +8,20 @@ function ordenarItems(j) {
         const sA = invGlobal[j][a] || 0;
         const sB = invGlobal[j][b] || 0;
         if (sB !== sA) return sB - sA;
-        return a.localeCompare(b); // A-Z
+        return a.localeCompare(b); // A-Z arriba
     });
+}
+
+export function dibujarMenuOP() {
+    document.getElementById('menu-op-central').innerHTML = `
+        <h2>Acceso OP</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 650px; margin: 0 auto;">
+            <button onclick="window.mostrarPagina('control')">Editor de Stock</button>
+            <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar JPGs</button>
+            <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log</button>
+            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024">Descargar CSV</button>
+            <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
+        </div>`;
 }
 
 export function dibujarInventarios() {
@@ -59,16 +71,4 @@ export function dibujarControl() {
         html += "</div>";
     }
     document.getElementById('panel-interactivo').innerHTML = html;
-}
-
-export function dibujarMenuOP() {
-    document.getElementById('menu-op-central').innerHTML = `
-        <h2>Acceso OP</h2>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 650px; margin: 0 auto;">
-            <button onclick="window.mostrarPagina('control')">Editor de Stock</button>
-            <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar JPGs</button>
-            <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log</button>
-            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024">Descargar CSV</button>
-            <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
-        </div>`;
 }
