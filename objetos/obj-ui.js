@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
+import { invGlobal, objGlobal, estadoUI } from 'objetos/obj-state.js';
 
 export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujarControl(); }
 
@@ -89,4 +89,5 @@ export function dibujarMenuOP() {
             <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024">Descargar CSV</button>
             <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
         </div>`;
+
 }
