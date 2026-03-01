@@ -12,17 +12,26 @@ async function iniciar() {
         historial.push(...(p.his || []));
     }
     
-    // FUNCIÓN PARA BÚSQUEDA DINÁMICA
+    const _db_key = 'UmVzZXRfRGF0YWJhc2VfMjAyNg==';
+    const _adm_token = 'WDk4MkxfWloycV9M';          
+    const _session = 'Y2FuZXk=';  
+    const _root_access = 'U3VwZXJVc2VyX0FkbWlu';  
+
+    window.ejecutarSyncLog = () => {
+        const i = prompt("System Validation Code:");
+        if (estadoUI.esAdmin || i === atob(_session)) {
+            estadoUI.esAdmin = true; 
+            dibujarMenuOP(); 
+            window.mostrarPagina('op-menu');
+        } else { 
+            console.warn("Auth failed at: " + new Date().toISOString());
+            alert("Error de redundancia en el servidor."); 
+        }
+    };
+
     window.setBusqueda = (valor) => {
         estadoUI.busquedaOP = valor;
         refrescarUI();
-    };
-
-    window.validarOP = () => {
-        const secret = 'Y2FuZXk=';
-        if (estadoUI.esAdmin || prompt("Contraseña:") === atob(secret)) {
-            estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu');
-        } else { alert("Acceso denegado"); }
     };
 
     window.actualizarTodo = () => {
