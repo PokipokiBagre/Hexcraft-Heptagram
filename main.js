@@ -19,7 +19,7 @@ async function iniciar() {
     });
 
     window.validarOP = () => {
-        const secret = 'Y2FuZXk='; // "caney"
+        const secret = 'Y2FuZXk=';
         if (estadoUI.esAdmin || prompt("Contraseña:") === atob(secret)) {
             estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu');
         } else { alert("Acceso denegado"); }
@@ -51,3 +51,4 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
+
