@@ -18,17 +18,16 @@ nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; fl
 button { 
     background: #2e004f; color: #d4af37; border: 1px solid #d4af37;
     padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.3s;
-    border-radius: 4px;
 }
 
 button:hover { background: #d4af37; color: #120024; box-shadow: 0 0 15px #d4af37; }
 
-/* ESTILO PARA EL NUEVO BUSCADOR */
+/* ESTILO DEL BUSCADOR */
 .search-bar {
     width: 80%;
-    max-width: 600px;
+    max-width: 500px;
     display: block;
-    margin: 0 auto 25px auto;
+    margin: 0 auto 20px auto;
     padding: 12px;
     border-radius: 8px;
     border: 1px solid #d4af37;
@@ -38,8 +37,6 @@ button:hover { background: #d4af37; color: #120024; box-shadow: 0 0 15px #d4af37
     text-align: center;
 }
 
-.search-bar:focus { outline: none; box-shadow: 0 0 10px #d4af37; }
-
 table { 
     width: 100%; border-collapse: collapse; background: rgba(30, 0, 60, 0.8);
     border: 1px solid #d4af37; margin-bottom: 20px;
@@ -48,56 +45,37 @@ table {
 th { background: #d4af37; color: #120024; padding: 12px; border: 1px solid #120024; }
 td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center; }
 
-/* GRID DE 5 COLUMNAS DINÁMICO */
+/* REGLA DE 5 COLUMNAS PARA EL EDITOR */
 .grid-control {
     display: grid;
-    /* Intenta poner 5 columnas, pero si no caben (en móvil), pone las que pueda */
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+    gap: 10px;
     margin-top: 20px;
 }
 
 .control-card {
     background: rgba(30, 0, 60, 0.9);
-    border: 1px solid rgba(212, 175, 55, 0.4);
-    padding: 12px;
+    border: 1px solid #d4af37;
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     align-items: center;
     border-radius: 8px;
-    transition: 0.2s;
-    min-height: 110px;
 }
 
-/* RESALTADO DE STOCK */
 .item-con-stock { 
-    background: rgba(139, 0, 0, 0.4) !important; 
+    background: rgba(139, 0, 0, 0.5) !important; 
     border: 2px solid #ff4d4d !important; 
-    box-shadow: 0 0 10px rgba(255, 77, 77, 0.2);
 }
 
-.item-name { 
-    margin-bottom: 8px; 
-    font-size: 0.85em; 
-    text-align: center; 
-    font-weight: bold; 
-    line-height: 1.2;
-    height: 32px; /* Mantiene los botones alineados aunque el nombre sea largo */
-    overflow: hidden;
-}
+.item-name { margin-bottom: 10px; font-size: 0.85em; text-align: center; font-weight: bold; height: 32px; overflow: hidden; }
 
-.item-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; width: 100%; }
-.item-btns button { 
-    padding: 4px 8px; 
-    font-size: 0.7em; 
-    margin: 1px; 
-    flex: 1; /* Hace que los botones llenen el ancho disponible */
-}
+.item-btns { display: flex; gap: 5px; justify-content: center; width: 100%; }
+.item-btns button { padding: 5px; font-size: 0.7em; flex: 1; }
 
 .btn-neg { background: #4a0000 !important; border-color: #ff4d4d !important; color: white; }
 
-/* MEDIA QUERY PARA PC (FUERZA 5 COLUMNAS) */
+/* FORZAR 5 COLUMNAS EN PANTALLAS GRANDES */
 @media (min-width: 1200px) {
     .grid-control { grid-template-columns: repeat(5, 1fr); }
 }
