@@ -4,10 +4,10 @@ export function calcularBonos(jugador) {
     const s = statsGlobal[jugador];
     if (!s) return null;
 
-    // REGLAS DEL ROL:
-    // +1 Roja cada 2 Física
-    // +1 Azul cada 4 (Energética, Espiritual, Psíquica, Mando)
-    // +Vex basado en Oscura (300/4 por punto = 75 Vex)
+    // REGLAS HEX:
+    // +1 Roja / 2 Física
+    // +1 Azul / 4 (Ene, Esp, Psi, Man)
+    // +75 Vex / 1 Oscura
     
     return {
         bonoRoja: Math.floor(s.afin.fis / 2),
@@ -17,20 +17,19 @@ export function calcularBonos(jugador) {
 }
 
 export function descargarCSVStats() {
-    let csv = "\uFEFFPersonaje,Nombre,Bio,Hex,AumHex,Vex,AumVex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,HechizosAfin,HechizosNom,HechizosHex,CorRojos,CorAzules,GuardaOro\n";
+    let csv = "\uFEFFPersonaje,Nombre,Bio,Hex,AumHex,Vex,AumVex,Fis,Ene,Esp,Man,Psi,Osc,SpellsAfin,SpellsNom,SpellsHex,VidaRoja,VidaAzul,GuardaOro\n";
     
     Object.keys(statsGlobal).sort().forEach(p => {
         const d = statsGlobal[p];
-        const spellsAfin = d.learnedSpells.map(s => s.afinidad).join(',');
-        const spellsNom = d.learnedSpells.map(s => s.nombre).join(',');
-        const spellsHex = d.learnedSpells.map(s => s.costo).join(',');
+        const spA = d.learnedSpells.map(s => s.afinidad).join(',');
+        const spN = d.learnedSpells.map(s => s.nombre).join(',');
+        const spH = d.learnedSpells.map(s => s.costo).join(',');
 
-        csv += `"${p}","${d.nombreFull}","${d.bio}",${d.hex},0,${d.vex},0,${d.afin.fis},${d.afin.ene},${d.afin.esp},${d.afin.man},${d.afin.psi},${d.afin.osc},"${spellsAfin}","${spellsNom}","${spellsHex}","${d.vida.roja}",${d.vida.azul},${d.vida.oro}\n`;
+        csv += `"${p}","${d.nombreFull}","${d.bio}",${d.hex},0,${d.vex},0,${d.afin.fis},${d.afin.ene},${d.afin.esp},${d.afin.man},${d.afin.psi},${d.afin.osc},"${spA}","${spN}","${spH}","${d.vida.roja}",${d.vida.azul},${d.vida.oro}\n`;
     });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `HEX_ESTADISTICAS_EXPORT.csv`;
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    link.download = `HEX_ESTADISTICAS.csv`;
     link.click();
 }
