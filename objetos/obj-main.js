@@ -12,18 +12,37 @@ async function iniciar() {
     if (!cache) await cargarTodoDesdeCSV();
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     
-    // SISTEMA DE POP-UP GLOBAL
+    // SISTEMA DE POP-UP MOVIBLE
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view';
     modal.className = 'hex-modal';
-    modal.onclick = () => modal.style.display = 'none'; // Se cierra al hacer clic en cualquier lado
-    modal.innerHTML = `<img id="hex-modal-img" src="">`;
+    modal.innerHTML = `<img id="hex-modal-img" src="" draggable="false">`;
     document.body.appendChild(modal);
 
+    const modalImg = document.getElementById('hex-modal-img');
+    let isDragging = false, startX, startY, initialX, initialY;
+
+    // Cerrar si haces clic en el desenfoque, no en la imagen
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+    // Lógica para mover la imagen
+    modalImg.onmousedown = (e) => {
+        isDragging = true;
+        startX = e.clientX; startY = e.clientY;
+        initialX = modalImg.offsetLeft; initialY = modalImg.offsetTop;
+        e.preventDefault();
+    };
+    window.onmousemove = (e) => {
+        if (!isDragging) return;
+        modalImg.style.left = (initialX + (e.clientX - startX)) + 'px';
+        modalImg.style.top = (initialY + (e.clientY - startY)) + 'px';
+    };
+    window.onmouseup = () => { isDragging = false; };
+
     window.verImagen = (url) => {
-        const img = document.getElementById('hex-modal-img');
-        img.src = url;
-        document.getElementById('hex-modal-view').style.display = 'flex';
+        modalImg.src = url;
+        modalImg.style.left = '0px'; modalImg.style.top = '0px'; // Reset posición
+        modal.style.display = 'flex';
     };
 
     const _session = 'Y2FuZXk=';
@@ -47,20 +66,17 @@ async function iniciar() {
         window.actualizarBitacoraTexto(); modificar(j, o, c, refrescarUI);
     };
 
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
         const i = prompt("Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
     };
 
     window.mostrarPagina = (id) => { document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); document.getElementById('pag-' + id).style.display = 'block'; refrescarUI(); };
-    
     window.setInv = (j) => { estadoUI.jugadorInv = j; dibujarInventarios(); };
     window.setCtrl = (j) => { estadoUI.jugadorControl = j; dibujarControl(); };
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
-    
-    // Optimización de búsquedas para evitar lag
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
     window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; dibujarControl(); };
