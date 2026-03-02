@@ -4,45 +4,47 @@ export async function cargarStatsDesdeCSV() {
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZD7f7YtuNnIH1P_KWABhRFDos3GnX4dkkUUE0zpRgNiKPvtbX2kOx4N-CGi0Rc4FPKYYZxXbeJFR/pub?output=csv&cachebust=" + Date.now();
     try {
         const res = await fetch(url);
-        const data = await res.text();
-        const filas = data.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
+        const text = await res.text();
+        // Separador de filas, ignorando comas dentro de comillas
+        const filas = text.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
 
         filas.slice(1).forEach(f => {
-            const p = f[0]; if (!p) return;
+            if (!f[0]) return;
+
+            // Columna A: [0] Personaje, [1] Nombre, [2] Descripción
+            const datosA = f[0].split(',').map(s => s.trim());
+            const idKey = datosA[0]; // "Linda"
             
-            // Parseo de Hechizos Aprendidos
-            const afinidadesList = f[14] ? f[14].split(',').map(s => s.trim()) : [];
-            const nombresList = f[15] ? f[15].split(',').map(s => s.trim()) : [];
-            const hexList = f[16] ? f[16].split(',').map(s => s.trim()) : [];
+            // Columna B: [0] Hex, [1] AumHex, [2] Vex, [3] AumVex
+            const datosB = f[1] ? f[1].split(',').map(s => s.trim()) : ["0","0","0","0"];
+            
+            // Columna C: [0] Fis, [1] Ene, [2] Esp, [3] Man, [4] Psi, [5] Osc (FEEMPO)
+            const datosC = f[2] ? f[2].split(',').map(s => s.trim()) : ["0","0","0","0","0","0"];
+            
+            // Columna M: [0] VidaRoja, [1] VidaAzul, [2] Oro (RAD)
+            const datosM = f[12] ? f[12].split(',').map(s => s.trim()) : ["0/10","0","0"];
 
-            const spells = nombresList.map((nombre, i) => ({
-                nombre,
-                afinidad: afinidadesList[i] || '?',
-                costo: hexList[i] || '0'
-            })).filter(s => s.nombre !== "");
-
-            statsGlobal[p] = {
-                nombreFull: f[1],
-                bio: f[2],
-                hex: parseInt(f[3]) || 0,
-                vex: parseInt(f[5]) || 0,
+            statsGlobal[idKey] = {
+                nombreFull: datosA[1] || idKey,
+                bio: datosA[2] || "Sin descripción.",
+                hex: parseInt(datosB[0]) || 0,
+                vex: parseInt(datosB[2]) || 0,
                 afin: {
-                    fis: parseInt(f[7]) || 0,
-                    ene: parseInt(f[8]) || 0,
-                    esp: parseInt(f[9]) || 0,
-                    man: parseInt(f[10]) || 0,
-                    psi: parseInt(f[11]) || 0,
-                    osc: parseInt(f[12]) || 0
+                    fis: parseInt(datosC[0]) || 0,
+                    ene: parseInt(datosC[1]) || 0,
+                    esp: parseInt(datosC[2]) || 0,
+                    man: parseInt(datosC[3]) || 0,
+                    psi: parseInt(datosC[4]) || 0,
+                    osc: parseInt(datosC[5]) || 0
                 },
-                learnedSpells: spells,
                 vida: {
-                    roja: f[17] || "0/10",
-                    azul: parseInt(f[18]) || 0,
-                    oro: parseInt(f[19]) || 0
-                }
+                    roja: datosM[0] || "0/10",
+                    azul: parseInt(datosM[1]) || 0,
+                    oro: parseInt(datosM[2]) || 0
+                },
+                learnedSpells: [] // Se puede mapear de las columnas N-Z luego
             };
         });
         guardarStats();
-    } catch (e) { console.error("Error cargando Stats:", e); }
-
+    } catch (e) { console.error("Error de conexión:", e); }
 }
