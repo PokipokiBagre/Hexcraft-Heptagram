@@ -1,19 +1,14 @@
 import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
 
-// Función para evitar la pérdida de foco al escribir
+// Mantiene el foco y la posición del cursor al escribir
 function dibujarConFoco(containerId, html) {
     const activeId = document.activeElement.id;
     const start = document.activeElement.selectionStart;
     const end = document.activeElement.selectionEnd;
-    
     document.getElementById(containerId).innerHTML = html;
-    
     if (activeId) {
         const el = document.getElementById(activeId);
-        if (el) {
-            el.focus();
-            if (el.setSelectionRange) el.setSelectionRange(start, end);
-        }
+        if (el) { el.focus(); if (el.setSelectionRange) el.setSelectionRange(start, end); }
     }
 }
 
@@ -21,9 +16,14 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
+// Normalización que respeta la "ñ" para que coincida con tus archivos
 const normalizarNombre = (str) => {
     if (!str) return "";
-    return str.toString().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+    return str.toString().trim().toLowerCase()
+        .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e').replace(/[íìïî]/g, 'i')
+        .replace(/[óòöô]/g, 'o').replace(/[úùüû]/g, 'u')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9ñ_]/g, ''); // Respeta la ñ
 };
 
 function ordenarItems(j) {
@@ -54,7 +54,7 @@ export function dibujarInventarios() {
             <div class="player-info">
                 <h3>${j}</h3>
                 <p class="afinidad-tag">Afinidad Máxima: <span>${maxAf}</span></p>
-                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
+                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
             </div>
         </div>
         <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
@@ -70,17 +70,24 @@ export function dibujarInventarios() {
                 const imgFile = normalizarNombre(o);
                 html += `
                 <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
-                    <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                    <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <span class="top-item-name">${o}</span>
                 </div>`;
             });
             html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
         }
 
-        html += `<div class="table-responsive"><table class='container-hex'><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
-        ordenarItems(j).forEach(o => {
+        // TABLA DE INVENTARIO CON COLUMNA IMAGEN
+        html += `<div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
+        Object.keys(invGlobal[j]).sort().forEach(o => {
             if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
-                html += `<tr><td style="font-weight:bold; color:#d4af37;">${o}</td><td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff}</td><td>${invGlobal[j][o]}</td></tr>`;
+                const imgFile = normalizarNombre(o);
+                html += `<tr>
+                    <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
+                    <td style="font-weight:bold; color:#d4af37;">${o}</td>
+                    <td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff || '-'}</td>
+                    <td>${invGlobal[j][o]}</td>
+                </tr>`;
             }
         });
         html += "</table></div>";
@@ -94,9 +101,9 @@ export function dibujarCatalogo() {
         const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
         html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
     });
-    html += "</div><div class='filter-group' style='margin-top:10px;'>";
+    html += "</div><div class='filter-group'>";
     ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
-        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
+        const active = estadoUI.filtroMat === m ? 'style="background:#4a004a; border-color:#fff;"' : '';
         html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
     });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
@@ -107,12 +114,10 @@ export function dibujarCatalogo() {
         const item = objGlobal[o];
         const matchR = estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar;
         const matchM = estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat;
-        
         if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
             const imgFile = normalizarNombre(o);
-            // Integración de imágenes en la tabla del catálogo
             html += `<tr>
-                <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
+                <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
                 <td style="font-weight:bold; color:#d4af37;">${o}</td>
                 <td style="text-align:left; font-size:0.85em;">${item.eff}</td>
                 <td>${item.mat}</td>
@@ -123,7 +128,7 @@ export function dibujarCatalogo() {
     dibujarConFoco('tabla-todos-objetos', html + "</table></div>");
 }
 
-// --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
+// --- TUS FUNCIONES OP Y CONTROL (INTACTAS) ---
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -134,7 +139,7 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = estadoUI.busquedaOP.toLowerCase();
