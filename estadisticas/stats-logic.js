@@ -1,38 +1,27 @@
 import { statsGlobal } from './stats-state.js';
 
-export function calcularFicha(id) {
+export function calcular(id) {
     const s = statsGlobal[id]; if(!s) return null;
 
-    // +1 Afin por cada hechizo de ese tipo aprendido
-    const getBonusSpell = (tipo) => s.learnedSpells.filter(sp => sp.afin.toLowerCase().includes(tipo.toLowerCase())).length;
-
-    const fFin = {
-        fis: s.afin.fis + getBonusSpell('Física'),
-        ene: s.afin.ene + getBonusSpell('Energética'),
-        esp: s.afin.esp + getBonusSpell('Espiritual'),
-        man: s.afin.man + getBonusSpell('Mando'),
-        psi: s.afin.psi + getBonusSpell('Psíquica'),
-        osc: s.afin.osc + getBonusSpell('Oscura')
+    const bAfin = (t) => s.spAf.filter(a => a.toLowerCase().includes(t.toLowerCase())).length;
+    const fF = {
+        fi: s.af.fi + bAfin('Física'), en: s.af.en + bAfin('Energética'),
+        es: s.af.es + bAfin('Espiritual'), ma: s.af.ma + bAfin('Mando'),
+        ps: s.af.ps + bAfin('Psíquica'), os: s.af.os + bAfin('Oscura')
     };
 
-    // Bonos RAD: +1 Roja/2 Psi | +1 Azul/4 (Ene, Esp, Psi, Man)
-    const bRoja = Math.floor(fFin.psi / 2);
-    const bAzul = Math.floor((fFin.ene + fFin.esp + fFin.psi + fFin.man) / 4);
-    const bVex = Math.round((fFin.osc * 75) / 50) * 50;
+    const bR = Math.floor(fF.ps / 2);
+    const bA = Math.floor((fF.en + fF.es + fF.ps + fF.ma) / 4);
+    const bV = Math.round((fF.os * 75) / 50) * 50;
 
-    // Escala del círculo (2000 Hex = 110px de diámetro)
-    const sizeHX = Math.min(Math.max((s.hex / 2000) * 110, 45), 180);
-    const sizeVX = Math.min(Math.max(((s.vex + bVex) / 2000) * 110, 45), 180);
+    // Escala círculos: 2000 = 120px
+    const sHX = Math.min(Math.max((s.hx / 2000) * 120, 50), 200);
+    const sVX = Math.min(Math.max(((s.vx + bV) / 2000) * 120, 50), 200);
 
     return {
-        r: s.vida.act, rM: s.vida.maxBase + bRoja, a: s.vida.azul + bAzul, o: s.vida.oro,
-        hx: s.hex, vxM: s.vex + bVex, vxA: s.vex,
-        afin: fFin, spells: s.learnedSpells,
-        sHX: sizeHX, sVX: sizeVX
+        r: s.vi.r, rM: s.vi.rM + bR, a: s.vi.a + bA, g: s.vi.g,
+        hx: s.hx, vxM: s.vx + bV, vxA: s.vx,
+        af: fF, sp: s.sp, sHX, sVX
     };
-}
-
-export function generarCSV(id, n) {
-    return `"${id}",0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,"","",""\n`;
 }
 
