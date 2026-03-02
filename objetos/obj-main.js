@@ -67,9 +67,12 @@ window.updateCreationLog = () => {
     if (out) out.value = l.join('\n');
 };
 
-window.mostrarCreacionObjeto = () => { 
-    window.mostrarPagina('control'); // Navega al panel interactivo
-    dibujarCreacionObjeto();        // Dibuja el formulario
+    window.mostrarCreacionObjeto = () => { 
+    // 1. Cambia a la sección visible que contiene el panel interactivo
+    window.mostrarPagina('control'); 
+    
+    // 2. Ejecuta el renderizado del formulario de creación
+    dibujarCreacionObjeto(); 
 };
 
 window.hexMod = (j, o, c) => {
@@ -120,5 +123,6 @@ window.hexMod = (j, o, c) => {
     refrescarUI();
 }
 iniciar();
+
 
 
