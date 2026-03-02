@@ -1,12 +1,12 @@
 import { statsGlobal, guardar } from './stats-state.js';
 
-const URL_STATS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZD7f7YtuNnIH1P_KWABhRFDos3GnX4dkkUUE0zpRgNiKPvtbX2kOx4N-CGi0Rc4FPKYYZxXbeJFR/pub?output=csv";
-const URL_OBJS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv";
+const URL_S = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZD7f7YtuNnIH1P_KWABhRFDos3GnX4dkkUUE0zpRgNiKPvtbX2kOx4N-CGi0Rc4FPKYYZxXbeJFR/pub?output=csv";
+const URL_O = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv";
 
 export async function cargarTodo() {
     try {
-        // 1. Cargar Estadísticas (Prioridad)
-        const resS = await fetch(URL_STATS + "&cache=" + Date.now());
+        // 1. Estadísticas (Linda, Postrimería...)
+        const resS = await fetch(URL_S + "&cb=" + Date.now());
         const textS = await resS.text();
         const filasS = textS.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
 
@@ -21,8 +21,8 @@ export async function cargarTodo() {
             };
         });
 
-        // 2. Escanear Objetos para encontrar personajes faltantes
-        const resO = await fetch(URL_OBJS + "&cache=" + Date.now());
+        // 2. Objetos (Para Volvo, Yuko...)
+        const resO = await fetch(URL_O + "&cb=" + Date.now());
         const textO = await resO.text();
         const filasO = textO.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
 
@@ -34,9 +34,6 @@ export async function cargarTodo() {
                 }
             });
         });
-
-        guardar();
-        return true;
-    } catch (e) { console.error(e); return false; }
+        guardar(); return true;
+    } catch (e) { console.error("Error Fusión:", e); return false; }
 }
-
