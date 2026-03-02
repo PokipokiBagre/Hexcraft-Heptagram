@@ -31,3 +31,4 @@ export function calcularFicha(id) {
         sizeVex: Math.min(Math.max(escalaVex, 40), 180)
     };
 }
+
