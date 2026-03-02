@@ -31,7 +31,7 @@ async function iniciarStats() {
     window.accesoAdmin = () => {
         if(estadoUI.esAdmin) { window.setPage('admin'); return; }
         const pass = prompt("System Code:");
-        if(pass === atob('Y2FuZXk=')) { // caney
+        if(pass === atob('Y2FuZXk='))
             estadoUI.esAdmin = true;
             window.setPage('admin');
         }
@@ -55,3 +55,4 @@ async function iniciarStats() {
 }
 
 iniciarStats();
+
