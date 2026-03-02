@@ -1,38 +1,43 @@
-import { statsGlobal } from './stats-state.js';
+import { statsGlobal, guardar } from './stats-state.js';
 
-export function calcularFicha(id) {
+export function calcularValores(id) {
     const s = statsGlobal[id]; if(!s) return null;
 
-    // 1. Modificadores por Hechizos Aprendidos (+1 afinidad por cada hechizo)
-    const countSpells = (tipo) => s.learnedSpells.filter(sp => sp.afin.toLowerCase().includes(tipo.toLowerCase())).length;
+    // +1 Afin por cada hechizo de ese tipo aprendido
+    const bonusAfin = (tipo) => s.learnedSpells.filter(sp => sp.afin.toLowerCase().includes(tipo.toLowerCase())).length;
 
     const fFin = {
-        fis: s.afin.fis + countSpells('Física'),
-        ene: s.afin.ene + countSpells('Energética'),
-        esp: s.afin.esp + countSpells('Espiritual'),
-        man: s.afin.man + countSpells('Mando'),
-        psi: s.afin.psi + countSpells('Psíquica'),
-        osc: s.afin.osc + countSpells('Oscura')
+        fis: s.afin.fis + bonusAfin('Física'),
+        ene: s.afin.ene + bonusAfin('Energética'),
+        esp: s.afin.esp + bonusAfin('Espiritual'),
+        man: s.afin.man + bonusAfin('Mando'),
+        psi: s.afin.psi + bonusAfin('Psíquica'),
+        osc: s.afin.osc + bonusAfin('Oscura')
     };
 
-    // 2. Bonos RAD
-    // +1 Corazón Rojo por cada 2 Psíquica
+    // Bonos: +1 Roja/2 Psi | +1 Azul/4 (Magias)
     const bRoja = Math.floor(fFin.psi / 2);
-    // +1 Azul por cada 4 de (Ene, Esp, Psi, Man)
     const bAzul = Math.floor((fFin.ene + fFin.esp + fFin.psi + fFin.man) / 4);
-    // Vex: Redondeado a 50 por cada 75 (Oscura*75)
-    const rawVex = fFin.osc * 75;
-    const bVex = Math.round(rawVex / 50) * 50;
+    const bVex = Math.round((fFin.osc * 75) / 50) * 50;
 
     return {
-        roja: s.vida.actual,
-        rojaMax: s.vida.maxBase + bRoja,
-        azul: s.vida.azul + bAzul,
-        oro: s.vida.oro,
-        hex: s.hex,
-        vexMax: s.vex + bVex,
-        vexActual: s.vex,
-        afin: fFin,
-        spells: s.learnedSpells
+        r: s.vida.act, rM: s.vida.maxBase + bRoja, a: s.vida.azul + bAzul, o: s.vida.oro,
+        hx: s.hex, vxM: s.vex + bVex, vxA: s.vex,
+        afin: fFin, spells: s.learnedSpells, nombre: id
     };
 }
+
+export function exportarCSVCompleto() {
+    let csv = "\uFEFFPersonaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,CorRojos,CorRojosMax,CorAzules,GuardaOro,DanRojo,DanAzul,ElimOro,AfinHech,NomsHech,HexHech\n";
+    Object.keys(statsGlobal).forEach(id => {
+        const s = statsGlobal[id];
+        const spA = s.learnedSpells.map(x => x.afin).join(',');
+        const spN = s.learnedSpells.map(x => x.nom).join(',');
+        const spH = s.learnedSpells.map(x => x.hex).join(',');
+        csv += `"${id}",${s.hex},${s.vex},${s.afin.fis},${s.afin.ene},${s.afin.esp},${s.afin.man},${s.afin.psi},${s.afin.osc},${s.vida.act},${s.vida.maxBase},${s.vida.azul},${s.vida.oro},${s.dan.r},${s.dan.a},${s.dan.e},"${spA}","${spN}","${spH}"\n`;
+    });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+    link.download = "HEX_STATS_COMPLETO.csv"; link.click();
+}
+
