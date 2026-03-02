@@ -1,8 +1,9 @@
 export let statsGlobal = {}; 
 export let estadoUI = {
+    personajeActivo: null,
     esAdmin: false,
     paginaActiva: 'publico',
-    personajesPrincipales: [] 
+    principales: [] // Personajes que tienen objetos en el sistema paralelo
 };
 
 export function guardar() { 
