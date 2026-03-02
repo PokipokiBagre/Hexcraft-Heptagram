@@ -4,20 +4,20 @@
     <meta charset="UTF-8">
     <title>HEX - FICHA DE ESTADO</title>
     <link rel="icon" type="image/png" href="../img/icon.png"> 
-    <link rel="stylesheet" href="../stylestats.css?v=1.2"> 
+    <link rel="stylesheet" href="../stylestats.css?v=1.3"> 
 </head>
 <body>
     <div class="container-hex">
-        <div style="text-align: left; margin-bottom: 10px;"><a href="../index.html" class="back-link">⬅ Volver al Inicio</a></div>
+        <div style="text-align: left; margin-bottom: 10px;"><a href="../index.html" style="color: #d4af37; text-decoration: none; font-size: 0.8em;">⬅ Volver al Heptagrama</a></div>
         <h1>FICHA DE ESTADO</h1>
         
         <nav>
             <button onclick="window.setPage('publico')">Jugador</button>
-            <button onclick="window.actualizarStats()" style="background:#006400;">Actualizar</button>
+            <button onclick="window.actualizarStats()" style="background:#006400; font-weight: bold;">Actualizar</button>
             <button onclick="window.accesoAdmin()" style="background:#2e004f; border-style: dashed;">Acceso OP</button>
         </nav>
 
-        <div id="selector-jugadores" class="filter-group"></div>
+        <div id="selector-jugadores" style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;"></div>
 
         <section id="pag-publico" class="pagina">
             <div id="dashboard-stats"></div>
@@ -28,6 +28,6 @@
         </section>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script type="module" src="stat-main.js?v=1.2"></script>
+    <script type="module" src="stat-main.js?v=1.3"></script>
 </body>
 </html>
