@@ -49,5 +49,35 @@ button:hover { background: #d4af37; color: #000; box-shadow: 0 0 15px #d4af37; }
 .afin-box label { display: block; font-size: 0.55em; color: #aaa; margin-bottom: 2px; }
 .afin-box span { font-size: 1.1em; color: #d4af37; font-weight: bold; }
 
+/* Bloques Segmentados con Límite */
+.block-grid { 
+    display: flex; flex-wrap: wrap; gap: 3px; 
+    max-width: 250px; margin: 10px auto; justify-content: center; 
+}
+.blk { width: 10px; height: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1px; }
+.b-red.on { background: #ff4d4d; box-shadow: 0 0 5px #f00; }
+.b-blue.on { background: #00bfff; box-shadow: 0 0 5px #00bfff; }
+.b-gold.on { background: #ffd700; box-shadow: 0 0 5px #ffd700; }
+
+/* Círculos de Energía */
+.energy-row { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 25px 0; }
+.circle { border-radius: 50%; display: flex; align-items: center; justify-content: center; text-align: center; border: 2px solid #d4af37; font-weight: bold; color: #fff; transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 20px rgba(212,175,55,0.3); }
+.c-hex { background: radial-gradient(circle, #402, #9932cc); }
+.c-vex { background: radial-gradient(circle, #030, #32cd32); }
+
+/* Ficha Detallada */
+.img-detail { width: 130px; height: 130px; border-radius: 50%; border: 4px solid #d4af37; display: block; margin: 0 auto 15px auto; object-fit: cover; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
+.img-p { width: 75px; height: 75px; border-radius: 50%; border: 2px solid #d4af37; margin-bottom: 8px; object-fit: cover; }
+.owner-tag { color: #0f0; display: block; margin-top: 5px; font-weight: bold; font-size: 0.6em; }
+
+/* Diseñador OP */
+.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+.input-group { text-align: left; }
+.input-group label { display: block; font-size: 0.65em; color: #aaa; margin-bottom: 4px; }
+.input-group input, .input-group textarea { width: 100%; background: #000; color: #fff; border: 1px solid #d4af37; padding: 8px; border-radius: 4px; font-family: 'Cinzel'; }
+.full-width { grid-column: span 3; margin-top: 10px; }
+.btn-save { background: green; color: #fff; width: 100%; margin-top: 20px; padding: 15px; font-weight: bold; cursor: pointer; border: none; }
+
 .op-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
 @media (max-width: 900px) { .catalog-grid { grid-template-columns: repeat(2, 1fr); } }
+
