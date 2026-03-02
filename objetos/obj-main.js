@@ -12,7 +12,7 @@ async function iniciar() {
     if (!cache) await cargarTodoDesdeCSV();
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     
-    // SISTEMA DE POP-UP GLOBAL MOVIBLE
+    // SISTEMA DE POP-UP MOVIBLE CORREGIDO
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view';
     modal.className = 'hex-modal';
@@ -20,30 +20,35 @@ async function iniciar() {
     document.body.appendChild(modal);
 
     const modalImg = document.getElementById('hex-modal-img');
-    let isDragging = false, startX, startY, initialX, initialY;
+    let isDragging = false, offsetX, offsetY;
 
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
-    // Lógica para mover la imagen con el ratón
+    // Lógica de movimiento suave basada en el punto de clic
     modalImg.onmousedown = (e) => {
         isDragging = true;
-        startX = e.clientX; startY = e.clientY;
-        initialX = modalImg.offsetLeft; initialY = modalImg.offsetTop;
-        e.preventDefault();
+        const rect = modalImg.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        modalImg.style.cursor = 'grabbing';
     };
+
     window.onmousemove = (e) => {
         if (!isDragging) return;
-        modalImg.style.left = (initialX + (e.clientX - startX)) + 'px';
-        modalImg.style.top = (initialY + (e.clientY - startY)) + 'px';
+        modalImg.style.left = (e.clientX - offsetX) + 'px';
+        modalImg.style.top = (e.clientY - offsetY) + 'px';
     };
-    window.onmouseup = () => { isDragging = false; };
+
+    window.onmouseup = () => { isDragging = false; modalImg.style.cursor = 'grab'; };
 
     window.verImagen = (url) => {
         modalImg.src = url;
-        modalImg.style.left = '0px'; modalImg.style.top = '0px'; 
+        modalImg.style.left = '50%'; modalImg.style.top = '50%'; 
+        modalImg.style.transform = 'translate(-50%, -50%)'; // Centrado inicial
         modal.style.display = 'flex';
     };
 
+    // Funciones globales vinculadas a window
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
@@ -66,11 +71,11 @@ async function iniciar() {
         window.actualizarBitacoraTexto(); modificar(j, o, c, refrescarUI);
     };
 
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
     
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
-        const i = prompt("System Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
+        const i = prompt("Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
     };
 
     window.mostrarPagina = (id) => { 
@@ -80,7 +85,6 @@ async function iniciar() {
         refrescarUI(); 
     };
 
-    // Vinculación de botones al objeto global window
     window.setInv = (j) => { estadoUI.jugadorInv = j; dibujarInventarios(); };
     window.setCtrl = (j) => { estadoUI.jugadorControl = j; dibujarControl(); };
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
