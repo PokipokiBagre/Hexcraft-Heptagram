@@ -9,7 +9,7 @@ async function iniciar() {
     if (!cache) await cargarTodoDesdeCSV();
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     
-    // ESTADO DE SESIÓN
+    // BITÁCORA DE SESIÓN
     estadoUI.cambiosSesion = {};
 
     // POP-UP MOVIBLE
@@ -33,21 +33,20 @@ async function iniciar() {
     window.onmouseup = () => { isDragging = false; modalImg.style.cursor = 'grab'; };
 
     window.verImagen = (url) => { modalImg.src = url; modalImg.style.left = '50%'; modalImg.style.top = '50%'; modalImg.style.transform = 'translate(-50%, -50%)'; modalImg.style.margin = 'auto'; modal.style.display = 'flex'; };
-
     window.verImagenByName = (name) => {
         const norm = name.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'');
         window.verImagen(`../img/imgobjetos/${norm}.png`);
     };
 
-    // ACTUALIZACIÓN DE BITÁCORA (ACUMULATIVA)
-    const actualizarLogSesion = () => {
+    // GENERADOR DE REGISTRO ACUMULATIVO (RESTAURADO)
+    const actualizarBitacoraAcumulada = () => {
         let lines = [];
         for (const player in estadoUI.cambiosSesion) {
             for (const item in estadoUI.cambiosSesion[player]) {
-                const count = estadoUI.cambiosSesion[player][item];
-                if (count === 0) continue;
-                const tag = count > 0 ? "OO" : "OP";
-                const mult = Math.abs(count) > 1 ? ` x${Math.abs(count)}` : "";
+                const total = estadoUI.cambiosSesion[player][item];
+                if (total === 0) continue;
+                const tag = total > 0 ? "OO" : "OP";
+                const mult = Math.abs(total) > 1 ? ` x${Math.abs(total)}` : "";
                 lines.push(`<${player} | ${tag}: ${item}${mult} | ${objGlobal[item]?.eff || "..."}>`);
             }
         }
@@ -65,19 +64,19 @@ async function iniciar() {
         const out = document.getElementById('copy-log-crea'); if (out) out.value = l.join('\n');
     };
 
-    // MODIFICAR CON ACUMULACIÓN
+    // MODIFICAR CON MEMORIA DE SESIÓN
     window.hexMod = (j, o, c) => {
         if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
         estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
-        actualizarLogSesion();
+        actualizarBitacoraAcumulada();
         modificar(j, o, c, refrescarUI);
     };
 
     // VINCULACIÓN GLOBAL
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); alert("OK"); refrescarUI(); } };
-    window.ejecutarSyncLog = () => { if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; } const i = prompt("Validation Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); } };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarTodoDesdeCSV(); alert("Sincronización OK"); refrescarUI(); } };
+    window.ejecutarSyncLog = () => { if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; } const i = prompt("Validation:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); } };
     window.mostrarCreacionObjeto = () => { dibujarCreacionObjeto(); };
     window.ejecutarAgregarObjeto = () => {
         const d = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
