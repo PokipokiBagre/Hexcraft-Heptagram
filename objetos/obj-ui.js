@@ -113,7 +113,6 @@ export function dibujarCatalogo() {
     drawnHEXPreserveFocus('tabla-todos-objetos', html + "</table></div>");
 }
 
-// RESTAURADO: EDITOR DE STOCK CON 4 BOTONES
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -124,7 +123,7 @@ export function dibujarControl() {
     
     if (estadoUI.jugadorControl) {
         const j = estadoUI.jugadorControl;
-        html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar..." value="${estadoUI.busquedaOP}" oninput="window.setBusqueda(this.value)">`;
+        html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">`;
         html += `<div class="grid-control">`;
         const term = estadoUI.busquedaOP.toLowerCase();
         ordenarItems(j).forEach(o => {
@@ -145,18 +144,22 @@ export function dibujarControl() {
             }
         });
         html += "</div>";
+        // Recuadro de Bitácora Acumulativa
         html += `<div class="container-hex" style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Esperando acción...'}</textarea>
                     <div style="display:flex; gap:10px;">
-                        <button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
+                        <button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button>
                         <button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button>
                     </div>
                  </div>`;
     }
     document.getElementById('panel-interactivo').innerHTML = html;
-    if (document.activeElement.id !== 'busq-op') {
-        const input = document.getElementById('busq-op');
-        if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+    
+    // Mantener el foco en el buscador sin interrumpir la escritura
+    const input = document.getElementById('busq-op');
+    if (input && document.activeElement.id !== 'busq-op') {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
     }
 }
 
@@ -202,3 +205,4 @@ export function dibujarCreacionObjeto() {
     </div>`;
     document.getElementById('panel-interactivo').innerHTML = html;
 }
+
