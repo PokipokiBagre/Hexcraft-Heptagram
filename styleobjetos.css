@@ -15,7 +15,7 @@ button { background: #2e004f; color: #d4af37; border: 1px solid #d4af37; padding
 
 /* Efecto de Profundidad al hacer Clic (:active) */
 button:active, .top-item-card:active, .cat-img:active { 
-    transform: scale(0.96); /* Toque de profundidad hacia adentro */
+    transform: scale(0.95); /* Toque de profundidad hacia adentro */
     box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Sombra interna */
 }
 
@@ -37,10 +37,10 @@ button:active, .top-item-card:active, .cat-img:active {
 /* Miniaturas en Tablas y Grilla */
 .top-item-card img, .cat-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; opacity: 0.8; transition: 0.4s ease; cursor: pointer; }
 
-/* Toque Profesional RECUPERADO Y BAJADO AL 50% */
+/* Toque Profesional (BLUR AL 50% - 1px) */
 .top-item-card img:hover, .cat-img:hover { 
     opacity: 1; 
-    filter: blur(1px) brightness(0.8); /* Difuminado suave de 1px */
+    filter: blur(1px) brightness(0.8); /* Difuminado suave reducido */
     transform: scale(1.02); 
 }
 
@@ -48,7 +48,7 @@ button:active, .top-item-card:active, .cat-img:active {
 .rarity-raro { border: 2px solid #8a2be2 !important; box-shadow: 0 0 15px rgba(138, 43, 226, 0.4); }
 .rarity-legendario { border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); }
 
-/* --- POP-UP ESTABLE MOVIBLE CON BLUR --- */
+/* --- POP-UP ESTABLE MOVIBLE CON BLUR (CORREGIDO) --- */
 .hex-modal { 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
     background: rgba(18, 0, 36, 0.4); backdrop-filter: blur(10px); /* Fondo borroso, no negro */
@@ -58,8 +58,7 @@ button:active, .top-item-card:active, .cat-img:active {
     max-width: 80vw; max-height: 75vh; border: 2px solid #d4af37; 
     box-shadow: 0 0 50px #000; background: #120024;
     cursor: grab;
-    position: absolute; /* Cambiado a absolute para el movimiento correcto */
-    left: 0; right: 0; top: 0; bottom: 0; margin: auto; /* Centrado automático inicial */
+    position: absolute; /* Clave para que el JS controle la posición real */
 }
 .hex-modal img:active { cursor: grabbing; }
 
