@@ -49,32 +49,31 @@ button:hover { background: #d4af37; color: #000; box-shadow: 0 0 15px #d4af37; }
 .afin-box label { display: block; font-size: 0.55em; color: #aaa; margin-bottom: 2px; }
 .afin-box span { font-size: 1.1em; color: #d4af37; font-weight: bold; }
 
-/* Cuadrícula de Bloques Segmentados */
+/* Bloques Segmentados */
 .block-grid { 
     display: flex; flex-wrap: wrap; gap: 2px; 
-    max-width: 350px; margin: 10px auto; justify-content: center;
+    max-width: 380px; /* Límite de ancho para que se apilen elegantemente */
+    margin: 10px auto; justify-content: center;
 }
 .blk { width: 9px; height: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
 .b-red.on { background: #ff4d4d; box-shadow: 0 0 5px #f00; }
 .b-blue.on { background: #00bfff; box-shadow: 0 0 5px #00bfff; }
 .b-gold.on { background: #ffd700; box-shadow: 0 0 5px #ffd700; }
 
-/* Energía Circular */
-.energy-row { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 30px 0; }
+/* Círculos de Energía */
+.energy-row { display: flex; justify-content: center; align-items: center; gap: 35px; margin: 30px 0; }
 .circle { 
     border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-    text-align: center; border: 2px solid #d4af37; font-weight: bold; color: #fff;
-    box-shadow: 0 0 25px rgba(212,175,55,0.3); transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-align: center; font-weight: bold; border: 2px solid #d4af37; color:#fff;
+    box-shadow: 0 0 20px rgba(212,175,55,0.3); transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .c-hex { background: radial-gradient(circle, #402, #9932cc); }
 .c-vex { background: radial-gradient(circle, #030, #32cd32); }
 
-/* Ficha Detallada e Imágenes */
-.img-detail { width: 140px; height: 140px; border-radius: 50%; border: 4px solid #d4af37; display: block; margin: 0 auto 10px auto; object-fit: cover; }
-.img-p { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #d4af37; margin-bottom: 10px; object-fit: cover; }
-.gold-t { color: #d4af37; font-weight: bold; }
-.btn-close { background: #444; color: #fff; border: none; padding: 10px 20px; cursor: pointer; float: right; }
-.spell-tag { background: rgba(212,175,55,0.1); border: 1px solid #d4af3744; padding: 4px 10px; border-radius: 4px; margin: 3px; display: inline-block; font-size: 0.75em; }}
+/* Detalle e Imagen Superior */
+.img-detail { width: 135px; height: 135px; border-radius: 50%; border: 4px solid #d4af37; display: block; margin: 0 auto 15px auto; object-fit: cover; box-shadow: 0 0 30px #000; }
+.img-p { width: 75px; height: 75px; border-radius: 50%; border: 2px solid #d4af37; margin-bottom: 10px; object-fit: cover; }
+.spell-tag { background: rgba(212,175,55,0.1); border: 1px solid #d4af3744; padding: 4px 10px; border-radius: 4px; margin: 3px; display: inline-block; font-size: 0.75em; }}}
 
 /* Diseñador OP */
 .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
@@ -86,5 +85,6 @@ button:hover { background: #d4af37; color: #000; box-shadow: 0 0 15px #d4af37; }
 
 .op-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
 @media (max-width: 900px) { .catalog-grid { grid-template-columns: repeat(2, 1fr); } }
+
 
 
