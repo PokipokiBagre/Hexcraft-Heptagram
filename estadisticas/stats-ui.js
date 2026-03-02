@@ -1,71 +1,75 @@
 import { statsGlobal, estadoUI } from './stats-state.js';
-import { calcularTodo } from './stats-logic.js';
-
-function drawnHEXPreserveFocus(containerId, html) {
-    const container = document.getElementById(containerId);
-    if (container) container.innerHTML = html;
-}
+import { calcularFicha } from './stats-logic.js';
 
 export function refrescarUI() {
-    dibujarCatalogo();
-    if (estadoUI.esAdmin) dibujarAdmin();
+    const catalog = document.getElementById('contenedor-catalog');
+    const dash = document.getElementById('dashboard-stats');
+    if(!catalog) return;
+
+    if(estadoUI.personajeActivo) {
+        catalog.style.display = "none";
+        dibujarDetalle(estadoUI.personajeActivo, dash);
+    } else {
+        catalog.style.display = "grid";
+        dash.innerHTML = "";
+        dibujarCatalogo(catalog);
+    }
 }
 
-function dibujarCatalogo() {
-    const container = document.getElementById('contenedor-catalog');
-    if (!container) return;
-
-    // Prioridad: Principales primero
+function dibujarCatalogo(container) {
     const ids = Object.keys(statsGlobal).sort((a, b) => {
         const pA = estadoUI.principales.includes(a) ? 0 : 1;
         const pB = estadoUI.principales.includes(b) ? 0 : 1;
         return pA - pB || a.localeCompare(b);
     });
 
-    let html = "";
-    ids.forEach(id => {
-        const d = calcularTodo(id);
+    container.innerHTML = ids.map(id => {
+        const d = calcularFicha(id);
         const img = `../img/imgpersonajes/${id.toLowerCase()}icon.png`;
-        
-        html += `
-            <div class="personaje-card">
-                <div class="header-card">
-                    <img src="${img}" class="img-p" onerror="this.src='../img/icon.png'">
-                    <span style="color:#d4af37; font-weight:bold;">${id.toUpperCase()}</span>
-                    ${estadoUI.principales.includes(id) ? '<small style="color:#0f0; display:block; font-size:0.6em;">PRINCIPAL</small>' : ''}
-                </div>
-                
-                <div class="bar-container"><div class="bar-fill bar-red" style="width:${(d.roja/d.rojaMax)*100}%"></div><div class="bar-text">${d.roja} / ${d.rojaMax} ❤️</div></div>
-                <div class="bar-container"><div class="bar-fill bar-blue" style="width:100%"></div><div class="bar-text">${d.azul} Corazones 💙</div></div>
-                
-                <div class="afin-grid">
-                    ${['FIS','ENE','ESP','MAN','PSI','OSC'].map((n, i) => `
-                        <div class="afin-box"><label>${n}</label><span>${d.afin[i]}</span></div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    });
-    drawnHEXPreserveFocus('contenedor-catalog', html);
+        return `
+            <div class="personaje-card" onclick="window.setActivo('${id}')">
+                <img src="${img}" class="img-p" onerror="this.src='../img/icon.png'">
+                <div style="color:#d4af37; font-weight:bold; margin-bottom:10px;">${id.toUpperCase()}</div>
+                <div class="bar-container"><div class="bar-fill bar-red" style="width:${(d.roja/d.rojaMax)*100}%"></div><div class="bar-text">${d.roja}/${d.rojaMax} ❤️</div></div>
+                <div class="bar-container"><div class="bar-fill bar-blue" style="width:100%"></div><div class="bar-text">${d.azul} Azules</div></div>
+                ${estadoUI.principales.includes(id) ? '<small style="color:#0f0;">PRINCIPAL</small>' : ''}
+            </div>`;
+    }).join('');
 }
 
-function dibujarAdmin() {
-    const panel = document.getElementById('panel-op-stats');
-    if (!panel) return;
-
-    panel.innerHTML = `
-        <div class="stat-card" style="max-width:600px; margin:0 auto; border-style:dashed;">
-            <h2>DISEÑADOR DE PERSONAJE</h2>
-            <div style="display:grid; gap:10px; text-align:left;">
-                <label>ID Personaje (Linda, Corvin...):</label>
-                <input type="text" id="new-id" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid #d4af37;">
-                <label>Nombre Completo:</label>
-                <input type="text" id="new-nom" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid #d4af37;">
-                <label>Biografía:</label>
-                <textarea id="new-bio" style="width:100%; height:60px; background:#000; color:#fff; border:1px solid #d4af37; padding:10px;"></textarea>
+function dibujarDetalle(id, container) {
+    const d = calcularFicha(id);
+    container.innerHTML = `
+        <div class="detail-card">
+            <button onclick="window.setActivo(null)" style="float:right;">CERRAR</button>
+            <h2 style="color:#d4af37;">${id}</h2>
+            <div class="resource-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <div>
+                    <label style="font-size:0.7em; color:#ff4d4d;">VITALIDAD RAD</label>
+                    <div class="bar-container"><div class="bar-fill bar-red" style="width:${(d.roja/d.rojaMax)*100}%"></div><div class="bar-text">${d.roja}/${d.rojaMax} ❤️</div></div>
+                    <div class="bar-container"><div class="bar-fill bar-blue" style="width:100%"></div><div class="bar-text">${d.azul} Corazones Azules</div></div>
+                </div>
+                <div>
+                    <label style="font-size:0.7em; color:#9932cc;">MÁGICA</label>
+                    <div class="bar-container"><div class="bar-fill bar-purple" style="width:100%"></div><div class="bar-text">${d.hex} HEX</div></div>
+                    <div class="bar-container"><div class="bar-fill bar-green" style="width:${(d.vexActual/d.vexMax)*100}%"></div><div class="bar-text">${d.vexActual}/${d.vexMax} VEX</div></div>
+                </div>
             </div>
-            <button onclick="window.descargarNuevoPersonaje()" style="width:100%; margin-top:20px; background:#006400; color:white;">GENERAR LÍNEA CSV</button>
-            <button onclick="window.mostrarPagina('publico')" style="width:100%; margin-top:10px; background:#444;">VOLVER AL CATÁLOGO</button>
-        </div>
-    `;
+            <div class="afin-grid">${Object.entries(d.afin).map(([k,v])=>`<div class="afin-box"><label>${k.toUpperCase()}</label><span>${v}</span></div>`).join('')}</div>
+            <h3>HECHIZOS APRENDIDOS (${d.spells.length})</h3>
+            <table class="spell-table">
+                <tr><th>AFINIDAD</th><th>HECHIZO</th><th>HEX</th></tr>
+                ${d.spells.map(s => `<tr><td>${s.afin}</td><td>${s.nom}</td><td>${s.hex}</td></tr>`).join('')}
+            </table>
+        </div>`;
+}
+
+export function dibujarAdmin() {
+    document.getElementById('panel-op-central').innerHTML = `
+        <div class="detail-card" style="max-width:500px; margin:auto;">
+            <h2>OP: DISEÑADOR</h2>
+            <input type="text" id="new-id" placeholder="Nombre Personaje..." style="width:95%; padding:10px; margin-bottom:10px; background:#000; color:#fff; border:1px solid #d4af37;">
+            <button onclick="window.generarLineaCSV()" style="width:100%; background:#006400;">DESCARGAR LÍNEA CSV (A-S)</button>
+            <button onclick="window.mostrarPagina('publico')" style="width:100%; background:#444; margin-top:10px;">CANCELAR</button>
+        </div>`;
 }
