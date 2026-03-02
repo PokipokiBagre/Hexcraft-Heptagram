@@ -12,8 +12,21 @@ async function iniciar() {
     if (!cache) await cargarTodoDesdeCSV();
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     
-    const _session = 'Y2FuZXk=';
+    // SISTEMA DE POP-UP GLOBAL
+    const modal = document.createElement('div');
+    modal.id = 'hex-modal-view';
+    modal.className = 'hex-modal';
+    modal.onclick = () => modal.style.display = 'none'; // Se cierra al hacer clic en cualquier lado
+    modal.innerHTML = `<img id="hex-modal-img" src="">`;
+    document.body.appendChild(modal);
 
+    window.verImagen = (url) => {
+        const img = document.getElementById('hex-modal-img');
+        img.src = url;
+        document.getElementById('hex-modal-view').style.display = 'flex';
+    };
+
+    const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.actualizarBitacoraTexto = () => {
