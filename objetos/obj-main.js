@@ -1,67 +1,47 @@
 import { invGlobal, objGlobal, historial, estadoUI } from './obj-state.js';
 import { cargarTodoDesdeCSV } from './obj-data.js';
-import { modificar, descargarLog, descargarEstadoCSV, descargarInventariosJPG } from './obj-logic.js';
-import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl } from './obj-ui.js';
+import { modificar, descargarLog, descargarEstadoCSV, descargarInventariosJPG, agregarObjetoManual } from './obj-logic.js';
+import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto } from './obj-ui.js';
 
 async function iniciar() {
-    if (performance.getEntriesByType("navigation")[0]?.type === "reload") {
-        localStorage.removeItem('hex_obj_v4');
-    }
-
+    if (performance.getEntriesByType("navigation")[0]?.type === "reload") { localStorage.removeItem('hex_obj_v4'); }
     const cache = localStorage.getItem('hex_obj_v4');
     if (!cache) await cargarTodoDesdeCSV();
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     
-    // SISTEMA DE POP-UP GLOBAL MOVIBLE
+    // SISTEMA DE POP-UP MOVIBLE CORREGIDO
     const modal = document.createElement('div');
-    modal.id = 'hex-modal-view';
-    modal.className = 'hex-modal';
+    modal.id = 'hex-modal-view'; modal.className = 'hex-modal';
     modal.innerHTML = `<img id="hex-modal-img" src="" draggable="false">`;
     document.body.appendChild(modal);
-
     const modalImg = document.getElementById('hex-modal-img');
     let isDragging = false, offsetX, offsetY;
 
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
-
-    // Lógica de movimiento suave basada en el punto de clic
     modalImg.onmousedown = (e) => {
         isDragging = true;
         const rect = modalImg.getBoundingClientRect();
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-        modalImg.style.cursor = 'grabbing';
-        modalImg.style.left = rect.left + 'px'; // Fijamos posición actual en píxeles
-        modalImg.style.top = rect.top + 'px';
-        modalImg.style.transform = 'none'; // Quita el centrado CSS inicial para moverlo
-        e.preventDefault();
+        offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
+        modalImg.style.cursor = 'grabbing'; modalImg.style.margin = '0';
+        modalImg.style.left = rect.left + 'px'; modalImg.style.top = rect.top + 'px';
+        modalImg.style.transform = 'none'; e.preventDefault();
     };
-
     window.onmousemove = (e) => {
         if (!isDragging) return;
-        modalImg.style.left = (e.clientX - offsetX) + 'px';
-        modalImg.style.top = (e.clientY - offsetY) + 'px';
+        modalImg.style.left = (e.clientX - offsetX) + 'px'; modalImg.style.top = (e.clientY - offsetY) + 'px';
     };
-
     window.onmouseup = () => { isDragging = false; modalImg.style.cursor = 'grab'; };
 
     window.verImagen = (url) => {
-        modalImg.src = url;
-        modalImg.style.left = '50%'; modalImg.style.top = '50%'; 
-        modalImg.style.transform = 'translate(-50%, -50%)'; // Reset posición inicial centrada
-        modal.style.display = 'flex';
+        modalImg.src = url; modalImg.style.left = '50%'; modalImg.style.top = '50%'; 
+        modalImg.style.transform = 'translate(-50%, -50%)'; modalImg.style.margin = 'auto'; modal.style.display = 'flex';
     };
 
     window.verImagenByName = (name) => {
-        const normalized = name.toString().trim().toLowerCase()
-            .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e').replace(/[íìïî]/g, 'i')
-            .replace(/[óòöô]/g, 'o').replace(/[úùüû]/g, 'u')
-            .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9ñ_]/g, '');
-        window.verImagen(`../img/imgobjetos/${normalized}.png`);
+        const norm = name.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'');
+        window.verImagen(`../img/imgobjetos/${norm}.png`);
     };
 
-    // Funciones globales vinculadas a window
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
@@ -72,10 +52,10 @@ async function iniciar() {
         estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
         if (estadoUI.cambiosSesion[j][o] === 0) delete estadoUI.cambiosSesion[j][o];
         let lines = [];
-        for (const player in estadoUI.cambiosSesion) {
-            for (const item in estadoUI.cambiosSesion[player]) {
-                const count = estadoUI.cambiosSesion[player][item]; if (count === 0) continue;
-                lines.push(`<${player} | ${count > 0 ? "OO" : "OP"}: ${item} | ${objGlobal[item]?.eff || "..."}>`);
+        for (const p in estadoUI.cambiosSesion) {
+            for (const i in estadoUI.cambiosSesion[p]) {
+                const count = estadoUI.cambiosSesion[p][i]; if (count === 0) continue;
+                lines.push(`<${p} | ${count > 0 ? "OO" : "OP"}: ${i} | ${objGlobal[i]?.eff || "..."}>`);
             }
         }
         estadoUI.logCopy = lines.join('\n');
@@ -84,14 +64,20 @@ async function iniciar() {
 
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
-        const i = prompt("System Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
+        const i = prompt("Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
+    };
+
+    window.mostrarCreacionObjeto = () => { dibujarCreacionObjeto(); };
+    window.ejecutarAgregarObjeto = () => {
+        const d = { nombre: document.getElementById('new-name').value.trim(), eff: document.getElementById('new-eff').value, mat: document.getElementById('new-mat').value, rar: document.getElementById('new-rar').value };
+        if(!d.nombre) return alert("Nombre vacío");
+        agregarObjetoManual(d, {}, () => { alert("Objeto Creado"); refrescarUI(); window.mostrarPagina('catalogo'); });
     };
 
     window.mostrarPagina = (id) => { 
         document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); 
         const target = document.getElementById('pag-' + id);
-        if(target) target.style.display = 'block'; 
-        refrescarUI(); 
+        if(target) target.style.display = 'block'; refrescarUI(); 
     };
 
     window.setInv = (j) => { estadoUI.jugadorInv = j; dibujarInventarios(); };
