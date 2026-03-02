@@ -1,47 +1,30 @@
-import { statsGlobal, estadoUI, guardar } from './stats-state.js';
+import { statsGlobal, estadoUI } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
-import { refrescarUI } from './stats-ui.js';
-import { generarLineaCSV } from './stats-logic.js';
+import { refrescarUI, dibujarAdmin } from './stats-ui.js';
 
 async function iniciar() {
-    // Sincronizar al recargar
-    if (performance.getEntriesByType("navigation")[0]?.type === "reload") { localStorage.removeItem('hex_stats_v2'); }
-    
+    if (performance.getEntriesByType("navigation")[0]?.type === "reload") { localStorage.removeItem('hex_stats_v3'); }
     await cargarStatsDesdeCSV();
 
+    window.setActivo = (id) => { estadoUI.personajeActivo = id; refrescarUI(); };
     window.mostrarPagina = (id) => {
         document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
-        const target = document.getElementById('pag-' + id);
-        if(target) target.style.display = 'block';
-        refrescarUI();
+        document.getElementById('pag-' + id).style.display = 'block';
+        if(id === 'admin') dibujarAdmin();
+        else { estadoUI.personajeActivo = null; refrescarUI(); }
     };
 
-    window.descargarNuevoPersonaje = () => {
-        const id = document.getElementById('new-id').value.trim();
-        const nom = document.getElementById('new-nom').value.trim();
-        const bio = document.getElementById('new-bio').value.trim();
-        if(!id) return alert("Falta ID");
-        
-        const csvLine = generarLineaCSV(id, nom, bio);
+    window.generarLineaCSV = () => {
+        const id = document.getElementById('new-id').value;
+        const linea = `"${id}",0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,"","",""\n`;
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csvLine], {type:'text/csv'}));
-        link.download = `ENTRADA_CSV_${id}.csv`;
-        link.click();
+        link.href = URL.createObjectURL(new Blob([linea], {type:'text/csv'}));
+        link.download = `ENTRADA_${id}.csv`; link.click();
     };
 
-    window.actualizarTodo = async () => { 
-        if(confirm("¿Sincronizar datos?")) { await cargarStatsDesdeCSV(); refrescarUI(); } 
-    };
-
-    window.ejecutarSyncLog = () => {
-        const i = prompt("Validation:");
-        if (i === atob('Y2FuZXk=')) { 
-            estadoUI.esAdmin = true; 
-            window.mostrarPagina('admin'); 
-        }
-    };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarStatsDesdeCSV(); refrescarUI(); } };
+    window.ejecutarSyncLog = () => { if (prompt("Validation:") === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; window.mostrarPagina('admin'); } };
 
     refrescarUI();
 }
-
 iniciar();
