@@ -1,41 +1,43 @@
-import { statsGlobal, estadoUI, guardar } from './stats-state.js';
+import { estadoUI, statsGlobal, guardarStats } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
-import { refrescarUI, dibujarDisenador } from './stats-ui.js';
-import { exportarCSV } from './stats-logic.js';
+import { dibujarUIStats, dibujarAdminStats } from './stats-ui.js';
+import { descargarCSVStats } from './stats-logic.js';
 
-async function iniciar() {
+async function iniciarStats() {
     await cargarStatsDesdeCSV();
-
-    window.setPersonaje = (id) => { estadoUI.personajeActivo = id; refrescarUI(); };
-    window.mostrarPagina = (id) => {
-        document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
-        document.getElementById('pag-' + id).style.display = 'block';
-        if(id === 'admin') dibujarDisenador();
-        else { estadoUI.personajeActivo = null; refrescarUI(); }
+    
+    window.setJugadorStats = (j) => { 
+        estadoUI.jugadorActivo = j; 
+        dibujarUIStats(); 
+        if(estadoUI.esAdmin) dibujarAdminStats(); 
     };
 
-    window.crearPersonaje = () => {
-        const id = document.getElementById('new-p-id').value.trim();
-        if(!id) return alert("Falta ID");
-        statsGlobal[id] = {
-            nombreFull: document.getElementById('new-p-nom').value,
-            bio: document.getElementById('new-p-bio').value,
-            baseHexVex: [0,0,0,0], f_base: [0,0,0,0,0,0], r_base: [0,10,0,0],
-            f_modDir:[0,0,0,0,0,0], f_aumPerm:[0,0,0,0,0,0], f_disPerm:[0,0,0,0,0,0],
-            f_aumTemp:[0,0,0,0,0,0], f_disTemp:[0,0,0,0,0,0], f_aumHech:[0,0,0,0,0,0],
-            r_modDir:[0,0,0,0], r_aumPerm:[0,0,0,0], r_disPerm:[0,0,0,0], r_aumTemp:[0,0,0,0], r_disTemp:[0,0,0,0],
-            spells: { nom:[], hex:[] }
-        };
-        guardar(); exportarCSV(); alert("Personaje creado. Sube el CSV al Sheet.");
-        window.mostrarPagina('publico');
+    window.setPage = (p) => { 
+        estadoUI.paginaActiva = p; 
+        document.querySelectorAll('.pagina').forEach(div => div.style.display = 'none');
+        document.getElementById('pag-' + p).style.display = 'block';
+        if(p === 'admin') dibujarAdminStats();
     };
 
-    window.actualizarTodo = async () => { await cargarStatsDesdeCSV(); refrescarUI(); };
-    window.ejecutarSyncLog = () => {
-        const i = prompt("Validation:");
-        if (i === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; window.mostrarPagina('admin'); }
+    window.actualizarStats = async () => { 
+        if(confirm("¿Sincronizar datos con Sheet?")) { 
+            localStorage.clear(); 
+            location.reload(); 
+        } 
+    };
+    
+    window.accesoAdmin = () => {
+        if(estadoUI.esAdmin) { window.setPage('admin'); return; }
+        const pass = prompt("System Code:");
+        if(pass === atob('Y2FuZXk=')) { // pass: caney
+            estadoUI.esAdmin = true;
+            window.setPage('admin');
+        }
     };
 
-    refrescarUI();
+    window.descargarCSVStats = descargarCSVStats;
+
+    dibujarUIStats();
 }
-iniciar();
+
+iniciarStats();
