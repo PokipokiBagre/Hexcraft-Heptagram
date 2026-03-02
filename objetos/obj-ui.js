@@ -42,15 +42,11 @@ export function dibujarInventarios() {
     if (estadoUI.jugadorInv) {
         const j = estadoUI.jugadorInv;
         const term = (estadoUI.busquedaInv || "").toLowerCase();
-        const afins = objGlobal[j]?.afinidades || {};
-        const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
-        
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
             <div style="text-align:left; flex:1;">
                 <h3>${j}</h3>
-                <p class="afinidad-tag">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold;">${maxAf}</span></p>
                 <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
             </div>
         </div>
@@ -78,9 +74,8 @@ export function dibujarInventarios() {
         html += `<div class="table-responsive"><table><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
         Object.keys(invGlobal[j]).sort().forEach(o => {
             if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
-                const imgFile = normalizarNombre(o);
                 html += `<tr>
-                    <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
+                    <td><img src="../img/imgobjetos/${normalizarNombre(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
                     <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
                     <td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff}</td>
                     <td>${invGlobal[j][o]}</td>
@@ -94,19 +89,31 @@ export function dibujarInventarios() {
 
 export function dibujarCatalogo() {
     let html = "<h2>Catálogo</h2><div class='filter-group'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => { html += `<button onclick="window.setRar('${r}')">${r}</button> `; });
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
+        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
+        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
+    });
     html += "</div><div class='filter-group'>";
-    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => { html += `<button onclick="window.setMat('${m}')" class="btn-active-mat">${m}</button> `; });
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
+        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
+        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
+    });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
     <div class="table-responsive"><table><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Rareza</th></tr>`;
+    
     const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
-        if (!term || o.toLowerCase().includes(term)) {
+        const item = objGlobal[o];
+        // FILTRO MEJORADO
+        const matchR = estadoUI.filtroRar === 'Todos' || item.rar.trim() === estadoUI.filtroRar;
+        const matchM = estadoUI.filtroMat === 'Todos' || item.mat.trim() === estadoUI.filtroMat;
+        
+        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
             html += `<tr>
                 <td><img src="../img/imgobjetos/${normalizarNombre(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
                 <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
-                <td style="text-align:left; font-size:0.85em;">${objGlobal[o].eff}</td>
-                <td>${objGlobal[o].rar}</td>
+                <td style="text-align:left; font-size:0.85em;">${item.eff}</td>
+                <td>${item.rar}</td>
             </tr>`;
         }
     });
@@ -116,58 +123,36 @@ export function dibujarCatalogo() {
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
-        const active = estadoUI.jugadorControl === j ? 'style="border: 2px solid #d4af37"' : '';
+        const active = estadoUI.jugadorControl === j ? 'class="btn-active"' : '';
         html += `<button onclick="window.setCtrl('${j}')" ${active}>${j}</button> `;
     });
     html += `<br><br><button onclick="window.mostrarPagina('op-menu')" style="background:#444;">⬅ Menú OP</button></div><br>`;
     
     if (estadoUI.jugadorControl) {
         const j = estadoUI.jugadorControl;
+        // LOG ARRIBA
+        html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
+                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                 </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
+                 <div class="grid-control">`;
         
-        // 1. REGISTRO AL INICIO (ARRIBA)
-        html += `
-        <div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-            <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Esperando acción...'}</textarea>
-            <div style="display:flex; gap:10px;">
-                <button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button>
-                <button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button>
-            </div>
-        </div>`;
-
-        // 2. BUSCADOR Y GRILLA
-        html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">`;
-        html += `<div class="grid-control">`;
-        const term = estadoUI.busquedaOP.toLowerCase();
         ordenarItems(j).forEach(o => {
+            const term = estadoUI.busquedaOP.toLowerCase();
             if (!term || o.toLowerCase().includes(term)) {
-                const c = invGlobal[j][o] || 0; const cl = c > 0 ? "item-con-stock" : "";
-                html += `
-                <div class="control-card ${cl}">
-                    <span class="item-name">${o} (<b>${c}</b>)</span>
-                    <div class="item-btns">
-                        <button onclick="window.hexMod('${j}','${o}',1)">+1</button>
-                        <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button>
-                    </div>
-                    <div class="item-btns" style="margin-top:5px">
-                        <button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button>
-                        <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)" style="background:#4a0000">-5</button>
-                    </div>
-                </div>`;
+                const c = invGlobal[j][o] || 0;
+                html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
+                            <span class="item-name">${o} (<b>${c}</b>)</span>
+                            <div class="item-btns"><button onclick="window.hexMod('${j}','${o}',1)">+1</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button></div>
+                            <div class="item-btns" style="margin-top:5px"><button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)" style="background:#4a0000">-5</button></div>
+                         </div>`;
             }
         });
         html += "</div>";
     }
-    document.getElementById('panel-interactivo').innerHTML = html;
-    
-    // Mantiene el foco en el buscador
-    const input = document.getElementById('busq-op');
-    if (input && document.activeElement.id !== 'busq-op') {
-        input.focus();
-        input.setSelectionRange(input.value.length, input.value.length);
-    }
+    drawnHEXPreserveFocus('panel-interactivo', html);
 }
 
-// RESTAURADO: MENÚ OP ORDENADO
 export function dibujarMenuOP() {
     document.getElementById('menu-op-central').innerHTML = `
         <h2>Acceso OP</h2>
@@ -181,9 +166,10 @@ export function dibujarMenuOP() {
         </div>`;
 }
 
+// CREACIÓN DE OBJETOS RESTAURADA
 export function dibujarCreacionObjeto() {
     let html = `<h2>Creación de Objetos</h2>
-    <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin: 0 auto;">
+    <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
         <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
             <select id="new-obj-tipo" class="search-bar" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
@@ -191,28 +177,18 @@ export function dibujarCreacionObjeto() {
         </div>
         <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
         <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
-        
         <h3 style="margin-top:20px; font-size:1em;">Cantidades por Jugador</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
-    
-    // Lista de jugadores dinámica para asignar stock inicial
     Object.keys(invGlobal).sort().forEach(j => {
-        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;">
-                    <label>${j}:</label>
-                    <input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;">
-                 </div>`;
+        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()"></div>`;
     });
-
     html += `</div>
         <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;"></textarea>
+            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
             <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
         </div>
         <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">CREAR Y DEFINIR DUEÑO</button>
         <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
     </div>`;
-
-    // Renderizado en el panel interactivo
     document.getElementById('panel-interactivo').innerHTML = html;
 }
-
