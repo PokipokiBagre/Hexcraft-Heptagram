@@ -4,20 +4,18 @@
     <meta charset="UTF-8">
     <title>HEX - FICHA DE ESTADO</title>
     <link rel="icon" type="image/png" href="../img/icon.png"> 
-    <link rel="stylesheet" href="stylestats.css?v=1.8"> 
+    <link rel="stylesheet" href="stylestats.css?v=1.9"> 
 </head>
 <body>
     <div class="container-hex">
         <div style="text-align: left; margin-bottom: 20px;">
-            <a href="../index.html" class="btn-volver">⬅ VOLVER AL INICIO</a>
+            <a href="../index.html" style="color: #d4af37; text-decoration: none; font-weight: bold; font-size: 0.9em;">⬅ VOLVER AL INICIO</a>
         </div>
-
         <h1>FICHA DE ESTADO</h1>
-        
         <nav>
-            <button onclick="window.mostrarPagina('publico')">JUGADORES</button>
-            <button onclick="window.actualizarTodo()" style="background:#006400; font-weight: bold;">ACTUALIZAR</button>
-            <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">ACCESO OP</button>
+            <button onclick="window.mostrarPagina('publico')">Jugadores</button>
+            <button onclick="window.actualizarTodo()" style="background:#006400; font-weight: bold;">Actualizar</button>
+            <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">Acceso OP</button>
         </nav>
 
         <div id="contenedor-jugadores"></div>
@@ -30,6 +28,6 @@
             <div id="panel-op-stats"></div>
         </section>
     </div>
-    <script type="module" src="stats-main.js?v=1.8"></script>
+    <script type="module" src="stats-main.js?v=1.9"></script>
 </body>
 </html>
