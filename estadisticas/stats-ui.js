@@ -83,3 +83,46 @@ export function dibujarAdminStats() {
         </div>
     `;
 }
+
+export function refrescarUI() {
+    const container = document.getElementById('contenedor-catalog');
+    if(!container) return;
+
+    const ids = Object.keys(statsGlobal).sort((a, b) => {
+        const pA = estadoUI.principales.includes(a) ? 0 : 1;
+        const pB = estadoUI.principales.includes(b) ? 0 : 1;
+        return pA - pB || a.localeCompare(b);
+    });
+
+    container.innerHTML = ids.map(id => {
+        const d = calcularTodo(id);
+        const img = `../img/imgpersonajes/${id.toLowerCase()}icon.png`;
+        return `
+            <div class="personaje-card">
+                <div class="header-card">
+                    <img src="${img}" class="img-p" onerror="this.src='../img/icon.png'">
+                    <span style="color:#d4af37; font-weight:bold;">${id.toUpperCase()}</span>
+                    ${estadoUI.principales.includes(id) ? '<small style="color:#0f0;">PROPRIETARIO</small>' : ''}
+                </div>
+                <div class="bar-container"><div class="bar-fill bar-red" style="width:${(d.roja/d.rojaMax)*100}%"></div><div class="bar-text">${d.roja}/${d.rojaMax} ❤️</div></div>
+                <div class="bar-container"><div class="bar-fill bar-blue" style="width:100%"></div><div class="bar-text">${d.azul} 💙</div></div>
+                <div class="afin-grid">
+                    ${['FIS','ENE','ESP','MAN','PSI','OSC'].map((n, i) => `<div class="afin-box"><label>${n}</label><span>${d.afin[i]}</span></div>`).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+export function dibujarDisenador() {
+    document.getElementById('panel-op-stats').innerHTML = `
+        <div class="personaje-card" style="max-width:500px; margin: 0 auto;">
+            <h2>DISEÑADOR DE PERSONAJE</h2>
+            <input type="text" id="new-id" placeholder="ID (Ej: Corvin)" style="width:90%; margin:10px; padding:8px;">
+            <input type="text" id="new-nom" placeholder="Nombre Completo" style="width:90%; margin:10px; padding:8px;">
+            <textarea id="new-bio" placeholder="Biografía corta..." style="width:90%; margin:10px; height:60px;"></textarea>
+            <button onclick="window.crearPersonaje()" style="width:100%; background:#006400; margin-top:10px;">GENERAR CSV</button>
+            <button onclick="window.mostrarPagina('publico')" style="width:100%; margin-top:5px; background:#444;">CANCELAR</button>
+        </div>
+    `;
+}
