@@ -1,23 +1,29 @@
-import { statsGlobal, estadoUI } from './stats-state.js';
+import { estadoUI, statsGlobal } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
 import { refrescarUI } from './stats-ui.js';
-import { descargarCSVStats } from './stats-logic.js';
 
-async function iniciar() {
-    // 1. Carga asíncrona (Espejo de Objetos)
-    try {
-        await cargarStatsDesdeCSV();
-        console.log("Personajes cargados:", Object.keys(statsGlobal));
-    } catch (e) { console.error("Fallo de conexión:", e); }
+async function iniciarStats() {
+    // 1. Carga prioritaria
+    await cargarStatsDesdeCSV();
 
-    // 2. Vinculación Global
+    // 2. Funciones de ventana (onclick)
     window.setJugadorStats = (j) => { estadoUI.jugadorActivo = j; refrescarUI(); };
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarStatsDesdeCSV(); refrescarUI(); } };
     
-    const _access = 'Y2FuZXk='; // Base64 para ocultar 'caney'
+    window.actualizarTodo = async () => { 
+        if(confirm("¿Sincronizar datos?")) { 
+            localStorage.removeItem('hex_stats_v1'); 
+            location.reload(); 
+        } 
+    };
+
+    const _access = 'Y2FuZXk='; 
     window.ejecutarSyncLog = () => {
+        if (estadoUI.esAdmin) { window.mostrarPagina('admin'); return; }
         const i = prompt("Validation:");
-        if (i === atob(_access)) { estadoUI.esAdmin = true; window.mostrarPagina('admin'); }
+        if (i === atob(_access)) { 
+            estadoUI.esAdmin = true; 
+            window.mostrarPagina('admin'); 
+        }
     };
 
     window.mostrarPagina = (id) => {
@@ -27,10 +33,7 @@ async function iniciar() {
         refrescarUI();
     };
 
-    window.descargarCSVStats = descargarCSVStats;
-
-    // 3. Inicio
+    // 3. Inicio visual
     refrescarUI();
 }
-
-iniciar();
+iniciarStats();
