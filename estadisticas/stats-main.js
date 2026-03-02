@@ -1,39 +1,41 @@
-import { estadoUI, statsGlobal } from './stats-state.js';
+import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
-import { refrescarUI } from './stats-ui.js';
+import { refrescarUI, dibujarDisenador } from './stats-ui.js';
+import { exportarCSV } from './stats-logic.js';
 
-async function iniciarStats() {
-    // 1. Carga prioritaria
+async function iniciar() {
     await cargarStatsDesdeCSV();
 
-    // 2. Funciones de ventana (onclick)
-    window.setJugadorStats = (j) => { estadoUI.jugadorActivo = j; refrescarUI(); };
-    
-    window.actualizarTodo = async () => { 
-        if(confirm("¿Sincronizar datos?")) { 
-            localStorage.removeItem('hex_stats_v1'); 
-            location.reload(); 
-        } 
-    };
-
-    const _access = 'Y2FuZXk='; 
-    window.ejecutarSyncLog = () => {
-        if (estadoUI.esAdmin) { window.mostrarPagina('admin'); return; }
-        const i = prompt("Validation:");
-        if (i === atob(_access)) { 
-            estadoUI.esAdmin = true; 
-            window.mostrarPagina('admin'); 
-        }
-    };
-
+    window.setPersonaje = (id) => { estadoUI.personajeActivo = id; refrescarUI(); };
     window.mostrarPagina = (id) => {
         document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
-        const target = document.getElementById('pag-' + id);
-        if(target) target.style.display = 'block';
-        refrescarUI();
+        document.getElementById('pag-' + id).style.display = 'block';
+        if(id === 'admin') dibujarDisenador();
+        else { estadoUI.personajeActivo = null; refrescarUI(); }
     };
 
-    // 3. Inicio visual
+    window.crearPersonaje = () => {
+        const id = document.getElementById('new-p-id').value.trim();
+        if(!id) return alert("Falta ID");
+        statsGlobal[id] = {
+            nombreFull: document.getElementById('new-p-nom').value,
+            bio: document.getElementById('new-p-bio').value,
+            baseHexVex: [0,0,0,0], f_base: [0,0,0,0,0,0], r_base: [0,10,0,0],
+            f_modDir:[0,0,0,0,0,0], f_aumPerm:[0,0,0,0,0,0], f_disPerm:[0,0,0,0,0,0],
+            f_aumTemp:[0,0,0,0,0,0], f_disTemp:[0,0,0,0,0,0], f_aumHech:[0,0,0,0,0,0],
+            r_modDir:[0,0,0,0], r_aumPerm:[0,0,0,0], r_disPerm:[0,0,0,0], r_aumTemp:[0,0,0,0], r_disTemp:[0,0,0,0],
+            spells: { nom:[], hex:[] }
+        };
+        guardar(); exportarCSV(); alert("Personaje creado. Sube el CSV al Sheet.");
+        window.mostrarPagina('publico');
+    };
+
+    window.actualizarTodo = async () => { await cargarStatsDesdeCSV(); refrescarUI(); };
+    window.ejecutarSyncLog = () => {
+        const i = prompt("Validation:");
+        if (i === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; window.mostrarPagina('admin'); }
+    };
+
     refrescarUI();
 }
-iniciarStats();
+iniciar();
