@@ -191,8 +191,12 @@ export function dibujarCreacionObjeto() {
         <h3 style="margin-top:20px; font-size:1em;">Cantidades por Jugador</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
     
+    // Lista de jugadores dinámica para asignar stock inicial
     Object.keys(invGlobal).sort().forEach(j => {
-        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;"></div>`;
+        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;">
+                    <label>${j}:</label>
+                    <input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;">
+                 </div>`;
     });
 
     html += `</div>
@@ -203,6 +207,7 @@ export function dibujarCreacionObjeto() {
         <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">CREAR Y DEFINIR DUEÑO</button>
         <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
     </div>`;
+
+    // Renderizado en el panel interactivo
     document.getElementById('panel-interactivo').innerHTML = html;
 }
-
