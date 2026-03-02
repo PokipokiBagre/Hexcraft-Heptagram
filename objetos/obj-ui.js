@@ -55,7 +55,7 @@ export function dibujarInventarios() {
             <div style="text-align:left; flex:1;">
                 <h3>${j}</h3>
                 <p class="afinidad-tag">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold;">${maxAf}</span></p>
-                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
+                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
             </div>
         </div>
         <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
@@ -128,6 +128,7 @@ export function dibujarCatalogo() {
     drawnHEXPreserveFocus('tabla-todos-objetos', html + "</table></div>");
 }
 
+// RESTAURADO: EDITOR DE STOCK CON +5/-5
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -138,8 +139,8 @@ export function dibujarControl() {
     
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:40px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Esperando acción...'}</textarea>
+                    <button onclick="window.copyToClipboard('copy-log-stock')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
                  <div class="grid-control">`;
         
@@ -149,21 +150,24 @@ export function dibujarControl() {
                 const c = invGlobal[estadoUI.jugadorControl][o] || 0;
                 const cl = c > 0 ? "item-con-stock" : "";
                 html += `<div class="control-card ${cl}">
-                            <span class="item-name">${o} (<b>x${c}</b>)</span>
+                            <span class="item-name">${o} (<b>${c}</b>)</span>
                             <div class="item-btns">
                                 <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)">+1</button>
-                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="background:#4a0000;">-1</button>
-                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',5)" style="background:#004d00;">+5</button>
-                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-5)" style="background:#8b0000;">-5</button>
+                                <button class="btn-neg" onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)">-1</button>
+                            </div>
+                            <div class="item-btns" style="margin-top:5px">
+                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',5)" style="background:#004a4a">+5</button>
+                                <button class="btn-neg" onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-5)" style="background:#4a0000">-5</button>
                             </div>
                          </div>`;
             }
         });
         html += "</div>";
     }
-    document.getElementById('panel-interactivo').innerHTML = html;
+    drawnHEXPreserveFocus('panel-interactivo', html);
 }
 
+// RESTAURADO: MENÚ OP ORDENADO
 export function dibujarMenuOP() {
     document.getElementById('menu-op-central').innerHTML = `
         <h2>Acceso OP</h2>
@@ -177,17 +181,33 @@ export function dibujarMenuOP() {
         </div>`;
 }
 
+// RESTAURADO: CREACIÓN DE OBJETOS CON CANTIDADES POR JUGADOR
 export function dibujarCreacionObjeto() {
-    let html = `<h2>Crear Nuevo Objeto</h2>
-    <div class="container-hex" style="max-width:500px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; margin:0 auto;">
-        <input type="text" id="new-name" class="search-bar" placeholder="Nombre del objeto...">
-        <textarea id="new-eff" class="search-bar" placeholder="Efecto..."></textarea>
-        <div style="display:flex; gap:10px;">
-            <select id="new-mat" class="search-bar" style="flex:1;"><option>Orgánico</option><option>Cristal</option><option>Metal</option><option>Sagrado</option></select>
-            <select id="new-rar" class="search-bar" style="flex:1;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
+    let html = `<h2>Creación de Objetos</h2>
+    <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
+        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+            <select id="new-obj-tipo" class="search-bar" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
+            <select id="new-obj-mat" class="search-bar" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
         </div>
-        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:10px; background:#006400;">CREAR E INSERTAR</button>
-        <br><br><button onclick="window.mostrarPagina('op-menu')" style="width:100%; background:#444;">VOLVER</button>
+        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
+        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
+        
+        <h3 style="margin-top:20px; font-size:1em;">Cantidades por Jugador</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
+    
+    Object.keys(invGlobal).sort().forEach(j => {
+        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;"></div>`;
+    });
+
+    html += `</div>
+        <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
+            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
+            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
+        </div>
+        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">CREAR Y DEFINIR DUEÑO</button>
+        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
     </div>`;
-    document.getElementById('menu-op-central').innerHTML = html;
+    document.getElementById('panel-interactivo').innerHTML = html;
 }
+
