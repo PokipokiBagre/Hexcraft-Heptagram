@@ -23,7 +23,7 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
-// Normalización que respeta la "ñ" para GitHub
+// Normalización que respeta la "ñ" para que coincida con tus archivos en GitHub
 const normalizarNombre = (str) => {
     if (!str) return "";
     return str.toString().trim().toLowerCase()
@@ -58,10 +58,10 @@ export function dibujarInventarios() {
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-            <div style="text-align:left; flex:1;">
+            <div class="player-info">
                 <h3>${j}</h3>
-                <p style="font-size:0.8em; color:#aaa;">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold; text-transform:uppercase;">${maxAf}</span></p>
-                <p style="font-size:0.85em; color:#eee;">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
+                <p class="afinidad-tag">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold; text-transform:uppercase;">${maxAf}</span></p>
+                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
             </div>
         </div>
         <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
@@ -79,7 +79,7 @@ export function dibujarInventarios() {
                 html += `
                 <div class="top-item-card ${rarClase}">
                     <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                    <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37;">${o}</span>
+                    <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</span>
                 </div>`;
             });
             html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
@@ -91,7 +91,7 @@ export function dibujarInventarios() {
                 const imgFile = normalizarNombre(o);
                 html += `<tr>
                     <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
-                    <td style="font-weight:bold; color:#d4af37;">${o}</td>
+                    <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
                     <td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff}</td>
                     <td>${invGlobal[j][o]}</td>
                 </tr>`;
@@ -125,7 +125,7 @@ export function dibujarCatalogo() {
             const imgFile = normalizarNombre(o);
             html += `<tr>
                 <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
-                <td style="font-weight:bold; color:#d4af37;">${o}</td>
+                <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
                 <td style="text-align:left; font-size:0.85em;">${item.eff}</td>
                 <td>${item.mat}</td>
                 <td>${item.rar}</td>
@@ -135,7 +135,7 @@ export function dibujarCatalogo() {
     drawnHEXPreserveFocus('tabla-todos-objetos', html + "</table></div>");
 }
 
-// --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
+// --- TUS FUNCIONES OP Y CONTROL (INTACTAS) ---
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -146,7 +146,7 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = (estadoUI.busquedaOP || "").toLowerCase();
@@ -154,7 +154,7 @@ export function dibujarControl() {
                 const c = invGlobal[estadoUI.jugadorControl][o] || 0; const cl = c > 0 ? "item-con-stock" : "";
                 html += `<div style="background:rgba(30,0,60,0.9); border:1px solid #d4af37; padding:10px; border-radius:8px; text-align:center;">
                             <span style="font-size:0.85em; font-weight:bold; margin-bottom:10px; display:block;">${o} (<b>${c}</b>)</span>
-                            <div style="display:flex; gap:5px;"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)" style="flex:1;">+1</button><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="flex:1; background:#4a0000;">-1</button></div>
+                            <div style="display:flex; gap:5px;"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)" style="flex:1;">+1</button><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="flex:1; background:#4a004a;">-1</button></div>
                          </div>`;
             }
         });
