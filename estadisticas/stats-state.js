@@ -3,9 +3,6 @@ export let estadoUI = {
     personajeActivo: null,
     esAdmin: false,
     paginaActiva: 'publico',
-    principales: [] // Personajes que tienen objetos en el sistema paralelo
+    principales: [] 
 };
-
-export function guardar() { 
-    localStorage.setItem('hex_stats_v2', JSON.stringify(statsGlobal)); 
-}
+export function guardar() { localStorage.setItem('hex_stats_v3', JSON.stringify(statsGlobal)); }
