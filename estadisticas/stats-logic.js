@@ -1,4 +1,4 @@
-import { statsGlobal, guardarStats } from './stat-state.js';
+import { statsGlobal, guardarStats } from './stats-state.js';
 
 export function calcularBonos(jugador) {
     const s = statsGlobal[jugador];
@@ -33,3 +33,4 @@ export function descargarCSVStats() {
     link.download = `HEX_ESTADISTICAS.csv`;
     link.click();
 }
+
