@@ -4,6 +4,9 @@ import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 const bText = (val) => val > 0 ? `<span style="color:#00ff00; font-size:0.8em"> (+${val})</span>` : (val < 0 ? `<span style="color:red; font-size:0.8em"> (${val})</span>` : '');
 
+// Previene bucles infinitos de 404
+const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
+
 export function dibujarCatalogo() {
     const contenedor = document.getElementById('vista-catalogo');
     let html = '';
@@ -11,7 +14,7 @@ export function dibujarCatalogo() {
         const p = statsGlobal[nombre];
         html += `
         <div class="char-card" onclick="window.abrirDetalle('${nombre}')">
-            <img src="../img/imgpersonajes/${normalizar(nombre)}icon.png" onerror="this.src='../img/imgpersonajes/defaulticon.png'">
+            <img src="../img/imgpersonajes/${normalizar(nombre)}icon.png" onerror="${imgError}">
             <h3>${nombre}</h3>
             <p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p>
         </div>`;
@@ -37,11 +40,11 @@ export function dibujarDetalle() {
 
     contenedor.innerHTML = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px;">
-        <img src="../img/imgpersonajes/${normalizar(nombre)}icon.png" style="width: 120px; border-radius: 50%; border: 3px solid #d4af37;" onerror="this.src='../img/imgpersonajes/defaulticon.png'">
+        <img src="../img/imgpersonajes/${normalizar(nombre)}icon.png" style="width: 120px; border-radius: 50%; border: 3px solid #d4af37;" onerror="${imgError}">
         <div>
             <h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''}</h1>
         </div>
-        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#4a004a;">Editar / Buffs</button>` : ''}
+        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#4a004a; border-color:#d4af37;">Editar / Buffs</button>` : ''}
     </div>
 
     <div class="circle-wrap">
@@ -94,12 +97,12 @@ export function dibujarFormularioCrear() {
     return `
     <div style="text-align:left; max-width:600px; margin:0 auto; background:#150029; padding:20px; border:1px solid var(--gold);">
         <h4 style="margin-top:0">Crear Personaje / NPC</h4>
-        <input type="text" id="npc-nombre" placeholder="Nombre" style="width:100%; margin-bottom:10px; padding:5px;">
+        <input type="text" id="npc-nombre" placeholder="Nombre" style="width:100%; margin-bottom:10px; padding:5px; background:#000; color:white; border:1px solid #444;">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <div><label>HEX</label><input type="number" id="npc-hex" value="0" style="width:100%"></div>
-            <div><label>VEX</label><input type="number" id="npc-vex" value="0" style="width:100%"></div>
-            <div><label>Vida Roja Max</label><input type="number" id="npc-vr" value="10" style="width:100%"></div>
-            <div><label>Vida Azul</label><input type="number" id="npc-va" value="0" style="width:100%"></div>
+            <div><label>HEX</label><input type="number" id="npc-hex" value="0" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
+            <div><label>VEX</label><input type="number" id="npc-vex" value="0" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
+            <div><label>Vida Roja Max</label><input type="number" id="npc-vr" value="10" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
+            <div><label>Vida Azul</label><input type="number" id="npc-va" value="0" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
         </div>
         <button onclick="window.ejecutarCreacionNPC()" style="width:100%; background:var(--gold); color:black;">GUARDAR NPC</button>
     </div>`;
@@ -108,18 +111,47 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
-    return `
-    <div style="text-align:left; max-width:600px; margin:0 auto; background:#1a0000; padding:20px; border:1px dashed red;">
-        <h4 style="margin-top:0">Editar Buffs Temporales: ${estadoUI.personajeSeleccionado}</h4>
-        <p style="font-size:0.8em; color:#aaa;">Estos valores se suman (+) o restan (-) a la base temporalmente.</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px; font-size:0.9em;">
-            <div><label>Daño Rojo Extra</label><input type="number" id="b-dr" value="${p.buffs.danoRojo}" style="width:100%"></div>
-            <div><label>Daño Azul Extra</label><input type="number" id="b-da" value="${p.buffs.danoAzul}" style="width:100%"></div>
-            <div><label>Elim. Dorada Extra</label><input type="number" id="b-ed" value="${p.buffs.elimDorada}" style="width:100%"></div>
-            <div><label>Afin. Psíquica Extra</label><input type="number" id="b-psi" value="${p.buffs.psiquica}" style="width:100%"></div>
-            <div><label>Afin. Espiritual Extra</label><input type="number" id="b-esp" value="${p.buffs.espiritual}" style="width:100%"></div>
-            <div><label>Corazones Extra (Directo)</label><input type="number" id="b-vrx" value="${p.buffs.vidaRojaMaxExtra}" style="width:100%"></div>
-        </div>
-        <button onclick="window.ejecutarEdicionBuffs()" style="width:100%; background:red; color:white;">APLICAR BUFFS</button>
-    </div>`;
+
+    // Array con todos los stats editables
+    const statsAEditar = [
+        { id: 'danoRojo', label: 'Daño Rojo Extra' },
+        { id: 'danoAzul', label: 'Daño Azul Extra' },
+        { id: 'elimDorada', label: 'Elim. Dorada' },
+        { id: 'fisica', label: 'Afin. Física' },
+        { id: 'energetica', label: 'Afin. Energética' },
+        { id: 'espiritual', label: 'Afin. Espiritual' },
+        { id: 'mando', label: 'Afin. Mando' },
+        { id: 'psiquica', label: 'Afin. Psíquica' },
+        { id: 'oscura', label: 'Afin. Oscura' },
+        { id: 'vidaRojaMaxExtra', label: 'Corazones (Directo)' }
+    ];
+
+    let html = `
+    <div style="text-align:center; max-width:900px; margin:0 auto;">
+        <h3 style="margin-top:0; color:var(--gold)">Alteración Temporal: ${estadoUI.personajeSeleccionado}</h3>
+        <button onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 10px;">⬅ Volver al Perfil</button>
+        <div class="edit-grid">`;
+
+    statsAEditar.forEach(s => {
+        const val = p.buffs[s.id] || 0;
+        const colorVal = val > 0 ? '#00ff00' : (val < 0 ? 'red' : 'var(--gold)');
+        const displayVal = val > 0 ? `+${val}` : val;
+
+        html += `
+        <div class="edit-card">
+            <h4>${s.label}</h4>
+            <span style="color: ${colorVal}">${displayVal}</span>
+            <div class="btn-row">
+                <button class="btn-plus" onclick="window.modificarBuff('${s.id}', 1)">+1</button>
+                <button class="btn-minus" onclick="window.modificarBuff('${s.id}', -1)">-1</button>
+            </div>
+            <div class="btn-row">
+                <button class="btn-plus5" onclick="window.modificarBuff('${s.id}', 5)">+5</button>
+                <button class="btn-minus5" onclick="window.modificarBuff('${s.id}', -5)">-5</button>
+            </div>
+        </div>`;
+    });
+
+    html += `</div></div>`;
+    return html;
 }
