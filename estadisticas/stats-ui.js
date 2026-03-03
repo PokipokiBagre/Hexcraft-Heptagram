@@ -6,7 +6,7 @@ export function refrescarUI() {
     const tableDiv = document.getElementById('contenedor-tabla');
     if(!catalog || !tableDiv) return;
 
-    // 1. Catálogo 4x4 (Bloques)
+    // 1. Dibujar Bloques 4x4
     catalog.innerHTML = Object.keys(statsGlobal).sort().map(id => {
         const d = calcularValores(id);
         const img = `../img/imgpersonajes/${id.toLowerCase()}icon.png`;
@@ -19,24 +19,24 @@ export function refrescarUI() {
             </div>`;
     }).join('');
 
-    // 2. Tabla Directa (A-P)
+    // 2. Dibujar Tabla de Datos (A-P)
     let htmlT = `<table><tr><th>ID</th><th>HEX</th><th>VEX</th><th>FIS</th><th>ENE</th><th>ESP</th><th>MAN</th><th>PSI</th><th>OSC</th><th>R</th><th>RM</th><th>A</th></tr>`;
     Object.keys(statsGlobal).sort().forEach(id => {
         const s = statsGlobal[id];
         htmlT += `<tr><td>${id}</td><td>${s.hex}</td><td>${s.vex}</td><td>${s.fi}</td><td>${s.en}</td><td>${s.es}</td><td>${s.ma}</td><td>${s.ps}</td><td>${s.os}</td><td>${s.r}</td><td>${s.rm}</td><td>${s.az}</td></tr>`;
     });
-    tableDiv.innerHTML = `<div class="table-container"><h3>DATOS REGISTRADOS (A-P)</h3>${htmlT}</table></div>`;
+    tableDiv.innerHTML = `<div class="table-container" style="margin-top:50px;"><h3>REGISTRO DEL SISTEMA (A-P)</h3>${htmlT}</table></div>`;
 }
 
 export function verDetalle(id) {
     const d = calcularValores(id);
-    alert(`Personaje: ${id}\nHex: ${d.hx}\nVitalidad: ${d.r}/${d.rm}\n\nDetalle extendido desactivado para pruebas.`);
+    alert(`PERSONAJE: ${id}\nHex: ${d.hx}\nVitalidad: ${d.r} / ${d.rm}\n\n(Detalle extendido desactivado temporalmente para asegurar conexión)`);
 }
 
 export function dibujarMenuOP() {
     document.getElementById('panel-op-central').innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:20px;">
-            <button onclick="window.mostrarPantallaCrear()" style="background:#4a004a;">CREAR PERSONAJE</button>
+            <button onclick="window.mostrarPantallaCrear()" style="background:#4a004a;">NUEVO PERSONAJE</button>
             <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#000;">DESCARGAR CSV</button>
             <button onclick="window.mostrarPagina('publico')" style="grid-column: span 2; background:#444; margin-top:10px;">CERRAR</button>
         </div>`;
@@ -45,7 +45,7 @@ export function dibujarMenuOP() {
 export function dibujarPantallaCrear() {
     document.getElementById('panel-op-central').innerHTML = `
         <div class="personaje-card" style="max-width:800px; margin:auto; text-align:left;">
-            <h2>DISEÑADOR DE PERSONAJE</h2>
+            <h2>DISEÑADOR</h2>
             <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
                 <input id="n-id" placeholder="ID (Linda)"> <input id="n-hx" type="number" placeholder="Hex"> <input id="n-vx" type="number" placeholder="Vex">
                 <input id="n-fi" type="number" placeholder="Física"> <input id="n-en" type="number" placeholder="Energía"> <input id="n-es" type="number" placeholder="Espiritual">
