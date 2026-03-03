@@ -178,7 +178,6 @@ export function dibujarMenuOP() {
         <h3>PANEL DE OPERADOR</h3>
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
             <button onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a">Crear NPC (Manual)</button>
-            <button onclick="window.forzarSincronizacion()" class="btn-green">Sincronizar Sheet</button>
             <button onclick="window.descargarAumentada()">Descargar CSV</button>
             <button onclick="window.triggerSubirCSV()" class="btn-red">Subir CSV</button>
         </div>
@@ -280,3 +279,4 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
+
