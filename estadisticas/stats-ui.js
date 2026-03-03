@@ -42,7 +42,6 @@ export function dibujarDetalle() {
     let hexPercent = Math.min((p.hex / 4000) * 100, 100);
     let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
-    // CORAZONES ROJOS (Normales vs Extra Desbordados)
     let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual);
     let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual);
     let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
@@ -52,10 +51,9 @@ export function dibujarDetalle() {
     for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    // CORAZONES AZULES (Base estricta vs Buffs/Afinidad Extra)
     const baseS = p.afinidades.espiritual + p.afinidades.energetica + p.afinidades.psiquica + p.afinidades.mando;
     const buffS = baseS + (p.buffs.espiritual||0) + (p.buffs.energetica||0) + (p.buffs.psiquica||0) + (p.buffs.mando||0);
-    const deltaBlue = Math.floor(buffS / 4) - Math.floor(baseS / 4); // Por cada 4 en la suma, da 1 extra
+    const deltaBlue = Math.floor(buffS / 4) - Math.floor(baseS / 4); 
 
     let normalAzul = Math.max(0, p.vidaAzul);
     let extraAzul = Math.max(0, (p.buffs.vidaAzulExtra || 0) + deltaBlue);
@@ -64,7 +62,6 @@ export function dibujarDetalle() {
     for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    // GUARDA DORADA (Base estricta vs Buffs)
     let normalGuarda = Math.max(0, p.guardaDorada);
     let extraGuarda = Math.max(0, p.buffs.guardaDoradaExtra || 0);
     let guardasHTML = ''; 
@@ -72,7 +69,6 @@ export function dibujarDetalle() {
     for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
-    // DECODIFICADOR DE ESTADOS ALTERADOS
     let estadosHTML = ''; let descEstadosHTML = '';
     const st = p.estados;
     if(st.veneno > 0) { estadosHTML += `<div class="status-badge badge-veneno">Veneno (${st.veneno})</div>`; descEstadosHTML += `<p><strong>Veneno (${st.veneno}):</strong> El objetivo pierde ${st.veneno} corazones rojos cada turno.</p>`; }
@@ -172,6 +168,27 @@ export function dibujarDetalle() {
             </div>
         </div>
     </div>`;
+
+    // BLOQUE DE CLONACIÓN
+    let opcionesPersonajes = Object.keys(statsGlobal)
+        .filter(n => n !== nombre) // No mostrarse a sí mismo
+        .map(n => `<option value="${n}">${n}</option>`)
+        .join('');
+
+    html += `
+    <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
+        <h3 style="margin-top:0; color:var(--gold);">Transferencia de Estados</h3>
+        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Copia los estados alterados (buffs y efectos) o clona toda la ficha hacia otro personaje.</p>
+        <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
+            <select id="clon-target" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;">
+                <option value="" disabled selected>-- Selecciona Objetivo --</option>
+                ${opcionesPersonajes}
+            </select>
+            <button onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Copiar Estados Alterados</button>
+            <button onclick="window.ejecutarClonacion('completo')" style="background:#4a0000; border:1px solid #ff4444; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar por Completo</button>
+        </div>
+    </div>`;
+
     contenedor.innerHTML = html;
 }
 
@@ -281,4 +298,3 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
-
