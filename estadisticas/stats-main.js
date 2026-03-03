@@ -1,7 +1,7 @@
 import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
-import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
+import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, calcularVidaAzulMax } from './stats-logic.js';
 
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
@@ -41,18 +41,49 @@ window.mostrarPaginaOP = (subvista) => {
     if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
 };
 
+// 1. Modifica Buffs Temporales (Desde Afuera)
 window.modificarBuff = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    
     const maxRojoPrev = calcularVidaRojaMax(p);
+    const maxAzulPrev = calcularVidaAzulMax(p);
+
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
 
-    guardar();
-    if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle');
-    else repintarConScroll('op');
+    guardar(); repintarConScroll('detalle');
+};
+
+// 2. Modifica Base Directa (Desde Editor Interno)
+window.modBaseTop = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    const maxRojoPrev = calcularVidaRojaMax(p);
+    
+    p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
+    
+    const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    
+    guardar(); repintarConScroll('op');
+};
+
+// 3. Modifica Afinidades Base (Desde Editor Interno)
+window.modBaseAfin = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    const maxRojoPrev = calcularVidaRojaMax(p);
+    const maxAzulPrev = calcularVidaAzulMax(p);
+
+    p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad);
+    
+    const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+
+    guardar(); repintarConScroll('op');
 };
 
 window.modificarDirecto = (statId, cantidad) => {
@@ -94,7 +125,7 @@ window.ejecutarClonacion = (tipo) => {
         return;
     }
 
-    const targetName = estadoUI.personajeSeleccionado; // El personaje que estás viendo
+    const targetName = estadoUI.personajeSeleccionado;
     const msg = tipo === 'estados' 
         ? `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` 
         : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName} (sobrescribiendo la vida base, daño y afinidades originales de ${targetName})?`;
@@ -104,35 +135,20 @@ window.ejecutarClonacion = (tipo) => {
     const source = statsGlobal[sourceName];
     const target = statsGlobal[targetName];
 
-    // 1. Siempre se copian los Objetos Alterables (Buffs y Estados)
     target.buffs = JSON.parse(JSON.stringify(source.buffs));
     target.estados = JSON.parse(JSON.stringify(source.estados));
 
-    // 2. Si es 'Completo', se sobrescribe toda la anatomía del personaje
     if (tipo === 'completo') {
-        target.vidaRojaActual = source.vidaRojaActual;
-        target.vidaRojaMax = source.vidaRojaMax;
-        
-        target.vidaAzul = source.vidaAzul;
-        target.baseVidaAzul = source.baseVidaAzul; // Importante para que no se desborde erróneamente
-        
-        target.guardaDorada = source.guardaDorada;
-        target.baseGuardaDorada = source.baseGuardaDorada;
-
+        target.vidaRojaActual = source.vidaRojaActual; target.vidaRojaMax = source.vidaRojaMax;
+        target.vidaAzul = source.vidaAzul; target.baseVidaAzul = source.baseVidaAzul; 
+        target.guardaDorada = source.guardaDorada; target.baseGuardaDorada = source.baseGuardaDorada;
         target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
-        target.danoRojo = source.danoRojo;
-        target.danoAzul = source.danoAzul;
-        target.elimDorada = source.elimDorada;
-        
-        target.hex = source.hex;
-        target.vex = source.vex;
+        target.danoRojo = source.danoRojo; target.danoAzul = source.danoAzul; target.elimDorada = source.elimDorada;
+        target.hex = source.hex; target.vex = source.vex;
     }
 
-    guardar();
-    alert(`Importación completada. ${targetName} ha recibido los datos de ${sourceName}.`);
-    
-    sourceSelect.value = ""; // Resetea el dropdown
-    repintarConScroll('detalle'); // Refresca visualmente sin salto
+    guardar(); alert(`Importación completada. ${targetName} ha recibido los datos de ${sourceName}.`);
+    sourceSelect.value = ""; repintarConScroll('detalle'); 
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -143,7 +159,7 @@ window.ejecutarCreacionNPC = () => {
     statsGlobal[nombre] = {
         isPlayer: false, isNPC: true, hex: parseInt(document.getElementById('npc-hex').value) || 0, vex: parseInt(document.getElementById('npc-vex').value) || 0,
         vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
-        vidaAzul: vidaA, guardaDorada: guardaD,
+        vidaAzul: vidaA, baseVidaAzul: vidaA, guardaDorada: guardaD, baseGuardaDorada: guardaD,
         danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, danoAzul: parseInt(document.getElementById('npc-da').value) || 0, elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
         afinidades: { fisica: parseInt(document.getElementById('npc-fis').value) || 0, energetica: parseInt(document.getElementById('npc-ene').value) || 0, espiritual: parseInt(document.getElementById('npc-esp').value) || 0, mando: parseInt(document.getElementById('npc-man').value) || 0, psiquica: parseInt(document.getElementById('npc-psi').value) || 0, oscura: parseInt(document.getElementById('npc-osc').value) || 0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
@@ -184,4 +200,3 @@ async function iniciar() {
 }
 
 iniciar();
-
