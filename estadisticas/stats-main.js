@@ -1,69 +1,71 @@
 import { statsGlobal, estadoUI, guardar } from './stats-state.js';
-import { cargarStatsDesdeCSV } from './stats-data.js';
-import { refrescarUI, dibujarMenuOP, dibujarPantallaCrear, verDetalle } from './stats-ui.js';
-import { descargarCSV } from './stats-logic.js';
+import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
+import { dibujarCatalogo, dibujarDetalle } from './stats-ui.js';
+import { generarCSVExportacion, descargarArchivoCSV } from './stats-logic.js';
 
 async function iniciar() {
-    // 1. Cargar datos del CSV (A-P)
-    await cargarStatsDesdeCSV();
-
-    // 2. VINCULACIÓN DE BOTONES (window.functionName)
-    // Estos nombres deben coincidir EXACTAMENTE con los onclick de tu index.html
-    window.mostrarPagina = (id) => {
-        document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
-        const target = document.getElementById('pag-' + id);
-        if(target) target.style.display = 'block';
-        if(id === 'admin') dibujarMenuOP();
-        refrescarUI();
-    };
-
-    window.actualizarTodo = async () => {
-        if(confirm("¿Sincronizar datos con el Sheet?")) {
-            await cargarStatsDesdeCSV();
-            refrescarUI();
-        }
-    };
-
-    window.ejecutarSyncLog = () => {
-        const pass = prompt("Validation Code:");
-        if (pass === atob('Y2FuZXk=')) { // pass: caney
-            estadoUI.esAdmin = true;
-            window.mostrarPagina('admin');
-        }
-    };
-
-    // Funciones internas del Menú OP y Catálogo
-    window.verDetalle = verDetalle;
-    window.mostrarPantallaCrear = dibujarPantallaCrear;
-    window.descargarEstadoCSV = descargarCSV;
+    const cache = localStorage.getItem('hex_stats_v1');
     
-    window.agregarLocal = () => {
-        const id = document.getElementById('n-id').value.trim();
-        if(!id) return alert("Falta ID del personaje.");
-        
-        statsGlobal[id] = {
-            id: id, 
-            hex: document.getElementById('n-hx').value || "0", 
-            vex: document.getElementById('n-vx').value || "0",
-            fi: document.getElementById('n-fi').value || "0", 
-            en: document.getElementById('n-en').value || "0", 
-            es: document.getElementById('n-es').value || "0", 
-            ma: document.getElementById('n-ma').value || "0", 
-            ps: document.getElementById('n-ps').value || "0", 
-            os: document.getElementById('n-os').value || "0",
-            r: document.getElementById('n-ra').value || "0", 
-            rm: document.getElementById('n-rm').value || "10", 
-            az: document.getElementById('n-aa').value || "0", 
-            go: 0, dr: 0, da: 0, eo: 0
-        };
-        guardar();
-        alert("¡Personaje inyectado localmente!");
-        refrescarUI();
-        window.mostrarPagina('publico');
-    };
-
-    // 3. Renderizar vista inicial
-    refrescarUI();
+    // Si no hay caché local, cargamos de Google Sheets
+    if (!cache) {
+        await cargarTodoDesdeCSV();
+    } else {
+        const guardado = JSON.parse(cache);
+        Object.assign(statsGlobal, guardado.stats);
+    }
+    
+    refrescarVistas();
 }
 
+function refrescarVistas() {
+    document.getElementById('vista-catalogo').classList.add('oculto');
+    document.getElementById('vista-detalle').classList.add('oculto');
+    document.getElementById('vista-op').classList.add('oculto');
+
+    if (estadoUI.vistaActual === 'catalogo') {
+        document.getElementById('vista-catalogo').classList.remove('oculto');
+        dibujarCatalogo();
+    } else if (estadoUI.vistaActual === 'detalle') {
+        document.getElementById('vista-detalle').classList.remove('oculto');
+        dibujarDetalle();
+    } else if (estadoUI.vistaActual === 'op') {
+        document.getElementById('vista-op').classList.remove('oculto');
+    }
+}
+
+// Vinculación Global para el HTML
+window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); };
+window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); };
+window.abrirMenuOP = () => { estadoUI.vistaActual = 'op'; refrescarVistas(); };
+
+window.forzarSincronizacion = async () => {
+    if(confirm("¿Seguro? Esto borrará tus cambios locales no descargados y traerá los datos del Sheet maestro.")) {
+        await cargarTodoDesdeCSV();
+        alert("Sincronización completada.");
+        window.mostrarCatalogo();
+    }
+};
+
+window.descargarAumentada = () => {
+    const csv = generarCSVExportacion();
+    descargarArchivoCSV(csv, "HEX_ESTADOS_AUMENTADO.csv");
+};
+
+window.subirAumentada = (evento) => {
+    const archivo = evento.target.files[0];
+    if (!archivo) return;
+    const lector = new FileReader();
+    lector.onload = function(e) {
+        const texto = e.target.result;
+        procesarTextoCSV(texto);
+        alert("CSV subido e inyectado a la memoria local con éxito.");
+        window.mostrarCatalogo();
+    };
+    lector.readAsText(archivo);
+};
+
+// Arrancar la app
 iniciar();
+
+iniciar();
+
