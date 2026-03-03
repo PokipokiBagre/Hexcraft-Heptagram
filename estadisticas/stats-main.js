@@ -30,8 +30,7 @@ window.abrirMenuOP = () => {
 };
 
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = 'op';
-    refrescarVistas();
+    estadoUI.vistaActual = 'op'; refrescarVistas();
     const sub = document.getElementById('sub-vista-op');
     if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear();
     if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
@@ -47,28 +46,24 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
     if (tipoAccion === 'buff') p.buffs[statId] = val;
     else if (tipoAccion === 'baseTop') p[statId] = Math.max(0, val);
     else if (tipoAccion === 'baseAfin') p.afinidades[statId] = Math.max(0, val);
-    else if (tipoAccion === 'spellTop' || tipoAccion === 'spellAfin') {
-        if(!p.hechizos) p.hechizos = {};
-        p.hechizos[statId] = val;
-    }
+    else if (tipoAccion === 'spellTop' || tipoAccion === 'spellAfin') { p.hechizos[statId] = val; }
     else if (tipoAccion === 'directo') p[statId] = Math.max(0, val);
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    const limiteReal = calcularVidaRojaMax(p);
+    if (p.vidaRojaActual > limiteReal) p.vidaRojaActual = limiteReal;
 
     guardar();
-    if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle');
-    else repintarConScroll('op');
+    if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle'); else repintarConScroll('op');
 };
 
 window.modificarBuff = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
-
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('detalle');
 };
 
@@ -76,46 +71,35 @@ window.modBaseTop = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
-    
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
 window.modBaseAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
-
     p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad);
-    
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
 window.modSpellTop = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    if(!p.hechizos) p.hechizos = {};
     const maxRojoPrev = calcularVidaRojaMax(p);
-    
-    p.hechizos[statId] = (p.hechizos[statId] || 0) + Math.max(0, cantidad); 
-    if(cantidad < 0) p.hechizos[statId] = Math.max(0, (p.hechizos[statId] || 0) + cantidad);
-    else p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
-
+    p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
 window.modSpellAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    if(!p.hechizos) p.hechizos = {};
     const maxRojoPrev = calcularVidaRojaMax(p);
-
     p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
-    
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
@@ -127,6 +111,21 @@ window.modificarDirecto = (statId, cantidad) => {
 window.modLibre = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('detalle');
+};
+
+// MODIFICADORES DE AZUL Y DORADO (CONSUMIBLES)
+window.modBlueExtra = (cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad);
+    p.vidaAzul = Math.max(0, (p.vidaAzul || 0) + cantidad);
+    guardar(); repintarConScroll('detalle');
+};
+
+window.modGoldExtra = (cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra || 0) + cantidad);
+    p.guardaDorada = Math.max(0, (p.guardaDorada || 0) + cantidad);
+    guardar(); repintarConScroll('detalle');
 };
 
 window.modForm = (inputId, cantidad) => {
@@ -145,10 +144,8 @@ window.toggleEstado = (estadoId) => {
 };
 
 window.ejecutarClonacion = (tipo) => {
-    const sourceSelect = document.getElementById('clon-source');
-    if(!sourceSelect) return;
-    const sourceName = sourceSelect.value;
-    if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
+    const sourceSelect = document.getElementById('clon-source'); if(!sourceSelect) return;
+    const sourceName = sourceSelect.value; if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
     const targetName = estadoUI.personajeSeleccionado; 
     const msg = tipo === 'estados' ? `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?`;
     if(!confirm(msg)) return;
