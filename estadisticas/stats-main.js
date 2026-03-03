@@ -6,13 +6,12 @@ import { generarCSVExportacion, descargarArchivoCSV } from './stats-logic.js';
 window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); };
 window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); };
 
-// VALIDACIÓN DE CONTRASEÑA
 window.abrirMenuOP = () => { 
     if (estadoUI.esAdmin) {
         estadoUI.vistaActual = 'op'; refrescarVistas(); return;
     }
     const pass = prompt("Acceso Restringido. Contraseña:");
-    if (pass === atob('Y2FuZXk=')) { // 'caney'
+    if (pass === atob('Y2FuZXk=')) { 
         estadoUI.esAdmin = true;
         estadoUI.vistaActual = 'op'; 
         refrescarVistas();
@@ -98,3 +97,4 @@ async function iniciar() {
 }
 
 iniciar();
+
