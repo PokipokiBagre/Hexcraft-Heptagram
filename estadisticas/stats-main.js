@@ -1,4 +1,4 @@
-import { statsGlobal, estadoUI, guardar } from './stats-state.js';
+import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, calcularVidaAzulMax } from './stats-logic.js';
@@ -22,45 +22,35 @@ function repintarConScroll(vista) {
 window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
 window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
 
-// NAVEGACIÓN INTELIGENTE: Dependiendo de dónde estés, hace una cosa u otra
 window.abrirMenuOP = () => { 
-    const enrutarOP = () => {
-        // Si está en el catálogo, lo manda al panel general OP
-        if (estadoUI.vistaActual === 'catalogo') {
-            estadoUI.vistaActual = 'op';
-        }
-        // Si está en detalle, NO cambia la vista, solo refresca para mostrar los botones admin
-        refrescarVistas();
-    };
-
-    if (estadoUI.esAdmin) { 
-        enrutarOP(); 
-        return; 
-    }
-    
+    const enrutarOP = () => { if (estadoUI.vistaActual === 'catalogo') estadoUI.vistaActual = 'op'; refrescarVistas(); };
+    if (estadoUI.esAdmin) { enrutarOP(); return; }
     const pass = prompt("Acceso Restringido. Contraseña:");
-    if (pass === atob('Y2FuZXk=')) { 
-        estadoUI.esAdmin = true; 
-        enrutarOP(); 
-    } else { 
-        if(pass !== null) alert("Acceso denegado."); 
-    }
+    if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
 };
 
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = 'op';
-    refrescarVistas();
+    estadoUI.vistaActual = 'op'; refrescarVistas();
     const sub = document.getElementById('sub-vista-op');
-    if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear();
-    if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
+    if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear(); if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
+};
+
+window.setFiltro = (tipo, valor) => {
+    if(tipo === 'rol') estadoUI.filtroRol = valor;
+    if(tipo === 'act') estadoUI.filtroAct = valor;
+    refrescarVistas();
+};
+
+window.toggleIdentidad = (prop) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; 
+    guardar(); repintarConScroll('op');
 };
 
 window.cambioManual = (statId, valorStr, tipoAccion) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
-    
-    let val = parseInt(valorStr);
-    if (isNaN(val)) val = 0; 
+    let val = parseInt(valorStr); if (isNaN(val)) val = 0; 
 
     if (tipoAccion === 'buff') p.buffs[statId] = val;
     else if (tipoAccion === 'baseTop') p[statId] = Math.max(0, val);
@@ -188,15 +178,20 @@ window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta dar un nombre.");
     const vidaA = parseInt(document.getElementById('npc-va').value) || 0; const guardaD = parseInt(document.getElementById('npc-gd').value) || 0;
+    
+    // CREACIÓN DINÁMICA DE ESTADOS EN EL NUEVO PERSONAJE
+    let stInit = {};
+    listaEstados.forEach(e => { stInit[e.id] = (e.tipo === 'numero') ? 0 : false; });
+
     statsGlobal[nombre] = {
-        isPlayer: false, isNPC: true, hex: parseInt(document.getElementById('npc-hex').value) || 0, vex: parseInt(document.getElementById('npc-vex').value) || 0,
+        isPlayer: false, isNPC: true, isActive: true, hex: parseInt(document.getElementById('npc-hex').value) || 0, vex: parseInt(document.getElementById('npc-vex').value) || 0,
         vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
         vidaAzul: vidaA, baseVidaAzul: vidaA, guardaDorada: guardaD, baseGuardaDorada: guardaD,
         danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, danoAzul: parseInt(document.getElementById('npc-da').value) || 0, elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
         afinidades: { fisica: parseInt(document.getElementById('npc-fis').value) || 0, energetica: parseInt(document.getElementById('npc-ene').value) || 0, espiritual: parseInt(document.getElementById('npc-esp').value) || 0, mando: parseInt(document.getElementById('npc-man').value) || 0, psiquica: parseInt(document.getElementById('npc-psi').value) || 0, oscura: parseInt(document.getElementById('npc-osc').value) || 0 },
         hechizos: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
-        estados: { veneno: 0, radiacion: 0, maldito: false, incapacitado: false, debilitado: false, angustia: false, petrificacion: false, secuestrado: false, huesos: false, comestible: false, cifrado: false, inversion: false, verde: false }
+        estados: stInit
     };
     guardar(); alert("¡Personaje Forjado!"); window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
