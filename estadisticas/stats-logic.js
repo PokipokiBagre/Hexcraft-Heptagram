@@ -10,8 +10,7 @@ export function calcularVidaRojaMax(p) {
 }
 
 export function calcularVexMax(p) {
-    if (p.isNPC) return p.vex; // Los NPCs manuales conservan su VEX escrito a mano
-    // Corrección: El VEX depende ÚNICAMENTE de la afinidad Oscura total.
+    if (p.isNPC) return p.vex; // NPCs mantienen el suyo
     const oscTotal = p.afinidades.oscura + (p.buffs?.oscura || 0);
     return Math.round((oscTotal * 75) / 50) * 50;
 }
@@ -21,7 +20,23 @@ export function generarCSVExportacion() {
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
         const af = p.afinidades;
-        csv += `"${nombre}",${p.hex},${p.vex},${af.fisica},${af.energetica},${af.espiritual},${af.mando},${af.psiquica},${af.oscura},${p.vidaRojaActual},${p.vidaRojaMax},${p.vidaAzul},${p.guardaDorada},${p.danoRojo},${p.danoAzul},${p.elimDorada},,,\n`;
+        const b = p.buffs;
+        
+        // VEX: 0 para jugadores (se calcula en su sheet), valor para NPCs
+        const expVex = p.isPlayer ? 0 : p.vex;
+        
+        // Se FUSIONA la base con el buff extra para que se guarde como permanente en el CSV
+        const expFis = af.fisica + b.fisica; const expEne = af.energetica + b.energetica;
+        const expEsp = af.espiritual + b.espiritual; const expMan = af.mando + b.mando;
+        const expPsi = af.psiquica + b.psiquica; const expOsc = af.oscura + b.oscura;
+        
+        const expVRMax = p.vidaRojaMax + b.vidaRojaMaxExtra;
+        const expVA = p.baseVidaAzul + b.vidaAzulExtra;
+        const expGD = p.baseGuardaDorada + b.guardaDoradaExtra;
+        
+        const expDR = p.danoRojo + b.danoRojo; const expDA = p.danoAzul + b.danoAzul; const expED = p.elimDorada + b.elimDorada;
+
+        csv += `"${nombre}",${p.hex},${expVex},${expFis},${expEne},${expEsp},${expMan},${expPsi},${expOsc},${p.vidaRojaActual},${expVRMax},${expVA},${expGD},${expDR},${expDA},${expED},,,\n`;
     });
     return csv;
 }
