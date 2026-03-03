@@ -2,30 +2,31 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>HEX - FICHA DE ESTADO</title>
-    <link rel="icon" type="image/png" href="../img/icon.png"> 
-    <link rel="stylesheet" href="../stylestats.css?v=5.0"> 
+    <title>Ficha de Estado - HEX</title>
+    <link rel="stylesheet" href="../stylestats.css">
 </head>
 <body>
-    <div class="container-hex">
-        <div style="text-align: left; margin-bottom: 20px;"><a href="../index.html" style="color:#d4af37; text-decoration:none; font-weight:bold; font-size:0.9em;">⬅ VOLVER AL INICIO</a></div>
-        <h1>FICHA DE ESTADO</h1>
-        
-        <nav>
-            <button onclick="window.mostrarPagina('publico')">PERSONAJES</button>
-            <button onclick="window.actualizarTodo()" style="background:#006400;">SINCRONIZAR</button>
-            <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">ACCESO OP</button>
-        </nav>
-
-        <section id="pag-publico" class="pagina">
-            <div id="contenedor-catalog" class="catalog-grid"></div>
-            <div id="contenedor-tabla" class="table-container"></div>
-        </section>
-
-        <section id="pag-admin" class="pagina" style="display:none;">
-            <div id="panel-op-central"></div>
-        </section>
+    <div class="nav-bar">
+        <button onclick="window.mostrarCatalogo()">Volver al Catálogo</button>
+        <h2>FICHA DE ESTADO HEX</h2>
+        <button onclick="window.abrirMenuOP()">Acceso OP</button>
     </div>
-    <script type="module" src="stats-main.js?v=5.0"></script>
+
+    <div id="vista-catalogo" class="catalogo-grid"></div>
+    <div id="vista-detalle" class="detalle-container oculto"></div>
+    
+    <div id="vista-op" class="detalle-container oculto" style="text-align: center;">
+        <h3>PANEL DE OPERADOR</h3>
+        <p>Gestiona la sincronización local y maestra.</p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <button onclick="window.forzarSincronizacion()" class="btn-green">Sincronizar (Borrar Local y Descargar Sheet)</button>
+            <button onclick="window.descargarAumentada()">Descargar CSV (Unión Sheet + Local)</button>
+            
+            <input type="file" id="subir-csv" accept=".csv" style="display: none;" onchange="window.subirAumentada(event)">
+            <button onclick="document.getElementById('subir-csv').click()" class="btn-red">Subir CSV Aumentado (Sobrescribe Todo)</button>
+        </div>
+    </div>
+
+    <script type="module" src="stats-main.js"></script>
 </body>
 </html>
