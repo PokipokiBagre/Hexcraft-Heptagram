@@ -105,8 +105,10 @@ window.ejecutarCreacionNPC = () => {
 };
 
 window.forzarSincronizacion = async () => {
-    if(confirm("¿Seguro? Borrarás los NPCs locales y resetearás buffs y estados.")) {
-        await cargarTodoDesdeCSV(); alert("Sincronización completada."); window.mostrarCatalogo();
+    if(confirm("¿Seguro que deseas Actualizar? Esto descargará la última versión maestra, pero borrará los NPCs locales, efectos de estado y buffs temporales de esta sesión.")) {
+        await cargarTodoDesdeCSV(); 
+        alert("Actualización completada exitosamente."); 
+        window.mostrarCatalogo();
     }
 };
 
@@ -134,4 +136,5 @@ async function iniciar() {
 }
 
 iniciar();
+
 
