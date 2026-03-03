@@ -1,15 +1,25 @@
 import { statsGlobal, guardar } from './stats-state.js';
 
-// LECTOR INTELIGENTE: Interpreta "Base_Buff" (ej. "41_10" o "41_-5")
+// LECTOR INTELIGENTE: Interpreta "Total_Base_Hechizos_Extra" (ej. "61_40_21_0")
 const parseCell = (str) => {
-    if (!str) return { base: 0, buff: 0 };
+    if (!str) return { total: 0, base: 0, spells: 0, extra: 0 };
     str = str.toString().trim();
-    if (str.includes('_')) {
-        const parts = str.split('_');
-        return { base: parseInt(parts[0]) || 0, buff: parseInt(parts[1]) || 0 };
+    const parts = str.split('_');
+    
+    // Formato Nuevo: Total_Base_Hechizos_Extra
+    if (parts.length === 4) {
+        return { total: parseInt(parts[0])||0, base: parseInt(parts[1])||0, spells: parseInt(parts[2])||0, extra: parseInt(parts[3])||0 };
+    } 
+    // Soporte Legado: Base_Extra
+    else if (parts.length === 2) {
+        const b = parseInt(parts[0])||0;
+        const e = parseInt(parts[1])||0;
+        return { total: b + e, base: b, spells: 0, extra: e };
     }
-    // Compatibilidad por si el número viene normal (sin extras)
-    return { base: parseInt(str) || 0, buff: 0 };
+    
+    // Valor simple
+    const v = parseInt(str)||0;
+    return { total: v, base: v, spells: 0, extra: 0 };
 };
 
 export async function cargarTodoDesdeCSV() {
@@ -34,7 +44,6 @@ export function procesarTextoCSV(texto) {
 
     for (let k in statsGlobal) delete statsGlobal[k];
 
-    // Los primeros 6 son Jugadores
     filas.slice(1).forEach((f, index) => {
         const nombre = f[0]; 
         if (!nombre) return;
@@ -42,7 +51,6 @@ export function procesarTextoCSV(texto) {
         const esJugador = index < 6;
         const est = cols[16].split('-');
 
-        // Parseo seguro de Bases y Extras
         const fFis = parseCell(cols[3]); const fEne = parseCell(cols[4]);
         const fEsp = parseCell(cols[5]); const fMan = parseCell(cols[6]);
         const fPsi = parseCell(cols[7]); const fOsc = parseCell(cols[8]);
@@ -56,29 +64,30 @@ export function procesarTextoCSV(texto) {
         const fED = parseCell(cols[15]);
 
         statsGlobal[nombre] = {
-            isPlayer: esJugador,
-            isNPC: !esJugador,
-            hex: parseInt(cols[1]) || 0,
-            vex: parseInt(cols[2]) || 0,
+            isPlayer: esJugador, isNPC: !esJugador,
+            hex: parseInt(cols[1]) || 0, vex: parseInt(cols[2]) || 0,
             
-            // Se asignan las Bases Permanentess
             afinidades: {
-                fisica: fFis.base, energetica: fEne.base,
-                espiritual: fEsp.base, mando: fMan.base,
-                psiquica: fPsi.base, oscura: fOsc.base
+                fisica: fFis.base, energetica: fEne.base, espiritual: fEsp.base, 
+                mando: fMan.base, psiquica: fPsi.base, oscura: fOsc.base
             },
+            hechizos: {
+                fisica: fFis.spells, energetica: fEne.spells, espiritual: fEsp.spells, 
+                mando: fMan.spells, psiquica: fPsi.spells, oscura: fOsc.spells,
+                danoRojo: fDR.spells, danoAzul: fDA.spells, elimDorada: fED.spells,
+                vidaRojaMaxExtra: fVRM.spells, vidaAzulExtra: fVA.spells, guardaDoradaExtra: fGD.spells
+            },
+            buffs: { 
+                fisica: fFis.extra, energetica: fEne.extra, espiritual: fEsp.extra, 
+                mando: fMan.extra, psiquica: fPsi.extra, oscura: fOsc.extra, 
+                danoRojo: fDR.extra, danoAzul: fDA.extra, elimDorada: fED.extra, 
+                vidaRojaMaxExtra: fVRM.extra, vidaAzulExtra: fVA.extra, guardaDoradaExtra: fGD.extra 
+            },
+            
             vidaRojaActual: parseInt(cols[9]) || 0, vidaRojaMax: fVRM.base,
             vidaAzul: fVA.base, baseVidaAzul: fVA.base,
             guardaDorada: fGD.base, baseGuardaDorada: fGD.base,
             danoRojo: fDR.base, danoAzul: fDA.base, elimDorada: fED.base,
-            
-            // Se asignan los Buffs Temporales/Extras
-            buffs: { 
-                fisica: fFis.buff, energetica: fEne.buff, espiritual: fEsp.buff, 
-                mando: fMan.buff, psiquica: fPsi.buff, oscura: fOsc.buff, 
-                danoRojo: fDR.buff, danoAzul: fDA.buff, elimDorada: fED.buff, 
-                vidaRojaMaxExtra: fVRM.buff, vidaAzulExtra: fVA.buff, guardaDoradaExtra: fGD.buff 
-            },
             
             estados: { 
                 veneno: parseInt(est[0]) || 0, radiacion: parseInt(est[1]) || 0, 
