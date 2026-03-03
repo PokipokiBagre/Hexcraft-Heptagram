@@ -1,7 +1,7 @@
 import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
-import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
+import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, calcularVidaAzulMax } from './stats-logic.js';
 
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
@@ -22,15 +22,34 @@ function repintarConScroll(vista) {
 window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
 window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
 
+// NAVEGACIÓN INTELIGENTE: Dependiendo de dónde estés, hace una cosa u otra
 window.abrirMenuOP = () => { 
-    if (estadoUI.esAdmin) { estadoUI.vistaActual = 'op'; refrescarVistas(); return; }
+    const enrutarOP = () => {
+        // Si está en el catálogo, lo manda al panel general OP
+        if (estadoUI.vistaActual === 'catalogo') {
+            estadoUI.vistaActual = 'op';
+        }
+        // Si está en detalle, NO cambia la vista, solo refresca para mostrar los botones admin
+        refrescarVistas();
+    };
+
+    if (estadoUI.esAdmin) { 
+        enrutarOP(); 
+        return; 
+    }
+    
     const pass = prompt("Acceso Restringido. Contraseña:");
-    if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; estadoUI.vistaActual = 'op'; refrescarVistas(); } 
-    else { if(pass !== null) alert("Acceso denegado."); }
+    if (pass === atob('Y2FuZXk=')) { 
+        estadoUI.esAdmin = true; 
+        enrutarOP(); 
+    } else { 
+        if(pass !== null) alert("Acceso denegado."); 
+    }
 };
 
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = 'op'; refrescarVistas();
+    estadoUI.vistaActual = 'op';
+    refrescarVistas();
     const sub = document.getElementById('sub-vista-op');
     if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear();
     if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
@@ -113,7 +132,6 @@ window.modLibre = (statId, cantidad) => {
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('detalle');
 };
 
-// MODIFICADORES DE AZUL Y DORADO (CONSUMIBLES)
 window.modBlueExtra = (cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad);
