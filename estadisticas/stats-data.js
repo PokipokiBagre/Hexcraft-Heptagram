@@ -1,29 +1,32 @@
 import { statsGlobal, guardar } from './stats-state.js';
 
 export async function cargarStatsDesdeCSV() {
+    // URL del sheet con cachebust
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZD7f7YtuNnIH1P_KWABhRFDos3GnX4dkkUUE0zpRgNiKPvtbX2kOx4N-CGi0Rc4FPKYYZxXbeJFR/pub?output=csv&cachebust=" + Date.now();
     try {
         const res = await fetch(url);
         const text = await res.text();
-        // Regex para manejar comas dentro de comillas (Hechizos)
-        const filas = text.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
+        
+        // Dividir por líneas y por comas
+        const filas = text.split(/\r?\n/).map(l => l.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
 
+        // Limpiar memoria
         for (let k in statsGlobal) delete statsGlobal[k];
 
         filas.slice(1).forEach(f => {
-            const id = f[0]; if (!id) return;
+            const id = f[0]; 
+            if (!id || id === "") return;
+
+            // Mapeo estricto A-P (0-15)
             statsGlobal[id] = {
-                hx: parseInt(f[1])||0, vx: parseInt(f[2])||0,
-                fi: parseInt(f[3])||0, en: parseInt(f[4])||0, es: parseInt(f[5])||0, ma: parseInt(f[6])||0, ps: parseInt(f[7])||0, os: parseInt(f[8])||0,
-                r: parseInt(f[9])||0, rm: parseInt(f[10])||10, az: parseInt(f[11])||0, gd: parseInt(f[12])||0,
-                dr: f[13]||"0", da: f[14]||"0", eo: f[15]||"0",
-                hechizos: {
-                    afin: f[16] ? f[16].split(',') : [],
-                    noms: f[17] ? f[17].split(',') : [],
-                    cost: f[18] ? f[18].split(',') : []
-                }
+                id: id,
+                hex: f[1] || "0", vex: f[2] || "0",
+                fis: f[3] || "0", ene: f[4] || "0", esp: f[5] || "0", 
+                man: f[6] || "0", psi: f[7] || "0", osc: f[8] || "0",
+                roja: f[9] || "0", rojaM: f[10] || "10", azul: f[11] || "0", oro: f[12] || "0",
+                dR: f[13] || "0", dA: f[14] || "0", eO: f[15] || "0"
             };
         });
         guardar();
-    } catch (e) { console.error("Error al importar Linda:", e); }
+    } catch (e) { console.error("Error cargando data:", e); }
 }
