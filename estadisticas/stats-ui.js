@@ -32,8 +32,9 @@ export function dibujarDetalle() {
     const contenedor = document.getElementById('vista-detalle');
     let vidaRojaVisual = calcularVidaRojaMax(p);
     let vexVisual = calcularVexMax(p);
-    let hexPercent = Math.min((p.hex / 2000) * 100, 100);
-    let vexPercent = Math.min((vexVisual / 2000) * 100, 100);
+    // CÍRCULOS A 4000 COMO BASE
+    let hexPercent = Math.min((p.hex / 4000) * 100, 100);
+    let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
     let corazonesRojosHTML = ''; for(let i=0; i < vidaRojaVisual; i++) corazonesRojosHTML += `<div class="heart-red ${i >= p.vidaRojaActual ? 'empty' : ''}"></div>`;
     let corazonesAzulesHTML = ''; for(let i=0; i < p.vidaAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`;
@@ -82,35 +83,38 @@ export function dibujarDetalle() {
     
     <div style="margin-top:30px; background:#0a0014; border:1px solid var(--gold); padding:20px; border-radius:8px;">
         <h3 style="margin-top:0; color:var(--gold); text-align:center;">Acciones Rápidas (Públicas)</h3>
-        <p style="text-align:center; color:#aaa; font-size:0.8em;">Alteraciones directas sin validación OP.</p>
-        <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+        <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
             <div class="edit-card">
                 <h4>Ganancia HEX</h4>
                 <div class="btn-row">
-                    <button class="btn-plus" style="background:#004a4a; border-color:#00ffff;" onclick="window.modLibre('hex', 300)">+300 Inicial</button>
-                    <button class="btn-minus" onclick="window.modLibre('hex', -50)">-50</button>
+                    <button class="btn-plus" style="background:#004a4a; border-color:#00ffff;" onclick="window.modLibre('hex', 300)">+300</button>
+                    <button class="btn-plus" style="background:#004a4a; border-color:#00ffff;" onclick="window.modLibre('hex', 1000)">+1000</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button>
+                    <button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -500)">-500</button>
                 </div>
             </div>
             <div class="edit-card">
                 <h4>Vida Roja (Actual)</h4>
                 <div class="btn-row">
-                    <button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Curar)</button>
+                    <button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button>
                     <button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button>
+                    <button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button>
                 </div>
             </div>
             <div class="edit-card">
                 <h4>Corazones Azules</h4>
-                <div class="btn-row">
-                    <button class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button>
-                    <button class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button>
-                </div>
+                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('vidaAzul', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('vidaAzul', -5)">-5</button></div>
             </div>
             <div class="edit-card">
                 <h4>Guarda Dorada</h4>
-                <div class="btn-row">
-                    <button class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button>
-                    <button class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button>
-                </div>
+                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('guardaDorada', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('guardaDorada', -5)">-5</button></div>
             </div>
         </div>
     </div>`;
@@ -131,34 +135,49 @@ export function dibujarMenuOP() {
     `;
 }
 
+// Función auxiliar para renderizar cartas de creación
+function genCard(f, isHex) {
+    let btns = '';
+    if (isHex) {
+        btns = `<div class="btn-row"><button class="btn-plus" onclick="window.modForm('${f.id}', 100)">+100</button><button class="btn-minus" onclick="window.modForm('${f.id}', -100)">-100</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', 500)">+500</button><button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', -500)">-500</button></div>`;
+    } else {
+        btns = `<div class="btn-row"><button class="btn-plus" onclick="window.modForm('${f.id}', 1)">+1</button><button class="btn-minus" onclick="window.modForm('${f.id}', -1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus5" onclick="window.modForm('${f.id}', 5)">+5</button><button class="btn-minus5" onclick="window.modForm('${f.id}', -5)">-5</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', 10)">+10</button><button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', -10)">-10</button></div>`;
+    }
+    // Ya no es readonly. El usuario puede escribir directo.
+    return `
+    <div class="edit-card">
+        <h4>${f.label}</h4>
+        <input type="number" id="${f.id}" value="${f.val}" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px;">
+        ${btns}
+    </div>`;
+}
+
 export function dibujarFormularioCrear() {
-    // Array exhaustivo de campos para Crear NPC
-    const fields = [
-        { id: 'npc-hex', label: 'HEX Inicial', val: 0 }, { id: 'npc-vex', label: 'VEX Inicial', val: 0 },
-        { id: 'npc-vra', label: 'Corazones Rojos (Actual)', val: 10 }, { id: 'npc-vrm', label: 'Corazones Rojos (Límite Máx)', val: 10 },
-        { id: 'npc-va', label: 'Corazones Azules', val: 0 }, { id: 'npc-gd', label: 'Guarda Dorada', val: 0 },
-        { id: 'npc-dr', label: 'Daño Rojo', val: 0 }, { id: 'npc-da', label: 'Daño Azul', val: 0 }, { id: 'npc-ed', label: 'Elim. Dorada', val: 0 },
-        { id: 'npc-fis', label: 'Afin. Física', val: 0 }, { id: 'npc-ene', label: 'Afin. Energética', val: 0 }, { id: 'npc-esp', label: 'Afin. Espiritual', val: 0 },
-        { id: 'npc-man', label: 'Afin. Mando', val: 0 }, { id: 'npc-psi', label: 'Afin. Psíquica', val: 0 }, { id: 'npc-osc', label: 'Afin. Oscura', val: 0 }
-    ];
+    const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0 }, { id:'npc-vex', label:'VEX Inicial', val:0 } ];
+    const pVitalidad = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 } ];
+    const pOfensiva = [ { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
+    const pAfinidades = [ { id:'npc-fis', label:'Afin. Física', val:0 }, { id:'npc-ene', label:'Afin. Energética', val:0 }, { id:'npc-esp', label:'Afin. Espiritual', val:0 }, { id:'npc-man', label:'Afin. Mando', val:0 }, { id:'npc-psi', label:'Afin. Psíquica', val:0 }, { id:'npc-osc', label:'Afin. Oscura', val:0 } ];
     
     let html = `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
         <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje / NPC</h3>
         <input type="text" id="npc-nombre" placeholder="Nombre del NPC..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center; font-family:'Cinzel', serif;">
-        <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">`;
+        
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Energía</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pEnergia.map(f => genCard(f, true)).join('')}</div>
 
-    fields.forEach(f => {
-        html += `
-        <div class="edit-card">
-            <h4>${f.label}</h4>
-            <input type="number" id="${f.id}" value="${f.val}" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px;" readonly>
-            <div class="btn-row"><button class="btn-plus" onclick="window.modForm('${f.id}', 1)">+1</button><button class="btn-minus" onclick="window.modForm('${f.id}', -1)">-1</button></div>
-            <div class="btn-row"><button class="btn-plus5" onclick="window.modForm('${f.id}', 5)">+5</button><button class="btn-minus5" onclick="window.modForm('${f.id}', -5)">-5</button></div>
-        </div>`;
-    });
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Vitalidad</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pVitalidad.map(f => genCard(f, false)).join('')}</div>
 
-    html += `</div>
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Ofensiva</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pOfensiva.map(f => genCard(f, false)).join('')}</div>
+
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">4. Afinidades</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, false)).join('')}</div>
+
         <button onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">GUARDAR PERSONAJE</button>
     </div>`;
     return html;
@@ -198,9 +217,11 @@ export function dibujarFormularioEditar() {
             <span style="color: ${colorVal}">${displayVal}</span>
             <div class="btn-row"><button class="btn-plus" onclick="window.modificarBuff('${s.id}', 1)">+1</button><button class="btn-minus" onclick="window.modificarBuff('${s.id}', -1)">-1</button></div>
             <div class="btn-row"><button class="btn-plus5" onclick="window.modificarBuff('${s.id}', 5)">+5</button><button class="btn-minus5" onclick="window.modificarBuff('${s.id}', -5)">-5</button></div>
+            <div class="btn-row"><button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modificarBuff('${s.id}', 10)">+10</button><button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modificarBuff('${s.id}', -10)">-10</button></div>
         </div>`;
     });
 
     html += `</div></div>`;
     return html;
 }
+
