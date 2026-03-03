@@ -53,7 +53,6 @@ window.modForm = (inputId, cantidad) => {
     if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
 };
 
-// NUEVAS FUNCIONES PARA ESTADOS ALTERADOS
 window.modEstado = (estadoId, cantidad) => {
     conScrollGuardado(() => {
         const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
@@ -95,10 +94,23 @@ window.forzarSincronizacion = async () => {
 
 window.descargarAumentada = () => { descargarArchivoCSV(generarCSVExportacion(), "HEX_ESTADOS_AUMENTADO.csv"); };
 
-window.subirAumentada = (e) => {
-    const archivo = e.target.files[0]; if (!archivo) return; const lector = new FileReader();
-    lector.onload = function(ev) { procesarTextoCSV(ev.target.result); alert("CSV inyectado."); window.mostrarCatalogo(); };
-    lector.readAsText(archivo); e.target.value = null; 
+// REPARACIÓN: Creación de input al vuelo en lugar de depender del HTML oculto.
+window.triggerSubirCSV = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = (e) => {
+        const archivo = e.target.files[0];
+        if (!archivo) return;
+        const lector = new FileReader();
+        lector.onload = function(ev) {
+            procesarTextoCSV(ev.target.result);
+            alert("CSV inyectado localmente.");
+            window.mostrarCatalogo();
+        };
+        lector.readAsText(archivo);
+    };
+    input.click();
 };
 
 function refrescarVistas() {
@@ -114,3 +126,4 @@ async function iniciar() {
 }
 
 iniciar();
+
