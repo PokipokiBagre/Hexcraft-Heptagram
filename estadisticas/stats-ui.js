@@ -1,16 +1,19 @@
 import { statsGlobal, estadoUI } from './stats-state.js';
-import { calcularVidaRojaMax, calcularVidaAzulMax, calcularVexMax } from './stats-logic.js';
+import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 const calcTotal = (base, spells, buff) => (base || 0) + (spells || 0) + (buff || 0);
-const calcExtra = (spells, buff) => (spells || 0) + (buff || 0);
-const bText = (spells, buff) => {
-    const val = calcExtra(spells, buff);
-    return val > 0 ? `<span style="color:#00ff00; font-size:0.6em; vertical-align:middle;"> (+${val})</span>` : (val < 0 ? `<span style="color:red; font-size:0.6em; vertical-align:middle;"> (${val})</span>` : '');
+
+// SEPARADOR VISUAL DE HECHIZOS (DORADO) Y BUFFS (VERDE/ROJO)
+const bTextSplit = (spells, buff) => {
+    let html = '';
+    if (spells !== 0) html += `<span style="color:#d4af37; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${spells > 0 ? '+' : ''}${spells})</span>`;
+    if (buff !== 0) html += `<span style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${buff > 0 ? '+' : ''}${buff})</span>`;
+    return html;
 };
+
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
-// INICIALIZACIÓN BLINDADA: Evita el error "undefined" rellenando todas las posibles variables
 function asegurarEstructuras(p) {
     if(!p.buffs) p.buffs = {};
     if(!p.hechizos) p.hechizos = {};
@@ -48,11 +51,11 @@ export function dibujarDetalle() {
 
     const contenedor = document.getElementById('vista-detalle');
     let vidaRojaVisual = calcularVidaRojaMax(p);
-    let vidaAzulVisual = calcularVidaAzulMax(p);
     let vexVisual = calcularVexMax(p);
     let hexPercent = Math.min((p.hex / 4000) * 100, 100);
     let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
+    // VIDA ROJA
     let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual);
     let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual);
     let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
@@ -62,16 +65,22 @@ export function dibujarDetalle() {
     for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    let extraAzul = Math.max(0, p.vidaAzul - vidaAzulVisual);
-    let normalAzul = Math.min(p.vidaAzul, vidaAzulVisual);
+    // VIDA AZUL (Con Matemática de Escudos Extras)
+    const mysticTotal = (p.afinidades.espiritual||0) + (p.afinidades.energetica||0) + (p.afinidades.psiquica||0) + (p.afinidades.mando||0) +
+                        (p.hechizos.espiritual||0) + (p.hechizos.energetica||0) + (p.hechizos.psiquica||0) + (p.hechizos.mando||0) +
+                        (p.buffs.espiritual||0) + (p.buffs.energetica||0) + (p.buffs.psiquica||0) + (p.buffs.mando||0);
+    const bonusMysticAzul = Math.floor(mysticTotal / 4);
+
+    let normalAzul = Math.max(0, p.vidaAzul);
+    let extraAzul = Math.max(0, p.hechizos.vidaAzulExtra + p.buffs.vidaAzulExtra + bonusMysticAzul);
     let corazonesAzulesHTML = ''; 
     for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`;
     for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    let baseGuarda = p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : p.guardaDorada;
-    let extraGuarda = Math.max(0, p.guardaDorada - baseGuarda);
-    let normalGuarda = Math.min(p.guardaDorada, baseGuarda);
+    // GUARDA DORADA (Base estricta + Extra Oscuritos)
+    let normalGuarda = Math.max(0, p.guardaDorada);
+    let extraGuarda = Math.max(0, p.hechizos.guardaDoradaExtra + p.buffs.guardaDoradaExtra);
     let guardasHTML = ''; 
     for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`;
     for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
@@ -115,25 +124,25 @@ export function dibujarDetalle() {
         <div>
             <h3 style="margin-top:0;">Vitalidad</h3>
             <div class="health-box"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${vidaRojaVisual})</label><div class="health-grid">${corazonesRojosHTML}</div></div>
-            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${p.vidaAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
-            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${p.guardaDorada})</label><div class="health-grid">${guardasHTML}</div></div>
+            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${normalAzul + extraAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
+            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${normalGuarda + extraGuarda})</label><div class="health-grid">${guardasHTML}</div></div>
             
             <h3 style="margin-top:20px;">Ofensiva Totales</h3>
             <div class="affinities-grid">
-                <div class="affinity-box"><label style="color:var(--red-life)">Daño Rojo</label><span>${calcTotal(p.danoRojo, p.hechizos.danoRojo, p.buffs.danoRojo)}${bText(p.hechizos.danoRojo, p.buffs.danoRojo)}</span></div>
-                <div class="affinity-box"><label style="color:var(--blue-life)">Daño Azul</label><span>${calcTotal(p.danoAzul, p.hechizos.danoAzul, p.buffs.danoAzul)}${bText(p.hechizos.danoAzul, p.buffs.danoAzul)}</span></div>
-                <div class="affinity-box"><label style="color:var(--gold)">Elim. Dorada</label><span>${calcTotal(p.elimDorada, p.hechizos.elimDorada, p.buffs.elimDorada)}${bText(p.hechizos.elimDorada, p.buffs.elimDorada)}</span></div>
+                <div class="affinity-box"><label style="color:var(--red-life)">Daño Rojo</label><span style="font-size:1.4em;">${calcTotal(p.danoRojo, p.hechizos.danoRojo, p.buffs.danoRojo)}</span>${bTextSplit(p.hechizos.danoRojo, p.buffs.danoRojo)}</div>
+                <div class="affinity-box"><label style="color:var(--blue-life)">Daño Azul</label><span style="font-size:1.4em;">${calcTotal(p.danoAzul, p.hechizos.danoAzul, p.buffs.danoAzul)}</span>${bTextSplit(p.hechizos.danoAzul, p.buffs.danoAzul)}</div>
+                <div class="affinity-box"><label style="color:var(--gold)">Elim. Dorada</label><span style="font-size:1.4em;">${calcTotal(p.elimDorada, p.hechizos.elimDorada, p.buffs.elimDorada)}</span>${bTextSplit(p.hechizos.elimDorada, p.buffs.elimDorada)}</div>
             </div>
         </div>
         <div>
             <h3 style="margin-top:0;">Afinidades Totales</h3>
             <div class="affinities-grid">
-                <div class="affinity-box"><label>Física</label><span>${calcTotal(p.afinidades.fisica, p.hechizos.fisica, p.buffs.fisica)}${bText(p.hechizos.fisica, p.buffs.fisica)}</span></div>
-                <div class="affinity-box"><label>Energética</label><span>${calcTotal(p.afinidades.energetica, p.hechizos.energetica, p.buffs.energetica)}${bText(p.hechizos.energetica, p.buffs.energetica)}</span></div>
-                <div class="affinity-box"><label>Espiritual</label><span>${calcTotal(p.afinidades.espiritual, p.hechizos.espiritual, p.buffs.espiritual)}${bText(p.hechizos.espiritual, p.buffs.espiritual)}</span></div>
-                <div class="affinity-box"><label>Mando</label><span>${calcTotal(p.afinidades.mando, p.hechizos.mando, p.buffs.mando)}${bText(p.hechizos.mando, p.buffs.mando)}</span></div>
-                <div class="affinity-box"><label>Psíquica</label><span>${calcTotal(p.afinidades.psiquica, p.hechizos.psiquica, p.buffs.psiquica)}${bText(p.hechizos.psiquica, p.buffs.psiquica)}</span></div>
-                <div class="affinity-box"><label>Oscura</label><span>${calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.buffs.oscura)}${bText(p.hechizos.oscura, p.buffs.oscura)}</span></div>
+                <div class="affinity-box"><label>Física</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.fisica, p.hechizos.fisica, p.buffs.fisica)}</span>${bTextSplit(p.hechizos.fisica, p.buffs.fisica)}</div>
+                <div class="affinity-box"><label>Energética</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.energetica, p.hechizos.energetica, p.buffs.energetica)}</span>${bTextSplit(p.hechizos.energetica, p.buffs.energetica)}</div>
+                <div class="affinity-box"><label>Espiritual</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.espiritual, p.hechizos.espiritual, p.buffs.espiritual)}</span>${bTextSplit(p.hechizos.espiritual, p.buffs.espiritual)}</div>
+                <div class="affinity-box"><label>Mando</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.mando, p.hechizos.mando, p.buffs.mando)}</span>${bTextSplit(p.hechizos.mando, p.buffs.mando)}</div>
+                <div class="affinity-box"><label>Psíquica</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.psiquica, p.hechizos.psiquica, p.buffs.psiquica)}</span>${bTextSplit(p.hechizos.psiquica, p.buffs.psiquica)}</div>
+                <div class="affinity-box"><label>Oscura</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.buffs.oscura)}</span>${bTextSplit(p.hechizos.oscura, p.buffs.oscura)}</div>
             </div>
         </div>
     </div>
@@ -194,7 +203,7 @@ export function dibujarDetalle() {
     html += `
     <div style="margin-top:20px; background:#110022; border:1px solid #00ffff; padding:20px; border-radius:8px;">
         <h3 style="margin-top:0; color:#00ffff; text-align:center;">Alteraciones Temporales (Extras)</h3>
-        <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:20px;">Estos valores se suman como "Buffs" a la base y a los hechizos.</p>
+        <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:20px;">Estos valores representan buffs aplicados sobre la base.</p>
         <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">1. Buffs de Vida y Daño</h4>
         <div class="edit-grid" style="margin-bottom: 30px;">${pVidaDanoE.map(f => genCard(f, 'buff')).join('')}</div>
         <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">2. Afinidades Temporales</h4>
@@ -205,7 +214,7 @@ export function dibujarDetalle() {
     html += `
     <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
         <h3 style="margin-top:0; color:var(--gold);">Importación de Estados</h3>
-        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa los estados alterados (buffs y efectos) o clona toda la ficha <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
+        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa los estados alterados o clona toda la ficha <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
         <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
             <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;">
                 <option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}
@@ -230,7 +239,6 @@ export function dibujarMenuOP() {
     `;
 }
 
-// GENERADOR DE TARJETAS INTELIGENTE: AHORA TODO ES UN <input> EDITABLE MANUALMENTE
 function genCard(f, tipoAccion) {
     let btns = ''; let clickMod = '';
     if (tipoAccion === 'buff') clickMod = 'window.modificarBuff';
@@ -242,8 +250,6 @@ function genCard(f, tipoAccion) {
     else if (tipoAccion === 'form') clickMod = 'window.modForm';
 
     const visualVal = f.val !== undefined ? f.val : 0;
-    
-    // INPUT MANUAL: Se activa 'onchange' (cuando quitas el foco o das Enter) para no interrumpir tu escritura
     const attrInput = `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
     let inputHtml = `<input type="number" id="inp-${tipoAccion}-${f.id}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
 
@@ -284,7 +290,6 @@ export function dibujarFormularioEditar() {
     const pVidaDanoBase = [ { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
-    // DAÑO RETIRADO DE LA SECCIÓN DE HECHIZOS (Solo queda vitalidad límite)
     const pVitalidadSpell = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Hechizo)', val: p.hechizos.vidaRojaMaxExtra }, { id: 'vidaAzulExtra', label: 'C. Azules (Hechizo)', val: p.hechizos.vidaAzulExtra }, { id: 'guardaDoradaExtra', label: 'G. Dorada (Hechizo)', val: p.hechizos.guardaDoradaExtra } ];
     const pAfinidadesSpell = [ { id: 'fisica', label: 'Física (Hechizo)', val: p.hechizos.fisica }, { id: 'energetica', label: 'Energética (Hechizo)', val: p.hechizos.energetica }, { id: 'espiritual', label: 'Espiritual (Hechizo)', val: p.hechizos.espiritual }, { id: 'mando', label: 'Mando (Hechizo)', val: p.hechizos.mando }, { id: 'psiquica', label: 'Psíquica (Hechizo)', val: p.hechizos.psiquica }, { id: 'oscura', label: 'Oscura (Hechizo)', val: p.hechizos.oscura } ];
 
