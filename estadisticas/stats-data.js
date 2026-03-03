@@ -9,15 +9,13 @@ const parseCell = (str) => {
     const v = parseInt(str)||0; return { total: v, base: v, spells: 0, extra: 0 };
 };
 
-// NUEVO: Función independiente para cargar SIEMPRE el diccionario estructural
 export async function cargarDiccionarioEstados() {
     try {
         const resEst = await fetch('estados.csv?v=' + new Date().getTime());
         if (!resEst.ok) { console.warn("No se encontró estados.csv"); return; }
         const txtEst = await resEst.text();
         const filasEst = txtEst.split(/\r?\n/).map(l => l.split(',').map(c => c.trim()));
-        
-        listaEstados.length = 0; // Limpiar lista actual
+        listaEstados.length = 0;
         filasEst.slice(1).forEach(f => {
             if(f[0]) listaEstados.push({ id: f[0], nombre: f[1], tipo: f[2], bg: f[3], border: f[4], desc: f[5] });
         });
@@ -79,8 +77,8 @@ export function procesarTextoCSV(texto) {
             buffs: { fisica: fFis.extra, energetica: fEne.extra, espiritual: fEsp.extra, mando: fMan.extra, psiquica: fPsi.extra, oscura: fOsc.extra, danoRojo: fDR.extra, danoAzul: fDA.extra, elimDorada: fED.extra, vidaRojaMaxExtra: fVRM.extra, vidaAzulExtra: fVA.extra, guardaDoradaExtra: fGD.extra },
             
             vidaRojaActual: parseInt(cols[9]) || 0, vidaRojaMax: baseVRM,
-            vidaAzul: fVA.total, baseVidaAzul: baseVA,
-            guardaDorada: fGD.total, baseGuardaDorada: fGD.base,
+            vidaAzul: baseVA, // Vida Azul entra directo a la piscina
+            guardaDorada: fGD.base, // Guarda dorada entra directo a la piscina
             danoRojo: fDR.base, danoAzul: fDA.base, elimDorada: fED.base,
             
             estados: estadosPers 
