@@ -18,17 +18,41 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
     grid-template-columns: repeat(2, 1fr) !important; 
     gap: 20px; max-width: 900px; margin: 0 auto; 
 }
-.grid-item { background: #1a0033; border: 1px solid #d4af37; padding: 20px; text-align: center; text-decoration: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: 0.3s; }
+.grid-item { background: #1a0033; border: 1px solid #d4af37; padding: 20px; text-align: center; text-decoration: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: 0.3s; border-radius: 8px; }
 .grid-item img { width: 100px; height: 100px; object-fit: cover; }
-.grid-item:hover { background: #2e004f; box-shadow: 0 0 15px #d4af37; }
+.grid-item:hover { background: #2e004f; box-shadow: 0 0 15px #d4af37; transform: scale(1.02); }
 
 /* HILOS CON BLUR PROFESIONAL */
 .direct-access { display: flex; gap: 30px; justify-content: center; margin-top: 20px; flex-wrap: wrap; padding-bottom: 40px; }
-.access-card { position: relative; width: 320px; height: 180px; border: 2px solid #d4af37; overflow: hidden; border-radius: 4px; }
+.access-card { position: relative; width: 320px; height: 180px; border: 2px solid #d4af37; overflow: hidden; border-radius: 8px; }
 .access-card img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.5); transition: 0.4s ease; }
 .access-card:hover img { transform: scale(1.1); filter: brightness(0.8) blur(3px); }
 .access-card .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
 .access-card span { color: #ffffff !important; font-weight: bold; font-size: 1.1em; text-transform: uppercase; text-shadow: 2px 2px 8px #000; }
 
 .disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
-@media (max-width: 750px) { .main-grid { grid-template-columns: 1fr !important; } }
+
+/* =======================================================
+   📱 ADAPTACIÓN PARA TELÉFONOS (HOME PAGE)
+   ======================================================= */
+@media (max-width: 768px) { 
+    body {
+        padding: 15px !important;
+    }
+    
+    .hero-section {
+        padding: 30px 10px !important;
+    }
+    
+    /* Los botones principales bajan a 1 sola columna vertical */
+    .main-grid { 
+        grid-template-columns: 1fr !important; 
+    } 
+    
+    /* Las tarjetas con imágenes se ajustan al 100% de la pantalla */
+    .access-card {
+        width: 100% !important;
+        max-width: 350px !important;
+        height: 140px !important;
+    }
+}
