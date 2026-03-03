@@ -1,9 +1,10 @@
 export let statsGlobal = {};
 export let estadoUI = {
     vistaActual: 'catalogo',
-    personajeSeleccionado: null
+    personajeSeleccionado: null,
+    esAdmin: false
 };
 
 export function guardar() {
-    localStorage.setItem('hex_stats_v1', JSON.stringify({ stats: statsGlobal }));
+    localStorage.setItem('hex_stats_v2', JSON.stringify({ stats: statsGlobal }));
 }
