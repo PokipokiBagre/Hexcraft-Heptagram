@@ -9,24 +9,30 @@ const parseCell = (str) => {
     const v = parseInt(str)||0; return { total: v, base: v, spells: 0, extra: 0 };
 };
 
-export async function cargarTodoDesdeCSV() {
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv&cachebust=" + new Date().getTime();
+// NUEVO: Función independiente para cargar SIEMPRE el diccionario estructural
+export async function cargarDiccionarioEstados() {
     try {
-        // 1. PRIMERO CARGAMOS EL DICCIONARIO DE ESTADOS LOCAL
         const resEst = await fetch('estados.csv?v=' + new Date().getTime());
+        if (!resEst.ok) { console.warn("No se encontró estados.csv"); return; }
         const txtEst = await resEst.text();
         const filasEst = txtEst.split(/\r?\n/).map(l => l.split(',').map(c => c.trim()));
-        listaEstados.length = 0;
+        
+        listaEstados.length = 0; // Limpiar lista actual
         filasEst.slice(1).forEach(f => {
             if(f[0]) listaEstados.push({ id: f[0], nombre: f[1], tipo: f[2], bg: f[3], border: f[4], desc: f[5] });
         });
+    } catch(e) { console.error("Error leyendo estados.csv:", e); }
+}
 
-        // 2. LUEGO CARGAMOS EL CSV DE ESTADÍSTICAS
+export async function cargarTodoDesdeCSV() {
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv&cachebust=" + new Date().getTime();
+    try {
+        await cargarDiccionarioEstados();
         const res = await fetch(sheetURL); 
         procesarTextoCSV(await res.text()); 
         return true; 
     } 
-    catch (e) { console.error("Error cargando CSVs:", e); return false; }
+    catch (e) { console.error("Error cargando CSV principal:", e); return false; }
 }
 
 export function procesarTextoCSV(texto) {
@@ -37,7 +43,7 @@ export function procesarTextoCSV(texto) {
 
     for (let k in statsGlobal) delete statsGlobal[k];
 
-    filas.slice(1).forEach((f, index) => {
+    filas.slice(1).forEach((f) => {
         const nombre = f[0]; if (!nombre) return;
         const cols = Array.from({length: 18}, (_, i) => f[i] || '');
         const est = cols[16].split('-');
@@ -57,7 +63,6 @@ export function procesarTextoCSV(texto) {
         let baseVRM = fVRM.base; if (!cols[10].includes('_')) baseVRM = Math.max(10, fVRM.base - Math.floor(fFis.base / 2));
         let baseVA = fVA.base; if (!cols[11].includes('_')) baseVA = Math.max(0, fVA.base - Math.floor((fEsp.base + fEne.base + fPsi.base + fMan.base) / 4));
 
-        // CONSTRUCCIÓN DINÁMICA DE ESTADOS BASADA EN EL ORDEN DEL CSV
         let estadosPers = {};
         listaEstados.forEach((estadoInfo, i) => {
             let val = est[i] || '0';
@@ -78,7 +83,7 @@ export function procesarTextoCSV(texto) {
             guardaDorada: fGD.total, baseGuardaDorada: fGD.base,
             danoRojo: fDR.base, danoAzul: fDA.base, elimDorada: fED.base,
             
-            estados: estadosPers // Inyección dinámica
+            estados: estadosPers 
         };
     });
     guardar();
