@@ -6,8 +6,11 @@
     <link rel="stylesheet" href="../stylestats.css">
 </head>
 <body>
-    <div class="nav-bar">
-        <button onclick="window.mostrarCatalogo()">Volver al Catálogo</button>
+<div class="nav-bar">
+        <div style="display: flex; gap: 10px;">
+            <button onclick="window.location.href='../index.html'" style="background: #111; border-color: #555;">⬅ Volver al Inicio</button>
+            <button onclick="window.mostrarCatalogo()">Volver al Catálogo</button>
+        </div>
         <h2>FICHA DE ESTADO HEX</h2>
         <button onclick="window.abrirMenuOP()">Acceso OP</button>
     </div>
@@ -30,3 +33,4 @@
     <script type="module" src="stats-main.js"></script>
 </body>
 </html>
+
