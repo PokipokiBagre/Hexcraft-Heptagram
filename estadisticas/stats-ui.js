@@ -1,5 +1,5 @@
 import { statsGlobal, estadoUI } from './stats-state.js';
-import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
+import { calcularVidaRojaMax, calcularVidaAzulMax, calcularVexMax } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 const calcTotal = (base, buff) => (base || 0) + (buff || 0);
@@ -38,10 +38,12 @@ export function dibujarDetalle() {
 
     const contenedor = document.getElementById('vista-detalle');
     let vidaRojaVisual = calcularVidaRojaMax(p);
+    let vidaAzulVisual = calcularVidaAzulMax(p);
     let vexVisual = calcularVexMax(p);
     let hexPercent = Math.min((p.hex / 4000) * 100, 100);
     let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
+    // CORAZONES ROJOS
     let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual);
     let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual);
     let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
@@ -51,35 +53,41 @@ export function dibujarDetalle() {
     for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    let normalAzul = p.vidaAzul || 0;
-    let extraAzul = p.buffs.vidaAzulExtra || 0;
+    // CORAZONES AZULES (Usando Delta y Extras)
+    let extraAzul = Math.max(0, p.vidaAzul - vidaAzulVisual);
+    let normalAzul = Math.min(p.vidaAzul, vidaAzulVisual);
     let corazonesAzulesHTML = ''; 
     for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`;
     for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    let normalGuarda = p.guardaDorada || 0;
-    let extraGuarda = p.buffs.guardaDoradaExtra || 0;
+    // GUARDA DORADA
+    let baseGuarda = p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : p.guardaDorada;
+    let extraGuarda = Math.max(0, p.guardaDorada - baseGuarda);
+    let normalGuarda = Math.min(p.guardaDorada, baseGuarda);
     let guardasHTML = ''; 
     for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`;
     for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
-    let estadosHTML = '';
+    // DECODIFICADOR DE ESTADOS ALTERADOS
+    let estadosHTML = ''; let descEstadosHTML = '';
     const st = p.estados;
-    if(st.veneno > 0) estadosHTML += `<div class="status-badge badge-veneno">Veneno (${st.veneno})</div>`;
-    if(st.radiacion > 0) estadosHTML += `<div class="status-badge badge-radiacion">Radiación (${st.radiacion})</div>`;
-    if(st.maldito) estadosHTML += `<div class="status-badge badge-maldito">Maldito</div>`;
-    if(st.incapacitado) estadosHTML += `<div class="status-badge badge-incapacitado">Incapacitado</div>`;
-    if(st.debilitado) estadosHTML += `<div class="status-badge badge-debilitado">Debilitado</div>`;
-    if(st.angustia) estadosHTML += `<div class="status-badge badge-angustia">Angustia</div>`;
-    if(st.petrificacion) estadosHTML += `<div class="status-badge badge-petrificacion">Petrificación</div>`;
-    if(st.secuestrado) estadosHTML += `<div class="status-badge badge-secuestrado">Secuestrado</div>`;
-    if(st.huesos) estadosHTML += `<div class="status-badge badge-huesos">En los Huesos</div>`;
-    if(st.comestible) estadosHTML += `<div class="status-badge badge-comestible">Comestible</div>`;
-    if(st.cifrado) estadosHTML += `<div class="status-badge badge-cifrado">Cifrado</div>`;
-    if(st.inversion) estadosHTML += `<div class="status-badge badge-inversion">Inversión</div>`;
-    if(st.verde) estadosHTML += `<div class="status-badge badge-verde">Verde</div>`;
+    if(st.veneno > 0) { estadosHTML += `<div class="status-badge badge-veneno">Veneno (${st.veneno})</div>`; descEstadosHTML += `<p><strong>Veneno (${st.veneno}):</strong> El objetivo pierde ${st.veneno} corazones rojos cada turno.</p>`; }
+    if(st.radiacion > 0) { estadosHTML += `<div class="status-badge badge-radiacion">Radiación (${st.radiacion})</div>`; descEstadosHTML += `<p><strong>Radiación (${st.radiacion}):</strong> Recibe ${st.radiacion} de daño rojo constante y ${st.radiacion} de daño azul al lanzar hechizos. Riesgo de autocastear Cáncer (Dado 5).</p>`; }
+    if(st.maldito) { estadosHTML += `<div class="status-badge badge-maldito">Maldito</div>`; descEstadosHTML += `<p><strong>Maldito:</strong> Prohíbe al objetivo adquirir corazones extra (vitalidad adicional).</p>`; }
+    if(st.incapacitado) { estadosHTML += `<div class="status-badge badge-incapacitado">Incapacitado</div>`; descEstadosHTML += `<p><strong>Incapacitado:</strong> El daño por Ataques Simples del objetivo se reduce a 0.</p>`; }
+    if(st.debilitado) { estadosHTML += `<div class="status-badge badge-debilitado">Debilitado</div>`; descEstadosHTML += `<p><strong>Debilitado:</strong> Si el objetivo recibe daño rojo, ese daño se duplica automáticamente.</p>`; }
+    if(st.angustia) { estadosHTML += `<div class="status-badge badge-angustia">Angustia</div>`; descEstadosHTML += `<p><strong>Angustia:</strong> Aumenta el costo de casteo de todos los hechizos del objetivo en 500 HEX.</p>`; }
+    if(st.petrificacion) { estadosHTML += `<div class="status-badge badge-petrificacion">Petrificación</div>`; descEstadosHTML += `<p><strong>Petrificación:</strong> Inmovilización total; no puede lanzar hechizos ni realizar Ataques Simples.</p>`; }
+    if(st.secuestrado) { estadosHTML += `<div class="status-badge badge-secuestrado">Secuestrado</div>`; descEstadosHTML += `<p><strong>Secuestrado:</strong> El objetivo es retirado de la acción y no puede realizar movimientos.</p>`; }
+    if(st.huesos) { estadosHTML += `<div class="status-badge badge-huesos">En los Huesos</div>`; descEstadosHTML += `<p><strong>En los Huesos:</strong> La vida ya no se pierde de 1 en 1, sino en bloques fijos de 3, 7 o 13.</p>`; }
+    if(st.comestible) { estadosHTML += `<div class="status-badge badge-comestible">Comestible</div>`; descEstadosHTML += `<p><strong>Comestible:</strong> Unifica sus barras. Al ser atacado, entrega 3 corazones a aliados y 5 a enemigos.</p>`; }
+    if(st.cifrado) { estadosHTML += `<div class="status-badge badge-cifrado">Cifrado</div>`; descEstadosHTML += `<p><strong>Cifrado:</strong> Genera 10 de HEX por cada palabra "cifrada" en su diálogo (Tope 1200).</p>`; }
+    if(st.inversion) { estadosHTML += `<div class="status-badge badge-inversion">Inversión</div>`; descEstadosHTML += `<p><strong>Inversión:</strong> Cualquier efecto de curación o restauración de vida se transforma en daño equivalente.</p>`; }
+    if(st.verde) { estadosHTML += `<div class="status-badge badge-verde">Verde</div>`; descEstadosHTML += `<p><strong>Verde:</strong> Estado de 'buena persona'. Permite reciclar objetos para ganar 20 de HEX instantáneamente.</p>`; }
+
+    let bloqueDescripciones = descEstadosHTML !== '' ? `<div style="margin-top:10px; padding:10px 15px; background:rgba(0,0,0,0.5); border-left:3px solid var(--gold); font-size:0.85em; color:#ccc; border-radius:4px;">${descEstadosHTML}</div>` : '';
 
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px;">
@@ -90,6 +98,7 @@ export function dibujarDetalle() {
         </div>
         ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#4a004a; border-color:#d4af37;">Editar / Buffs</button>` : ''}
     </div>
+    ${bloqueDescripciones}
 
     <div class="circle-wrap">
         <div class="stat-circle" style="background: conic-gradient(var(--gold) ${hexPercent}%, #222 0);"><div class="inner"><strong>${p.hex}</strong><span>HEX</span></div></div>
@@ -100,8 +109,8 @@ export function dibujarDetalle() {
         <div>
             <h3 style="margin-top:0;">Vitalidad</h3>
             <div class="health-box"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${vidaRojaVisual})</label><div class="health-grid">${corazonesRojosHTML}</div></div>
-            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${normalAzul + extraAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
-            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${normalGuarda + extraGuarda})</label><div class="health-grid">${guardasHTML}</div></div>
+            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${p.vidaAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
+            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${p.guardaDorada})</label><div class="health-grid">${guardasHTML}</div></div>
             
             <h3 style="margin-top:20px;">Ofensiva</h3>
             <div class="affinities-grid">
