@@ -21,11 +21,10 @@ export function calcularVexMax(p) {
     return Math.round((oscTotal * 75) / 50) * 50;
 }
 
-// EMPAQUETADOR SEGURO: Si hay un buff, crea strings como "41_10" o "21_-2"
+// EMPAQUETADOR DE CSV: Devuelve "Base_Extra" (Ej: "41_10" o "21_-2")
 function formatExp(base, buff) {
     const b = parseInt(base) || 0;
     const bf = parseInt(buff) || 0;
-    if (bf === 0) return `${b}`;
     return `${b}_${bf}`;
 }
 
@@ -40,6 +39,7 @@ export function generarCSVExportacion() {
         
         const expVex = p.isPlayer ? 0 : p.vex;
         
+        // Empaquetamos Base y Buff
         const eFis = formatExp(af.fisica, b.fisica);
         const eEne = formatExp(af.energetica, b.energetica);
         const eEsp = formatExp(af.espiritual, b.espiritual);
@@ -63,7 +63,6 @@ export function generarCSVExportacion() {
         ];
         const expEstado = arrEstados.join('-');
 
-        // Se usa "" para evitar que Excel malinterprete el texto
         csv += `"${nombre}",${p.hex},${expVex},"${eFis}","${eEne}","${eEsp}","${eMan}","${ePsi}","${eOsc}",${p.vidaRojaActual},"${eVRMax}","${eVA}","${eGD}","${eDR}","${eDA}","${eED}","${expEstado}"\n`;
     });
     return csv;
@@ -74,4 +73,3 @@ export function descargarArchivoCSV(contenido, nombreArchivo) {
     link.href = URL.createObjectURL(new Blob([contenido], { type: 'text/csv;charset=utf-8;' }));
     link.download = nombreArchivo; link.click();
 }
-
