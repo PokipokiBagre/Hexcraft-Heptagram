@@ -3,8 +3,15 @@ import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
 
-window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); };
-window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); };
+// FUNCION ANTE-PARPADEOS: Captura y restaura la posición actual
+function conScrollGuardado(accion) {
+    const scrollAnterior = window.scrollY;
+    accion();
+    window.scrollTo(0, scrollAnterior);
+}
+
+window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
+window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
 
 window.abrirMenuOP = () => { 
     if (estadoUI.esAdmin) {
@@ -29,29 +36,31 @@ window.mostrarPaginaOP = (subvista) => {
 };
 
 window.modificarBuff = (statId, cantidad) => {
-    const p = statsGlobal[estadoUI.personajeSeleccionado];
-    if(!p) return;
-    p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
-    guardar();
-    document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
+    conScrollGuardado(() => {
+        const p = statsGlobal[estadoUI.personajeSeleccionado];
+        if(!p) return;
+        p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
+        guardar();
+        document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
+    });
 };
 
-// NUEVO: Modifica los stats vitales y el HEX desde el perfil público
 window.modLibre = (statId, cantidad) => {
-    const p = statsGlobal[estadoUI.personajeSeleccionado];
-    if(!p) return;
-    
-    // Suma y asegura que no queden números negativos
-    p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
-    
-    // Lógica para que la Vida Actual no sobrepase la Vida Máxima (límite)
-    if (statId === 'vidaRojaActual') {
-        const max = calcularVidaRojaMax(p);
-        if (p.vidaRojaActual > max) p.vidaRojaActual = max;
-    }
-    
-    guardar();
-    refrescarVistas(); // Redibuja el perfil al instante
+    conScrollGuardado(() => {
+        const p = statsGlobal[estadoUI.personajeSeleccionado];
+        if(!p) return;
+        
+        p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
+        
+        // La vida actual nunca debe superar el límite máximo de ese personaje
+        if (statId === 'vidaRojaActual') {
+            const max = calcularVidaRojaMax(p);
+            if (p.vidaRojaActual > max) p.vidaRojaActual = max;
+        }
+        
+        guardar();
+        refrescarVistas();
+    });
 };
 
 window.modForm = (inputId, cantidad) => {
@@ -66,7 +75,6 @@ window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta dar un nombre al personaje.");
     
-    // Se extraen todos los datos de la matriz expandida
     statsGlobal[nombre] = {
         isNPC: true,
         hex: parseInt(document.getElementById('npc-hex').value) || 0,
@@ -88,7 +96,7 @@ window.ejecutarCreacionNPC = () => {
         },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0 }
     };
-    guardar(); alert("¡Personaje Forjado!"); window.abrirDetalle(nombre);
+    guardar(); alert("¡Personaje Forjado!"); window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
 
 window.forzarSincronizacion = async () => {
