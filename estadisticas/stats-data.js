@@ -7,9 +7,11 @@ export async function cargarTodoDesdeCSV() {
         const res = await fetch(sheetURL);
         const texto = await res.text();
         procesarTextoCSV(texto);
+        return true;
     } catch (e) { 
         console.error("Error cargando CSV:", e);
-        alert("Error de red al intentar descargar el CSV.");
+        alert("Error de red al intentar descargar el CSV maestro.");
+        return false;
     }
 }
 
