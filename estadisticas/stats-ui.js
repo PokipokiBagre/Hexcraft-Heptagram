@@ -169,21 +169,21 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
-    let opcionesPersonajes = Object.keys(statsGlobal)
-        .filter(n => n !== nombre)
+let opcionesPersonajes = Object.keys(statsGlobal)
+        .filter(n => n !== nombre) // No mostrarse a sí mismo
         .map(n => `<option value="${n}">${n}</option>`)
         .join('');
 
     html += `
     <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
-        <h3 style="margin-top:0; color:var(--gold);">Transferencia de Estados</h3>
-        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Copia los estados alterados (buffs y efectos) o clona toda la ficha hacia otro personaje.</p>
+        <h3 style="margin-top:0; color:var(--gold);">Importación de Estados</h3>
+        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa los estados alterados (buffs y efectos) o clona toda la ficha <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
         <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
-            <select id="clon-target" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;">
-                <option value="" disabled selected>-- Selecciona Objetivo --</option>
+            <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;">
+                <option value="" disabled selected>-- Selecciona Origen --</option>
                 ${opcionesPersonajes}
             </select>
-            <button onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Copiar Estados Alterados</button>
+            <button onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados Alterados</button>
             <button onclick="window.ejecutarClonacion('completo')" style="background:#4a0000; border:1px solid #ff4444; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar por Completo</button>
         </div>
     </div>`;
@@ -297,3 +297,4 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
+
