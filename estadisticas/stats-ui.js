@@ -1,5 +1,5 @@
 import { statsGlobal, listaEstados, estadoUI } from './stats-state.js';
-import { calcularVidaRojaMax, calcularVidaAzulMax, calcularVexMax } from './stats-logic.js';
+import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 const calcTotal = (base, spells, buff) => (base || 0) + (spells || 0) + (buff || 0);
@@ -74,27 +74,23 @@ export function dibujarDetalle() {
     for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    // REGLA ESTRICTA AZUL: Solo la Base de Vida Azul y las Afinidades Base generan Claros.
-    const mysticBase = (p.afinidades.espiritual||0) + (p.afinidades.energetica||0) + (p.afinidades.psiquica||0) + (p.afinidades.mando||0);
-    const limitClarosAzul = (p.baseVidaAzul||0) + Math.floor(mysticBase / 4);
-
-    let normalAzul = Math.min(p.vidaAzul, limitClarosAzul); 
-    let extraAzul = Math.max(0, p.vidaAzul - limitClarosAzul);
+    // VIDA AZUL (Solo Base = Claro | Solo Extras = Oscuro)
+    let normalAzul = Math.max(0, p.vidaAzul || 0); 
+    let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
     let corazonesAzulesHTML = ''; 
     for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; 
     for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    // REGLA ESTRICTA DORADA: Solo la Base de Guarda Dorada genera Claros.
-    const limitClarosGuarda = p.baseGuardaDorada || 0;
-    let normalGuarda = Math.min(p.guardaDorada, limitClarosGuarda); 
-    let extraGuarda = Math.max(0, p.guardaDorada - limitClarosGuarda);
+    // GUARDA DORADA (Solo Base = Claro | Solo Extras = Oscuro)
+    let normalGuarda = Math.max(0, p.guardaDorada || 0); 
+    let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
     let guardasHTML = ''; 
     for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; 
     for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
-    // RENDERIZADOR DINÁMICO DE ESTADOS CON TOOLTIPS
+    // DECODIFICADOR A TOOLTIPS
     let estadosHTML = ''; 
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
@@ -126,8 +122,8 @@ export function dibujarDetalle() {
         <div>
             <h3 style="margin-top:0;">Vitalidad</h3>
             <div class="health-box"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${vidaRojaVisual})</label><div class="health-grid">${corazonesRojosHTML}</div></div>
-            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${p.vidaAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
-            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${p.guardaDorada})</label><div class="health-grid">${guardasHTML}</div></div>
+            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${normalAzul + extraAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
+            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${normalGuarda + extraGuarda})</label><div class="health-grid">${guardasHTML}</div></div>
             
             <h3 style="margin-top:20px;">Ofensiva Totales</h3>
             <div class="affinities-grid">
@@ -267,7 +263,7 @@ export function dibujarFormularioEditar() {
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
     asegurarEstructuras(p);
     
-    const pVidaDanoBase = [ { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax }, { id: 'baseVidaAzul', label: 'C. Azules Base', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada Base', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
+    const pVidaDanoBase = [ { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
     const pVitalidadSpell = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Hechizo)', val: p.hechizos.vidaRojaMaxExtra } ];
@@ -335,6 +331,3 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
-    return html;
-}
-
