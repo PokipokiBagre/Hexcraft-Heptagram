@@ -1,42 +1,32 @@
 import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
-import { refrescarUI, dibujarDiseñador } from './stats-ui.js';
+import { refrescarUI, dibujarMenuOP, dibujarDiseñador } from './stats-ui.js';
 
 async function iniciar() {
-    // Forzar limpieza al inicio para asegurar que Linda aparezca
-    localStorage.removeItem('hex_stats_v5_final');
     await cargarStatsDesdeCSV();
 
-    window.setActivo = (id) => { estadoUI.personajeActivo = id; refrescarUI(); };
-    
     window.mostrarPagina = (id) => {
         document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
         document.getElementById('pag-' + id).style.display = 'block';
-        if(id === 'admin') dibujarDiseñador();
-        else { estadoUI.personajeActivo = null; refrescarUI(); }
+        if(id === 'admin') dibujarMenuOP();
+        refrescarUI();
     };
 
-    window.agregarManual = () => {
+    window.mostrarDiseñador = () => { dibujarDiseñador(); };
+
+    window.agregarLocal = () => {
         const id = document.getElementById('n-id').value;
         if(!id) return alert("Falta ID");
         statsGlobal[id] = {
-            id: id, hex: document.getElementById('n-hx').value, vex: document.getElementById('n-vx').value,
-            afin: { fis: document.getElementById('n-fi').value, ene: document.getElementById('n-en').value, esp: document.getElementById('n-es').value, man: document.getElementById('n-ma').value, psi: document.getElementById('n-ps').value, osc: document.getElementById('n-os').value },
-            vida: { actual: document.getElementById('n-ra').value, maxBase: document.getElementById('n-rm').value, azul: document.getElementById('n-aa').value, oro: document.getElementById('n-go').value },
-            rad: { dRoja: document.getElementById('n-dr').value, dAzul: document.getElementById('n-da').value, eOro: 0 },
-            hechizos: []
+            hx: parseInt(document.getElementById('n-hx').value)||0,
+            vx: parseInt(document.getElementById('n-vx').value)||0,
+            fi: parseInt(document.getElementById('n-fi').value)||0, en: parseInt(document.getElementById('n-en').value)||0, es: parseInt(document.getElementById('n-es').value)||0, ma: parseInt(document.getElementById('n-ma').value)||0, ps: parseInt(document.getElementById('n-ps').value)||0, os: parseInt(document.getElementById('n-os').value)||0,
+            r: parseInt(document.getElementById('n-ra').value)||0, rm: parseInt(document.getElementById('n-rm').value)||10, az: parseInt(document.getElementById('n-aa').value)||0, gd:0, hechizos:{afin:[],noms:[],cost:[]}
         };
         guardar(); refrescarUI(); window.mostrarPagina('publico');
     };
 
-    window.descargarFila = () => {
-        const id = document.getElementById('n-id').value;
-        const csv = `"${id}",${document.getElementById('n-hx').value},${document.getElementById('n-vx').value},${document.getElementById('n-fi').value},${document.getElementById('n-en').value},${document.getElementById('n-es').value},${document.getElementById('n-ma').value},${document.getElementById('n-ps').value},${document.getElementById('n-os').value},${document.getElementById('n-ra').value},${document.getElementById('n-rm').value},${document.getElementById('n-aa').value},${document.getElementById('n-go').value},${document.getElementById('n-dr').value},${document.getElementById('n-da').value},0,"","${document.getElementById('n-sp').value}",""\n`;
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-        link.download = `CSV_${id}.csv`; link.click();
-    };
-
+    window.verDetalle = (id) => { alert("Personaje: " + id + "\nPronto: Despliegue de Hechizos"); };
     window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarStatsDesdeCSV(); refrescarUI(); } };
     window.ejecutarSyncLog = () => { if (prompt("Val:") === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; window.mostrarPagina('admin'); } };
 
