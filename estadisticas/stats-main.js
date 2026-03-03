@@ -1,17 +1,27 @@
 import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
-import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, calcularVidaAzulMax } from './stats-logic.js';
+import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
 
-// ELIMINADOR DE PARPADEOS: Congela el height del contenedor padre para que no colapse a 0.
-function actualizarSinParpadeo(containerId, html) {
+// ELIMINADOR DE PARPADEOS DEFINITIVO: Ancla la altura del div específico
+function repintarConScroll(vista) {
+    const scrollY = window.scrollY;
+    const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
     const container = document.getElementById(containerId);
-    if (!container) return;
-    const prevScroll = window.scrollY;
-    container.style.minHeight = container.getBoundingClientRect().height + 'px';
-    container.innerHTML = html;
-    window.scrollTo(0, prevScroll);
-    requestAnimationFrame(() => { container.style.minHeight = ''; });
+    
+    if (container) {
+        const h = container.getBoundingClientRect().height;
+        container.style.minHeight = h + 'px';
+        
+        if (vista === 'detalle') dibujarDetalle();
+        else container.innerHTML = dibujarFormularioEditar();
+        
+        window.scrollTo(0, scrollY);
+        requestAnimationFrame(() => container.style.minHeight = '');
+    } else {
+        refrescarVistas();
+        window.scrollTo(0, scrollY);
+    }
 }
 
 window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
@@ -27,47 +37,36 @@ window.abrirMenuOP = () => {
 window.mostrarPaginaOP = (subvista) => {
     estadoUI.vistaActual = 'op';
     refrescarVistas();
-    if(subvista === 'crear') actualizarSinParpadeo('sub-vista-op', dibujarFormularioCrear());
-    if(subvista === 'editar') actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
+    const sub = document.getElementById('sub-vista-op');
+    if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear();
+    if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
 };
 
 window.modificarBuff = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     
-    // Capturamos el máximo antes del cambio
     const maxRojoPrev = calcularVidaRojaMax(p);
-    const maxAzulPrev = calcularVidaAzulMax(p);
-
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
     
-    // Si la matemática de afinidades detectó un corazón extra, lo sumamos al Actual también
+    // Auto-curar SOLO si aumentó el máximo rojo real a través de los Buffs/Afinidades extra
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaAzul !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
 
     guardar();
-    
-    if (estadoUI.vistaActual === 'detalle') actualizarSinParpadeo('vista-detalle', ''); // Redibuja via refrescarVistas
-    else actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
-    
-    if (estadoUI.vistaActual === 'detalle') refrescarVistas();
+    if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle');
+    else repintarConScroll('op');
 };
 
 window.modificarDirecto = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
-    actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
+    repintarConScroll('op');
 };
 
 window.modLibre = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
-    
-    // Anulamos el parpadeo del menú público
-    const prevScroll = window.scrollY;
-    refrescarVistas();
-    window.scrollTo(0, prevScroll);
+    repintarConScroll('detalle');
 };
 
 window.modForm = (inputId, cantidad) => {
@@ -78,13 +77,13 @@ window.modForm = (inputId, cantidad) => {
 window.modEstado = (estadoId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.estados[estadoId] = Math.max(0, (p.estados[estadoId] || 0) + cantidad); guardar();
-    actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
+    repintarConScroll('op');
 };
 
 window.toggleEstado = (estadoId) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.estados[estadoId] = !p.estados[estadoId]; guardar();
-    actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
+    repintarConScroll('op');
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -136,5 +135,3 @@ async function iniciar() {
 }
 
 iniciar();
-
-
