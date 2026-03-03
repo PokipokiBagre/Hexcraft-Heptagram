@@ -10,13 +10,18 @@ const bText = (spells, buff) => {
 };
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
+// INICIALIZACIÓN BLINDADA: Evita el error "undefined" rellenando todas las posibles variables
 function asegurarEstructuras(p) {
     if(!p.buffs) p.buffs = {};
     if(!p.hechizos) p.hechizos = {};
     if(!p.estados) p.estados = { veneno:0, radiacion:0, maldito:false, incapacitado:false, debilitado:false, angustia:false, petrificacion:false, secuestrado:false, huesos:false, comestible:false, cifrado:false, inversion:false, verde:false };
     
-    p.buffs.vidaAzulExtra = p.buffs.vidaAzulExtra || 0; p.buffs.guardaDoradaExtra = p.buffs.guardaDoradaExtra || 0; p.buffs.vidaRojaMaxExtra = p.buffs.vidaRojaMaxExtra || 0;
-    p.hechizos.vidaAzulExtra = p.hechizos.vidaAzulExtra || 0; p.hechizos.guardaDoradaExtra = p.hechizos.guardaDoradaExtra || 0; p.hechizos.vidaRojaMaxExtra = p.hechizos.vidaRojaMaxExtra || 0;
+    const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
+    props.forEach(pr => {
+        p.buffs[pr] = p.buffs[pr] || 0;
+        p.hechizos[pr] = p.hechizos[pr] || 0;
+        if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0;
+    });
 }
 
 export function dibujarCatalogo() {
@@ -225,6 +230,7 @@ export function dibujarMenuOP() {
     `;
 }
 
+// GENERADOR DE TARJETAS INTELIGENTE: AHORA TODO ES UN <input> EDITABLE MANUALMENTE
 function genCard(f, tipoAccion) {
     let btns = ''; let clickMod = '';
     if (tipoAccion === 'buff') clickMod = 'window.modificarBuff';
@@ -235,8 +241,11 @@ function genCard(f, tipoAccion) {
     else if (tipoAccion === 'spellAfin') clickMod = 'window.modSpellAfin';
     else if (tipoAccion === 'form') clickMod = 'window.modForm';
 
-    const visualVal = f.val;
-    const colorStyle = (visualVal > 0) ? 'color:#00ff00;' : (visualVal < 0 ? 'color:red;' : 'color:white;');
+    const visualVal = f.val !== undefined ? f.val : 0;
+    
+    // INPUT MANUAL: Se activa 'onchange' (cuando quitas el foco o das Enter) para no interrumpir tu escritura
+    const attrInput = `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
+    let inputHtml = `<input type="number" id="inp-${tipoAccion}-${f.id}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
 
     if (f.esHex) {
         btns = `<div class="btn-row"><button class="btn-plus" onclick="${clickMod}('${f.id}', 10)">+10</button><button class="btn-minus" onclick="${clickMod}('${f.id}', -10)">-10</button></div>
@@ -247,10 +256,6 @@ function genCard(f, tipoAccion) {
                 <div class="btn-row"><button class="btn-plus5" onclick="${clickMod}('${f.id}', 5)">+5</button><button class="btn-minus5" onclick="${clickMod}('${f.id}', -5)">-5</button></div>
                 <div class="btn-row"><button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${f.id}', 10)">+10</button><button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${f.id}', -10)">-10</button></div>`;
     }
-
-    let inputHtml = tipoAccion === 'form' 
-        ? `<input type="number" id="${f.id}" value="${visualVal}" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px;">`
-        : `<span style="display:block; margin-bottom:10px; font-weight:bold; font-size:1.5em; ${colorStyle}">${(visualVal > 0 && tipoAccion !== 'baseAfin' && tipoAccion !== 'baseTop') ? '+'+visualVal : visualVal}</span>`;
 
     return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
 }
@@ -271,18 +276,16 @@ export function dibujarFormularioCrear() {
     </div>`;
 }
 
-// PANEL OP: SEPARADO EN BASES Y HECHIZOS
 export function dibujarFormularioEditar() {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
     asegurarEstructuras(p);
     
-    // Arrays Bases
     const pVidaDanoBase = [ { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
-    // Arrays Hechizos
-    const pVidaDanoSpell = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Hechizo)', val: p.hechizos.vidaRojaMaxExtra }, { id: 'danoRojo', label: 'Daño Rojo (Hechizo)', val: p.hechizos.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (Hechizo)', val: p.hechizos.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (Hechizo)', val: p.hechizos.elimDorada } ];
+    // DAÑO RETIRADO DE LA SECCIÓN DE HECHIZOS (Solo queda vitalidad límite)
+    const pVitalidadSpell = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Hechizo)', val: p.hechizos.vidaRojaMaxExtra }, { id: 'vidaAzulExtra', label: 'C. Azules (Hechizo)', val: p.hechizos.vidaAzulExtra }, { id: 'guardaDoradaExtra', label: 'G. Dorada (Hechizo)', val: p.hechizos.guardaDoradaExtra } ];
     const pAfinidadesSpell = [ { id: 'fisica', label: 'Física (Hechizo)', val: p.hechizos.fisica }, { id: 'energetica', label: 'Energética (Hechizo)', val: p.hechizos.energetica }, { id: 'espiritual', label: 'Espiritual (Hechizo)', val: p.hechizos.espiritual }, { id: 'mando', label: 'Mando (Hechizo)', val: p.hechizos.mando }, { id: 'psiquica', label: 'Psíquica (Hechizo)', val: p.hechizos.psiquica }, { id: 'oscura', label: 'Oscura (Hechizo)', val: p.hechizos.oscura } ];
 
     let html = `
@@ -326,8 +329,8 @@ export function dibujarFormularioEditar() {
              
              <div style="border:1px solid #004a4a; padding:15px; margin-bottom:20px; border-radius:8px;">
                 <h2 style="color:#00ffff; margin-top:0;">Cambiar Cantidad por Hechizos</h2>
-                <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-align:left;">Vitalidad y Ofensiva por Hechizos</h3>
-                <div class="edit-grid" style="margin-bottom: 20px;">${pVidaDanoSpell.map(f => genCard(f, 'spellTop')).join('')}</div>
+                <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-align:left;">Vitalidad por Hechizos</h3>
+                <div class="edit-grid" style="margin-bottom: 20px;">${pVitalidadSpell.map(f => genCard(f, 'spellTop')).join('')}</div>
                 <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-align:left;">Afinidades por Hechizos</h3>
                 <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidadesSpell.map(f => genCard(f, 'spellAfin')).join('')}</div>
              </div>
