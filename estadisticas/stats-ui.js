@@ -19,7 +19,6 @@ export function dibujarCatalogo() {
     let html = '';
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        // Aplicar clase especial si es jugador
         const claseCarta = p.isPlayer ? 'player-card' : '';
         html += `
         <div class="char-card ${claseCarta}" onclick="window.abrirDetalle('${nombre}')">
@@ -43,7 +42,6 @@ export function dibujarDetalle() {
     let hexPercent = Math.min((p.hex / 4000) * 100, 100);
     let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
-    // CORAZONES
     let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual);
     let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual);
     let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
@@ -67,7 +65,6 @@ export function dibujarDetalle() {
     for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
-    // RENDERIZAR EFECTOS DE ESTADO (BADGES)
     let estadosHTML = '';
     const st = p.estados;
     if(st.veneno > 0) estadosHTML += `<div class="status-badge badge-veneno">Veneno (${st.veneno})</div>`;
@@ -174,8 +171,7 @@ export function dibujarMenuOP() {
             <button onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a">Crear NPC (Manual)</button>
             <button onclick="window.forzarSincronizacion()" class="btn-green">Sincronizar Sheet</button>
             <button onclick="window.descargarAumentada()">Descargar CSV</button>
-            <input type="file" id="subir-csv" accept=".csv" style="display:none" onchange="window.subirAumentada(event)">
-            <button onclick="document.getElementById('subir-csv').click()" class="btn-red">Subir CSV</button>
+            <button onclick="window.triggerSubirCSV()" class="btn-red">Subir CSV</button>
         </div>
         <div id="sub-vista-op"></div>
     `;
@@ -205,7 +201,6 @@ function genCard(f, tipoAccion) {
 }
 
 export function dibujarFormularioCrear() {
-    // ... (El código de crear NPC se mantiene igual, no cambia nada crítico aquí)
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
     const pVitalidad = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 } ];
     const pOfensiva = [ { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
@@ -244,3 +239,35 @@ export function dibujarFormularioEditar() {
 
     if (p.isNPC) {
         const pNPC = [ { id: 'hex', label: 'Subir/Bajar HEX', val: p.hex, esHex:true }, { id: 'vex', label: 'Subir/Bajar VEX', val: p.vex, esHex:true } ];
+        html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">0. Energía Base (Exclusivo NPC)</h3><div class="edit-grid" style="margin-bottom: 20px;">${pNPC.map(f => genCard(f, 'directo')).join('')}</div>`;
+    }
+
+    const st = p.estados;
+    const sBool = [
+        { id: 'maldito', label: 'Maldito' }, { id: 'incapacitado', label: 'Incapacitado' }, { id: 'debilitado', label: 'Debilitado' },
+        { id: 'angustia', label: 'Angustia' }, { id: 'petrificacion', label: 'Petrificación' }, { id: 'secuestrado', label: 'Secuestrado' },
+        { id: 'huesos', label: 'En los Huesos' }, { id: 'comestible', label: 'Comestible' }, { id: 'cifrado', label: 'Cifrado' },
+        { id: 'inversion', label: 'Inversión' }, { id: 'verde', label: 'Verde' }
+    ];
+
+    html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top:30px;">Efectos de Estado</h3>
+             <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom:20px;">
+                <div class="edit-card"><h4>Veneno (Daño)</h4><span style="color:#00ff00; font-size:1.5em; font-weight:bold;">${st.veneno}</span>
+                    <div class="btn-row"><button class="btn-plus" onclick="window.modEstado('veneno', 1)">+1</button><button class="btn-minus" onclick="window.modEstado('veneno', -1)">-1</button></div>
+                </div>
+                <div class="edit-card"><h4>Radiación (Daño)</h4><span style="color:#ffff00; font-size:1.5em; font-weight:bold;">${st.radiacion}</span>
+                    <div class="btn-row"><button class="btn-plus" onclick="window.modEstado('radiacion', 1)">+1</button><button class="btn-minus" onclick="window.modEstado('radiacion', -1)">-1</button></div>
+                </div>`;
+    sBool.forEach(s => {
+        const activo = st[s.id];
+        html += `<button class="status-toggle ${activo ? 'active' : ''}" onclick="window.toggleEstado('${s.id}')">${s.label}</button>`;
+    });
+    html += `</div>`;
+
+    html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Vitalidad Extra</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVitalidad.map(f => genCard(f, 'buff')).join('')}</div>
+             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Ofensiva Extra</h3><div class="edit-grid" style="margin-bottom: 20px;">${pOfensiva.map(f => genCard(f, 'buff')).join('')}</div>
+             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Extra</h3><div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'buff')).join('')}</div>
+    </div>`;
+
+    return html;
+}
