@@ -1,31 +1,41 @@
 import { statsGlobal } from './stats-state.js';
 
-export function calcular(id) {
-    const s = statsGlobal[id];
-    if (!s) return null;
+export function calcularFichaCompleta(id) {
+    const s = statsGlobal[id]; if(!s) return null;
 
-    // Bono Afinidades por Hechizos
-    const bAf = (t) => (s.spAf || []).filter(a => a.toLowerCase().includes(t.toLowerCase())).length;
-    const fF = {
-        fi: (s.af.fi||0) + bAf('Física'), en: (s.af.en||0) + bAf('Energética'),
-        es: (s.af.es||0) + bAf('Espiritual'), ma: (s.af.ma||0) + bAf('Mando'),
-        ps: (s.af.ps||0) + bAf('Psíquica'), os: (s.af.os||0) + bAf('Oscura')
+    // 1. BONO: +1 Afinidad por cada hechizo de ese tipo aprendido
+    const getBonoPorHechizos = (tipo) => s.hechizos.filter(h => h.afinidad.toLowerCase().includes(tipo.toLowerCase())).length;
+
+    const afinidadesFinales = {
+        fisica: s.afin.fis + getBonoPorHechizos('Física'),
+        energetica: s.afin.ene + getBonoPorHechizos('Energética'),
+        espiritual: s.afin.esp + getBonoPorHechizos('Espiritual'),
+        mando: s.afin.man + getBonoPorHechizos('Mando'),
+        psiquica: s.afin.psi + getBonoPorHechizos('Psíquica'),
+        oscura: s.afin.osc + getBonoPorHechizos('Oscura')
     };
 
-    // Bonos RAD
-    const bR = Math.floor(fF.ps / 2);
-    const bA = Math.floor((fF.en + fF.es + fF.ps + fF.ma) / 4);
-    const bV = Math.round(((fF.os||0) * 75) / 50) * 50;
+    // 2. VITALIDAD RAD: Base 10 + Bonos
+    // Roja: +1 Corazón por cada 2 afinidades Psíquicas
+    const bonoRoja = Math.floor(afinidadesFinales.psiquica / 2);
+    // Azul: +1 Corazón por cada 4 de (Ene, Esp, Psi, Man)
+    const bonoAzul = Math.floor((afinidadesFinales.energetica + afinidadesFinales.espiritual + afinidadesFinales.psiquica + afinidadesFinales.mando) / 4);
 
-    // Tamaño Círculos (Base 2000 = 120px)
-    const sHX = Math.min(Math.max(((s.hx||0) / 2000) * 120, 50), 200);
-    const sVX = Math.min(Math.max((((s.vx||0) + bV) / 2000) * 120, 50), 200);
+    // 3. VEX: +75 por cada punto de Oscura, redondeado a 50
+    const rawVexBonus = afinidadesFinales.oscura * 75;
+    const bonoVex = Math.round(rawVexBonus / 50) * 50;
 
     return {
-        r: s.vi.r, rM: (s.vi.rM||0) + bR, 
-        a: (s.vi.a||0) + bA, g: s.vi.g,
-        hx: s.hx, vxM: (s.vx||0) + bV, vxA: s.vx,
-        af: fF, sHX, sVX, sp: s.spNom || []
+        id: s.id,
+        roja: s.vida.actual,
+        rojaMax: s.vida.maxBase + bonoRoja,
+        azul: s.vida.azul + bonoAzul,
+        oro: s.vida.oro,
+        hex: s.hex,
+        vexMax: s.vex + bonoVex,
+        vexActual: s.vex,
+        afin: afinidadesFinales,
+        hechizos: s.hechizos,
+        rad: s.rad
     };
 }
-
