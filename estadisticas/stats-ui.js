@@ -109,7 +109,20 @@ export function dibujarDetalle() {
         ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#1a0033; border-color:#d4af37;">Editar Ficha Base</button>` : ''}
     </div>
 
-    <div class="circle-wrap"><div class="stat-circle" style="background: conic-gradient(var(--gold) ${hexPercent}%, #222 0);"><div class="inner"><strong>${p.hex}</strong><span>HEX</span></div></div><div class="stat-circle" style="background: conic-gradient(var(--blue-life) ${vexPercent}%, #222 0);"><div class="inner"><strong>${vexVisual}</strong><span>VEX</span></div></div></div>
+    <div class="circle-wrap">
+        <div class="stat-circle hex-circle" style="background: conic-gradient(var(--gold-dark) 0%, var(--gold-light) ${hexPercent / 2}%, var(--gold-dark) ${hexPercent}%, #111 ${hexPercent}%); box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);">
+            <div class="inner">
+                <strong>${p.hex}</strong>
+                <span>HEX</span>
+            </div>
+        </div>
+        <div class="stat-circle vex-circle" style="background: conic-gradient(var(--blue-life-dark) 0%, var(--blue-life-light) ${vexPercent / 2}%, var(--blue-life-dark) ${vexPercent}%, #111 ${vexPercent}%); box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);">
+            <div class="inner">
+                <strong>${vexVisual}</strong>
+                <span>VEX</span>
+            </div>
+        </div>
+    </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
         <div>
@@ -231,7 +244,6 @@ export function dibujarMenuOP() {
     `;
 }
 
-// ---------------- NUEVA PANTALLA: GESTOR DE HEX Y PARTY (CON CHECKLIST) ----------------
 export function dibujarHexOP() {
     let html = `<div style="text-align:center; max-width:1200px; margin:0 auto;">
         <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party</h2>
@@ -246,8 +258,8 @@ export function dibujarHexOP() {
         if(char && statsGlobal[char]) {
             const icono = normalizar(statsGlobal[char]?.iconoOverride || char);
             html += `<div style="width:80px; height:80px; border:2px solid var(--gold); border-radius:8px; background:url('../img/imgpersonajes/${icono}icon.png') center/cover; position:relative;" title="${char}">
-                <button onclick="window.togglePartyMember('${char}', false)" style="position:absolute; top:-8px; right:-8px; background:#ff0000; color:white; border-radius:50%; width:24px; height:24px; font-size:14px; font-weight:bold; border:2px solid #fff; cursor:pointer;">X</button>
-                <div style="position:absolute; bottom:0; background:rgba(0,0,0,0.7); width:100%; font-size:0.6em; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${char}</div>
+                <button onclick="window.togglePartyMember('${char}', false)" style="position:absolute; top:-8px; right:-8px; background:#ff0000; color:white; border-radius:50%; width:24px; height:24px; font-size:14px; font-weight:bold; border:2px solid #fff; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center;">X</button>
+                <div style="position:absolute; bottom:0; background:rgba(0,0,0,0.7); width:100%; font-size:0.6em; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:2px 0; border-radius:0 0 8px 8px;">${char}</div>
             </div>`;
         } else {
             html += `<div style="width:80px; height:80px; border:2px dashed #666; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:2em; color:#666; background:#111;">${i+1}</div>`;
@@ -262,15 +274,14 @@ export function dibujarHexOP() {
     
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        // Ocultamos los NPCs, solo mostramos Jugadores
         if (p.isPlayer) {
             const isChecked = estadoUI.party.includes(nombre) ? 'checked' : '';
             const iconoMuestra = normalizar(p.iconoOverride || nombre);
             html += `
-                <label style="display:flex; align-items:center; gap:8px; background:#111; padding:8px; border-radius:4px; border:1px solid #333; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='#333'">
+                <label style="display:flex; align-items:center; gap:8px; background:#111; padding:8px; border-radius:4px; border:1px solid #333; cursor:pointer; transition:0.2s; user-select:none;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='#333'">
                     <input type="checkbox" ${isChecked} onchange="window.togglePartyMember('${nombre}', this.checked)" style="transform:scale(1.3); cursor:pointer;">
                     <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:30px; height:30px; border-radius:50%; border:1px solid #fff; object-fit:cover;" onerror="${imgError}">
-                    <span style="color:white; font-size:0.85em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:bold;">${nombre}</span>
+                    <span style="color:white; font-size:0.85em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:bold; flex:1;">${nombre}</span>
                 </label>
             `;
         }
@@ -281,7 +292,7 @@ export function dibujarHexOP() {
 
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:20px;">
                 <button type="button" onclick="window.establecerPartyActiva()" style="background:#004a00; border-color:#00ff00; color:white; font-weight:bold;">ESTABLECER COMO ACTIVOS</button>
-                <button type="button" onclick="window.vaciarParty()" style="background:#4a0000; border-color:#ff0000; color:white;">VACIAR SLOTS</button>
+                <button type="button" onclick="window.vaciarParty()" style="background:#4a0040; border-color:#ff00ff; color:white;">VACIAR SLOTS</button>
                 <button type="button" onclick="window.addAsistenciaGlobal()" style="background:#4a004a; border-color:#8a008a; color:white; font-weight:bold;">SUMAR ASISTENCIA (+1) A PARTY</button>
             </div>
         </div>
@@ -302,7 +313,6 @@ export function dibujarHexOP() {
 
         <div class="edit-grid">`;
 
-    // Tarjetas individuales solo para los personajes que están en la Party
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
             const p = statsGlobal[nombre];
