@@ -1,28 +1,29 @@
 import { statsGlobal, listaEstados } from './stats-state.js';
 
 export function calcularVidaRojaMax(p) {
-    const basePura = (p.vidaRojaMax||0) + (p.hechizos?.vidaRojaMaxExtra||0) + (p.buffs?.vidaRojaMaxExtra||0);
-    const fisTotal = (p.afinidades.fisica||0) + (p.hechizos?.fisica||0) + (p.buffs?.fisica||0);
+    const basePura = (p.vidaRojaMax||0) + (p.hechizos?.vidaRojaMaxExtra||0) + (p.hechizosEfecto?.vidaRojaMaxExtra||0) + (p.buffs?.vidaRojaMaxExtra||0);
+    const fisTotal = (p.afinidades.fisica||0) + (p.hechizos?.fisica||0) + (p.hechizosEfecto?.fisica||0) + (p.buffs?.fisica||0);
     return basePura + Math.floor(fisTotal / 2);
 }
 
-// NUEVO: Monitorea el total de la Piscina Mística dividida entre 4
 export function getMysticBonus(p) {
     const t = (p.afinidades.espiritual||0) + (p.afinidades.energetica||0) + (p.afinidades.psiquica||0) + (p.afinidades.mando||0) +
               (p.hechizos?.espiritual||0) + (p.hechizos?.energetica||0) + (p.hechizos?.psiquica||0) + (p.hechizos?.mando||0) +
+              (p.hechizosEfecto?.espiritual||0) + (p.hechizosEfecto?.energetica||0) + (p.hechizosEfecto?.psiquica||0) + (p.hechizosEfecto?.mando||0) +
               (p.buffs?.espiritual||0) + (p.buffs?.energetica||0) + (p.buffs?.psiquica||0) + (p.buffs?.mando||0);
     return Math.floor(t / 4);
 }
 
 export function calcularVexMax(p) {
     if (p.isNPC) return p.vex;
-    const oscTotal = (p.afinidades.oscura||0) + (p.hechizos?.oscura||0) + (p.buffs?.oscura||0);
+    const oscTotal = (p.afinidades.oscura||0) + (p.hechizos?.oscura||0) + (p.hechizosEfecto?.oscura||0) + (p.buffs?.oscura||0);
     return Math.round((oscTotal * 75) / 50) * 50;
 }
 
-function formatExp(base, spells, extra) {
-    const b = parseInt(base) || 0; const s = parseInt(spells) || 0; const e = parseInt(extra) || 0;
-    return `${b + s + e}_${b}_${s}_${e}`;
+// EMPAQUETADOR DE 5 FASES
+function formatExp(base, spells, spellEff, extra) {
+    const b = parseInt(base) || 0; const s = parseInt(spells) || 0; const se = parseInt(spellEff) || 0; const e = parseInt(extra) || 0;
+    return `${b + s + se + e}_${b}_${s}_${se}_${e}`;
 }
 
 export function generarCSVExportacion() {
@@ -30,27 +31,21 @@ export function generarCSVExportacion() {
     
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        const af = p.afinidades; const h = p.hechizos || {}; const b = p.buffs || {};
+        const af = p.afinidades; const h = p.hechizos || {}; const he = p.hechizosEfecto || {}; const b = p.buffs || {};
         const st = p.estados || {};
         
         const expVex = p.isPlayer ? 0 : p.vex;
-        const eFis = formatExp(af.fisica, h.fisica, b.fisica); const eEne = formatExp(af.energetica, h.energetica, b.energetica);
-        const eEsp = formatExp(af.espiritual, h.espiritual, b.espiritual); const eMan = formatExp(af.mando, h.mando, b.mando);
-        const ePsi = formatExp(af.psiquica, h.psiquica, b.psiquica); const eOsc = formatExp(af.oscura, h.oscura, b.oscura);
+        const eFis = formatExp(af.fisica, h.fisica, he.fisica, b.fisica); const eEne = formatExp(af.energetica, h.energetica, he.energetica, b.energetica);
+        const eEsp = formatExp(af.espiritual, h.espiritual, he.espiritual, b.espiritual); const eMan = formatExp(af.mando, h.mando, he.mando, b.mando);
+        const ePsi = formatExp(af.psiquica, h.psiquica, he.psiquica, b.psiquica); const eOsc = formatExp(af.oscura, h.oscura, he.oscura, b.oscura);
         
-        const eVRMax = formatExp(p.vidaRojaMax, h.vidaRojaMaxExtra, b.vidaRojaMaxExtra);
-        // Consumibles limpios (Base_Hechizos_Buffs)
-        const eVA = formatExp(p.vidaAzul, h.vidaAzulExtra, b.vidaAzulExtra);
-        const eGD = formatExp(p.guardaDorada, h.guardaDoradaExtra, b.guardaDoradaExtra);
+        const eVRMax = formatExp(p.vidaRojaMax, h.vidaRojaMaxExtra, he.vidaRojaMaxExtra, b.vidaRojaMaxExtra);
+        const eVA = formatExp(p.vidaAzul, h.vidaAzulExtra, he.vidaAzulExtra, b.vidaAzulExtra);
+        const eGD = formatExp(p.guardaDorada, h.guardaDoradaExtra, he.guardaDoradaExtra, b.guardaDoradaExtra);
         
-        const eDR = formatExp(p.danoRojo, h.danoRojo, b.danoRojo); const eDA = formatExp(p.danoAzul, h.danoAzul, b.danoAzul); const eED = formatExp(p.elimDorada, h.elimDorada, b.elimDorada);
+        const eDR = formatExp(p.danoRojo, h.danoRojo, he.danoRojo, b.danoRojo); const eDA = formatExp(p.danoAzul, h.danoAzul, he.danoAzul, b.danoAzul); const eED = formatExp(p.elimDorada, h.elimDorada, he.elimDorada, b.elimDorada);
 
-        const arrEstados = listaEstados.map(e => {
-            let val = st[e.id];
-            if (e.tipo === 'numero') return val || 0;
-            return val ? 1 : 0;
-        });
-
+        const arrEstados = listaEstados.map(e => { let val = st[e.id]; if (e.tipo === 'numero') return val || 0; return val ? 1 : 0; });
         const expJugAct = `${p.isPlayer ? '1' : '0'}_${p.isActive !== false ? '1' : '0'}`;
 
         csv += `"${nombre}",${p.hex},${expVex},"${eFis}","${eEne}","${eEsp}","${eMan}","${ePsi}","${eOsc}",${p.vidaRojaActual},"${eVRMax}","${eVA}","${eGD}","${eDR}","${eDA}","${eED}","${arrEstados.join('-')}","${expJugAct}"\n`;
