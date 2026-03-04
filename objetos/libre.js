@@ -10,30 +10,26 @@ let draggingNode = null;
 let shakeAccumulator = 0;
 let lastDropTime = 0;
 let animationFrameId;
-let CANVAS_W = 0;
-let CANVAS_H = 0;
-let shelves = [];
+
+// Lienzo estricto para que la pantalla no lo rompa
+const CANVAS_W = 1000;
+const CANVAS_H = 700;
+
+// Repisas de media luna distribuidas (x, y, ancho, alto)
+const shelves = [
+    { x: 100, y: 250, w: 200, h: 20 },
+    { x: 650, y: 350, w: 250, h: 20 },
+    { x: 300, y: 550, w: 350, h: 20 }
+];
 
 export function initLibreMode() {
     const canvas = document.getElementById('contenedor-libre');
     if (!canvas) return;
     
-    // Limpiar restos anteriores
     canvas.querySelectorAll('.physics-node').forEach(e => e.remove());
     entities = [];
 
-    // Calcular medidas reales del lienzo en pantalla
-    const rect = canvas.getBoundingClientRect();
-    CANVAS_W = rect.width;
-    CANVAS_H = rect.height;
-
-    // Crear las 3 repisas dinámicamente basadas en el tamaño
-    shelves = [
-        { x: CANVAS_W * 0.1, y: CANVAS_H * 0.35, w: CANVAS_W * 0.25, h: 20 },
-        { x: CANVAS_W * 0.65, y: CANVAS_H * 0.55, w: CANVAS_W * 0.25, h: 20 },
-        { x: CANVAS_W * 0.35, y: CANVAS_H * 0.8, w: CANVAS_W * 0.3, h: 20 }
-    ];
-
+    // Dibujar las repisas
     shelves.forEach(s => {
         const div = document.createElement('div');
         div.className = 'shelf physics-node';
@@ -44,12 +40,14 @@ export function initLibreMode() {
         canvas.appendChild(div);
     });
 
-    const radius = 45;
+    const radius = 40;
     let shelfIndex = 0;
     
-    // Crear Personajes
+    // Posicionar jugadores en las repisas (sin amontonar)
     Object.keys(invGlobal).forEach(jugador => {
         const s = shelves[shelfIndex % shelves.length];
+        
+        // Offset aleatorio para que no caigan exactos en el mismo punto de la repisa
         let px = s.x + (Math.random() * (s.w - radius*2));
         let py = s.y - (radius * 2) - 10;
         shelfIndex++;
@@ -91,6 +89,7 @@ export function initLibreMode() {
     canvas.onmousedown = (e) => {
         if(e.target.tagName === 'BUTTON') return;
         const rect = canvas.getBoundingClientRect();
+        // Coordenadas relativas a la caja canvas, no a la pantalla entera
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
 
@@ -117,10 +116,11 @@ export function initLibreMode() {
         let targetX = mx - draggingNode.r;
         let targetY = my - draggingNode.r;
 
-        // Calcular velocidad para lanzar el objeto al soltar
-        draggingNode.vx = (targetX - draggingNode.x) * 0.8;
-        draggingNode.vy = (targetY - draggingNode.y) * 0.8;
+        // Inercia para lanzar el objeto al soltar
+        draggingNode.vx = (targetX - draggingNode.x) * 0.6;
+        draggingNode.vy = (targetY - draggingNode.y) * 0.6;
 
+        // Agitación (Shake to drop)
         let speed = Math.sqrt(draggingNode.vx**2 + draggingNode.vy**2);
         if (speed > 25) shakeAccumulator += speed;
         else shakeAccumulator = Math.max(0, shakeAccumulator - 5);
@@ -135,8 +135,9 @@ export function initLibreMode() {
         draggingNode.y = targetY;
     };
 
-    canvas.onmouseup = () => { if(draggingNode) { draggingNode.isDragging = false; draggingNode.el.style.cursor = 'grab'; draggingNode = null; } };
-    canvas.onmouseleave = () => { if(draggingNode) { draggingNode.isDragging = false; draggingNode.el.style.cursor = 'grab'; draggingNode = null; } };
+    const dropEvent = () => { if(draggingNode) { draggingNode.isDragging = false; draggingNode.el.style.cursor = 'grab'; draggingNode = null; } };
+    canvas.onmouseup = dropEvent;
+    canvas.onmouseleave = dropEvent;
 
     physicsLoop();
 }
@@ -150,7 +151,7 @@ function dropRandomItem(playerNode) {
     const droppedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
     modificar(playerNode.name, droppedItem, -1, refrescarUI);
 
-    const r = 20; 
+    const r = 18; // Radio del objeto
     const div = document.createElement('img');
     div.className = 'physics-node';
     div.src = `../img/imgobjetos/${normalizar(droppedItem)}.png`;
@@ -162,16 +163,17 @@ function dropRandomItem(playerNode) {
     div.style.border = '2px solid #00ffff';
     div.style.boxShadow = '0 0 15px #00ffff';
     div.style.pointerEvents = 'none';
+    div.style.zIndex = 5000;
 
     document.getElementById('contenedor-libre').appendChild(div);
 
     entities.push({
         type: 'item', itemName: droppedItem, el: div,
-        x: playerNode.x + playerNode.r - r, // NACE EXACTAMENTE EN EL CENTRO
+        x: playerNode.x + playerNode.r - r, // Nace EXACTAMENTE en el centro del jugador
         y: playerNode.y + playerNode.r - r,
         r: r, mass: 1,
-        vx: (Math.random() - 0.5) * 30, // Explota hacia los lados
-        vy: -15 - Math.random() * 10,
+        vx: (Math.random() - 0.5) * 35, // Sale disparado al azar hacia los lados
+        vy: -15 - Math.random() * 15, // Y un poco hacia arriba
         life: 0 
     });
 }
@@ -180,15 +182,15 @@ function physicsLoop() {
     if (!libreActivo) return;
     
     const gravity = 0.7;
-    const bounce = 0.6;
+    const bounce = 0.5;
 
     for (let i = entities.length - 1; i >= 0; i--) {
         let en = entities[i];
         
         if (!en.isDragging) {
             en.vy += gravity;
+            en.vy *= 0.99; 
             en.vx *= 0.98;
-            en.vy *= 0.99;
             en.x += en.vx;
             en.y += en.vy;
 
@@ -200,13 +202,17 @@ function physicsLoop() {
                 en.vx *= 0.8; 
             }
             
-            // Paredes
+            // Paredes Laterales
             if (en.x < 0) { en.x = 0; en.vx *= -bounce; }
             if (en.x + en.r*2 > CANVAS_W) { en.x = CANVAS_W - en.r*2; en.vx *= -bounce; }
+            // Techo
+            if (en.y < 0) { en.y = 0; en.vy *= -bounce; }
 
-            // Repisas
+            // Repisas de Media Luna
             for (let s of shelves) {
+                // Si el objeto está horizontalmente sobre la repisa
                 if (en.x + en.r*1.5 > s.x && en.x + en.r*0.5 < s.x + s.w) { 
+                    // Si el objeto está cayendo, y la parte inferior del objeto toca la parte superior de la repisa
                     if (en.vy >= 0 && en.y + en.r*2 >= s.y && en.y + en.r*2 - en.vy <= s.y + 20) {
                         en.y = s.y - en.r*2;
                         en.vy *= -bounce;
@@ -240,7 +246,7 @@ function physicsLoop() {
                     a.el.remove(); entities.splice(i, 1); break;
                 }
 
-                // Choque Físico
+                // Choque Físico entre entidades
                 if(a.type === 'player' && b.type === 'player') {
                     let angle = Math.atan2(dy, dx);
                     let overlap = min_dist - dist;
@@ -261,6 +267,7 @@ function physicsLoop() {
         }
     }
 
+    // Renderizado en pantalla
     for (let en of entities) {
         if (en.type === 'item') en.life++;
         if (en.el) en.el.style.transform = `translate(${en.x}px, ${en.y}px)`;
@@ -292,9 +299,10 @@ export function toggleLibre() {
     const bg = document.getElementById('modal-libre-bg');
     if (libreActivo) {
         bg.style.display = 'flex';
-        setTimeout(initLibreMode, 100); // Dar tiempo a que el div renderice su tamaño real
+        // Arranca con un pequeño retraso para que el display block haya terminado de calcular el tamaño de la caja.
+        setTimeout(initLibreMode, 50);
     } else {
         bg.style.display = 'none';
         cancelAnimationFrame(animationFrameId);
     }
-}
+            }
