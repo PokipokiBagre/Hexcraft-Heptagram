@@ -91,7 +91,7 @@ export function dibujarDetalle() {
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
     let estadosHTML = ''; 
-    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon completo de ${p.iconoOverride.toUpperCase()}</span></div>`;
+    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
@@ -252,15 +252,6 @@ export function dibujarHexOP() {
     }
     
     html += `</div>
-            
-            <div id="party-selector-container" style="display:none; background:#0a0014; border:1px dashed #00ffff; border-radius:8px; padding:15px; margin-bottom:15px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h4 style="margin:0; color:#00ffff;">Selecciona un Jugador para el Slot <span id="party-slot-label"></span></h4>
-                    <button type="button" onclick="document.getElementById('party-selector-container').style.display='none'" style="background:transparent; border:none; color:#ff0000; font-size:1.2em; cursor:pointer;">✖</button>
-                </div>
-                <div id="party-modal-grid" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-                <button type="button" id="btn-quitar-slot" onclick="window.quitarDeParty()" style="margin-top:15px; width:100%; background:#4a0000; display:none;">VACIAR ESTE SLOT</button>
-            </div>
 
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
                 <button type="button" onclick="window.autoLlenarParty()" style="background:#004a4a; border-color:#00ffff; color:white;">SELECCIONAR A JUGADORES ACTIVOS</button>
@@ -320,7 +311,19 @@ export function dibujarHexOP() {
                 <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white;">LIMPIAR LOG</button>
             </div>
         </div>
+    </div>
+
+    <div id="party-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center;">
+        <div style="background:#1a0033; border:2px solid var(--gold); border-radius:8px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; box-shadow:0 0 20px #000;">
+            <h3 style="color:var(--gold); margin-top:0; text-align:center;">Selecciona Jugador para el Slot <span id="party-slot-label"></span></h3>
+            <div id="party-modal-grid" style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin-top:20px;"></div>
+            <div style="display:flex; gap:10px; margin-top:30px;">
+                <button type="button" onclick="document.getElementById('party-modal').style.display='none'" style="flex:1; background:#444; color:white;">CANCELAR</button>
+                <button type="button" id="btn-quitar-slot" onclick="window.quitarDeParty()" style="flex:1; background:#4a0000; color:white; display:none;">VACIAR SLOT</button>
+            </div>
+        </div>
     </div>`;
+    
     return html;
 }
 
