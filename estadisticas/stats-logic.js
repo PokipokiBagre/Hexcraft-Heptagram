@@ -26,7 +26,6 @@ function formatExp(base, spells, spellEff, extra) {
 }
 
 export function generarCSVExportacion() {
-    // NUEVO: Agregada la columna "Copia" al final de la cabecera
     let csv = "\uFEFFPersonaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,Corazones Rojo,Corazones Rojos Max,Corazones Azules,Guarda Dorada,Daño Rojo,Daño Azul,Eliminacion Dorada,Estado,Jugador_Activo,Copia\n";
     
     Object.keys(statsGlobal).sort().forEach(nombre => {
@@ -35,6 +34,11 @@ export function generarCSVExportacion() {
         const st = p.estados || {};
         
         const expVex = p.isPlayer ? 0 : p.vex;
+        
+        // EMPAQUETADO FINAL HEX_ASISTENCIA
+        const asisExport = p.isPlayer ? (p.asistencia || 1) : 0;
+        const expHexCompuesto = `${p.hex}_${asisExport}`;
+
         const eFis = formatExp(af.fisica, h.fisica, he.fisica, b.fisica); const eEne = formatExp(af.energetica, h.energetica, he.energetica, b.energetica);
         const eEsp = formatExp(af.espiritual, h.espiritual, he.espiritual, b.espiritual); const eMan = formatExp(af.mando, h.mando, he.mando, b.mando);
         const ePsi = formatExp(af.psiquica, h.psiquica, he.psiquica, b.psiquica); const eOsc = formatExp(af.oscura, h.oscura, he.oscura, b.oscura);
@@ -47,11 +51,9 @@ export function generarCSVExportacion() {
 
         const arrEstados = listaEstados.map(e => { let val = st[e.id]; if (e.tipo === 'numero') return val || 0; return val ? 1 : 0; });
         const expJugAct = `${p.isPlayer ? '1' : '0'}_${p.isActive !== false ? '1' : '0'}`;
-        
-        // NUEVO: Exportación del valor de la copia
         const strCopia = p.iconoOverride || '';
 
-        csv += `"${nombre}",${p.hex},${expVex},"${eFis}","${eEne}","${eEsp}","${eMan}","${ePsi}","${eOsc}",${p.vidaRojaActual},"${eVRMax}","${eVA}","${eGD}","${eDR}","${eDA}","${eED}","${arrEstados.join('-')}","${expJugAct}","${strCopia}"\n`;
+        csv += `"${nombre}",${expHexCompuesto},${expVex},"${eFis}","${eEne}","${eEsp}","${eMan}","${ePsi}","${eOsc}",${p.vidaRojaActual},"${eVRMax}","${eVA}","${eGD}","${eDR}","${eDA}","${eED}","${arrEstados.join('-')}","${expJugAct}","${strCopia}"\n`;
     });
     return csv;
 }
@@ -60,6 +62,3 @@ export function descargarArchivoCSV(contenido, nombreArchivo) {
     const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([contenido], { type: 'text/csv;charset=utf-8;' }));
     link.download = nombreArchivo; link.click();
 }
-
-
-
