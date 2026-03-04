@@ -3,6 +3,8 @@ import { cargarTodoDesdeCSV, procesarTextoCSV, cargarDiccionarioEstados } from '
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarHexOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMysticBonus } from './stats-logic.js';
 
+let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
+
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -14,6 +16,7 @@ function repintarConScroll(vista) {
         
         if (vista === 'detalle') dibujarDetalle(); 
         else if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
+        else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
         else container.innerHTML = dibujarFormularioEditar();
         
         window.scrollTo(0, scrollY);
@@ -36,13 +39,10 @@ window.abrirMenuOP = () => {
     if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
 };
 
+// CORRECCIÓN DEL BUCLE INFINITO
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = subvista === 'hex' ? 'hex' : 'op';
+    estadoUI.vistaActual = subvista; // 'crear', 'editar' o 'hex'
     refrescarVistas();
-    const sub = document.getElementById('sub-vista-op');
-    if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear(); 
-    if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
-    if(subvista === 'hex') sub.innerHTML = dibujarHexOP();
 };
 
 window.setFiltro = (tipo, valor) => {
@@ -206,11 +206,47 @@ window.modGoldExtra = (cantidad) => {
     guardar(); repintarConScroll('detalle');
 };
 
+window.checkFormOverrides = (inputId) => {
+    if (['npc-vrm', 'npc-vra', 'npc-va'].includes(inputId)) {
+        formOverrides[inputId] = true;
+    }
+
+    const fis = parseInt(document.getElementById('npc-fis')?.value) || 0;
+    const ene = parseInt(document.getElementById('npc-ene')?.value) || 0;
+    const esp = parseInt(document.getElementById('npc-esp')?.value) || 0;
+    const man = parseInt(document.getElementById('npc-man')?.value) || 0;
+    const psi = parseInt(document.getElementById('npc-psi')?.value) || 0;
+
+    const calcVrm = 10 + Math.floor(fis / 2);
+    const calcVa = Math.floor((ene + esp + man + psi) / 4);
+
+    if (!formOverrides['npc-vrm']) {
+        const elVrm = document.getElementById('npc-vrm');
+        if (elVrm && elVrm.value != calcVrm) elVrm.value = calcVrm;
+    }
+    
+    if (!formOverrides['npc-vra']) {
+        const elVra = document.getElementById('npc-vra');
+        const targetVra = formOverrides['npc-vrm'] ? parseInt(document.getElementById('npc-vrm')?.value || 10) : calcVrm;
+        if (elVra && elVra.value != targetVra) elVra.value = targetVra;
+    }
+    
+    if (!formOverrides['npc-va']) {
+        const elVa = document.getElementById('npc-va');
+        if (elVa && elVa.value != calcVa) elVa.value = calcVa;
+    }
+};
+
+window.modFormInput = (inputId) => {
+    window.checkFormOverrides(inputId);
+};
+
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
     if(input) { 
         let val = parseInt(input.value) || 0; 
         input.value = Math.max(0, val + cantidad); 
+        window.checkFormOverrides(inputId); 
     }
 };
 
@@ -225,8 +261,6 @@ window.toggleEstado = (estadoId) => {
 };
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-
-// ---------------- GESTIÓN DE HEX Y PARTY ----------------
 
 function updateHexLogText() {
     const textarea = document.getElementById('hex-log-textarea');
@@ -388,7 +422,6 @@ window.ejecutarClonacion = (tipo) => {
     guardar(); sourceSelect.value = ""; repintarConScroll('detalle'); 
 };
 
-// CORREGIDO: Guarda exactamente lo que escribes sin restar matemáticas
 window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta dar un nombre.");
@@ -448,11 +481,30 @@ window.triggerSubirCSV = () => {
     }; input.click();
 };
 
+// CORRECCIÓN DEL BUCLE INFINITO
 function refrescarVistas() {
-    document.getElementById('vista-catalogo').classList.add('oculto'); document.getElementById('vista-detalle').classList.add('oculto'); document.getElementById('vista-op').classList.add('oculto');
-    if (estadoUI.vistaActual === 'catalogo') { document.getElementById('vista-catalogo').classList.remove('oculto'); dibujarCatalogo(); }
-    else if (estadoUI.vistaActual === 'detalle') { document.getElementById('vista-detalle').classList.remove('oculto'); dibujarDetalle(); }
-    else if (estadoUI.vistaActual === 'op' || estadoUI.vistaActual === 'hex') { document.getElementById('vista-op').classList.remove('oculto'); window.mostrarPaginaOP(estadoUI.vistaActual); }
+    document.getElementById('vista-catalogo').classList.add('oculto'); 
+    document.getElementById('vista-detalle').classList.add('oculto'); 
+    document.getElementById('vista-op').classList.add('oculto');
+    
+    if (estadoUI.vistaActual === 'catalogo') { 
+        document.getElementById('vista-catalogo').classList.remove('oculto'); 
+        dibujarCatalogo(); 
+    }
+    else if (estadoUI.vistaActual === 'detalle') { 
+        document.getElementById('vista-detalle').classList.remove('oculto'); 
+        dibujarDetalle(); 
+    }
+    else { 
+        // Si es CUALQUIER vista de OP ('hex', 'crear', 'editar')
+        document.getElementById('vista-op').classList.remove('oculto'); 
+        document.getElementById('vista-op').innerHTML = dibujarMenuOP();
+        
+        const sub = document.getElementById('sub-vista-op');
+        if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
+        else if (estadoUI.vistaActual === 'hex') sub.innerHTML = dibujarHexOP();
+        else sub.innerHTML = dibujarFormularioEditar(); // Por defecto editar
+    }
 }
 
 async function iniciar() {
