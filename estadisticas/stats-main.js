@@ -41,6 +41,29 @@ window.setFiltro = (tipo, valor) => {
     refrescarVistas();
 };
 
+// TOGGLES DURANTE LA CREACIÓN
+window.toggleCrearRol = () => {
+    const btn = document.getElementById('btn-crear-rol');
+    if (btn.dataset.val === 'npc') {
+        btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR';
+        btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00';
+    } else {
+        btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC';
+        btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000';
+    }
+};
+
+window.toggleCrearAct = () => {
+    const btn = document.getElementById('btn-crear-act');
+    if (btn.dataset.val === 'activo') {
+        btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO';
+        btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000';
+    } else {
+        btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO';
+        btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00';
+    }
+};
+
 window.toggleIdentidad = (prop) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; 
@@ -149,6 +172,7 @@ window.modGoldExtra = (cantidad) => {
     guardar(); repintarConScroll('detalle');
 };
 
+// ESTA FUNCIÓN AHORA RECIBE EL ID EXACTO Y SUMA CORRECTAMENTE
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
     if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
@@ -199,26 +223,48 @@ window.ejecutarClonacion = (tipo) => {
     guardar(); sourceSelect.value = ""; repintarConScroll('detalle'); 
 };
 
+// CORRECCIÓN: LECTURA DE SWITCHES EN CREACIÓN
 window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta dar un nombre.");
-    const vidaA = parseInt(document.getElementById('npc-va').value) || 0; const guardaD = parseInt(document.getElementById('npc-gd').value) || 0;
+    
+    const isPlayer = document.getElementById('btn-crear-rol').dataset.val === 'jugador';
+    const isActive = document.getElementById('btn-crear-act').dataset.val === 'activo';
+    
+    const vidaA = parseInt(document.getElementById('npc-va').value) || 0; 
+    const guardaD = parseInt(document.getElementById('npc-gd').value) || 0;
     
     let stInit = {};
     listaEstados.forEach(e => { stInit[e.id] = (e.tipo === 'numero') ? 0 : false; });
 
     statsGlobal[nombre] = {
-        isPlayer: false, isNPC: true, isActive: true, hex: parseInt(document.getElementById('npc-hex').value) || 0, vex: parseInt(document.getElementById('npc-vex').value) || 0,
-        vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
-        vidaAzul: vidaA, baseVidaAzul: vidaA, guardaDorada: guardaD, baseGuardaDorada: guardaD,
-        danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, danoAzul: parseInt(document.getElementById('npc-da').value) || 0, elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
-        afinidades: { fisica: parseInt(document.getElementById('npc-fis').value) || 0, energetica: parseInt(document.getElementById('npc-ene').value) || 0, espiritual: parseInt(document.getElementById('npc-esp').value) || 0, mando: parseInt(document.getElementById('npc-man').value) || 0, psiquica: parseInt(document.getElementById('npc-psi').value) || 0, oscura: parseInt(document.getElementById('npc-osc').value) || 0 },
+        isPlayer: isPlayer, isNPC: !isPlayer, isActive: isActive, 
+        hex: parseInt(document.getElementById('npc-hex').value) || 0, 
+        vex: parseInt(document.getElementById('npc-vex').value) || 0,
+        vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, 
+        vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
+        vidaAzul: vidaA, baseVidaAzul: vidaA, 
+        guardaDorada: guardaD, baseGuardaDorada: guardaD,
+        danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, 
+        danoAzul: parseInt(document.getElementById('npc-da').value) || 0, 
+        elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
+        afinidades: { 
+            fisica: parseInt(document.getElementById('npc-fis').value) || 0, 
+            energetica: parseInt(document.getElementById('npc-ene').value) || 0, 
+            espiritual: parseInt(document.getElementById('npc-esp').value) || 0, 
+            mando: parseInt(document.getElementById('npc-man').value) || 0, 
+            psiquica: parseInt(document.getElementById('npc-psi').value) || 0, 
+            oscura: parseInt(document.getElementById('npc-osc').value) || 0 
+        },
         hechizos: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         hechizosEfecto: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         estados: stInit
     };
-    guardar(); window.abrirDetalle(nombre); window.scrollTo(0,0);
+    guardar(); 
+    estadoUI.personajeSeleccionado = nombre; // Evita perder foco
+    window.abrirDetalle(nombre); 
+    window.scrollTo(0,0);
 };
 
 window.forzarSincronizacion = async () => {
@@ -262,3 +308,5 @@ async function iniciar() {
     finally { refrescarVistas(); }
 }
 iniciar();
+iniciar();
+
