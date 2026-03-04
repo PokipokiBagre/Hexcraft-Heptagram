@@ -4,11 +4,8 @@ const parseCell = (str) => {
     if (!str) return { total: 0, base: 0, spells: 0, spellEff: 0, extra: 0 };
     str = str.toString().trim();
     const parts = str.split('_');
-    // NUEVO: Formato de 5 Fases (Total_Base_Conteo_Efecto_Extra)
     if (parts.length === 5) return { total: parseInt(parts[0])||0, base: parseInt(parts[1])||0, spells: parseInt(parts[2])||0, spellEff: parseInt(parts[3])||0, extra: parseInt(parts[4])||0 };
-    // Legado 4 Fases
     if (parts.length === 4) return { total: parseInt(parts[0])||0, base: parseInt(parts[1])||0, spells: parseInt(parts[2])||0, spellEff: 0, extra: parseInt(parts[3])||0 };
-    // Legado 2 Fases
     if (parts.length === 2) return { total: (parseInt(parts[0])||0)+(parseInt(parts[1])||0), base: parseInt(parts[0])||0, spells: 0, spellEff: 0, extra: parseInt(parts[1])||0 };
     const v = parseInt(str)||0; return { total: v, base: v, spells: 0, spellEff: 0, extra: 0 };
 };
@@ -47,13 +44,17 @@ export function procesarTextoCSV(texto) {
 
     filas.slice(1).forEach((f) => {
         const nombre = f[0]; if (!nombre) return;
-        const cols = Array.from({length: 18}, (_, i) => f[i] || '');
+        // NUEVO: Aumentado a 19 para leer la columna S (Copia)
+        const cols = Array.from({length: 19}, (_, i) => f[i] || '');
         const est = cols[16].split('-');
         
         const idenStr = cols[17] || '0_1'; 
         const idenParts = idenStr.split('_');
         const esJugador = idenParts[0] === '1';
         const esActivo = idenParts[1] === '1';
+        
+        // NUEVO: Extracción del nombre a copiar
+        const copiaOverride = cols[18].trim();
 
         const fFis = parseCell(cols[3]); const fEne = parseCell(cols[4]);
         const fEsp = parseCell(cols[5]); const fMan = parseCell(cols[6]);
@@ -74,6 +75,7 @@ export function procesarTextoCSV(texto) {
 
         statsGlobal[nombre] = {
             isPlayer: esJugador, isNPC: !esJugador, isActive: esActivo,
+            iconoOverride: copiaOverride !== '' ? copiaOverride : null, // NUEVO
             hex: parseInt(cols[1]) || 0, vex: parseInt(cols[2]) || 0,
             
             afinidades: { fisica: fFis.base, energetica: fEne.base, espiritual: fEsp.base, mando: fMan.base, psiquica: fPsi.base, oscura: fOsc.base },
