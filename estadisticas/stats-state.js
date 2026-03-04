@@ -9,7 +9,7 @@ export let estadoUI = {
     party: [null, null, null, null, null, null], // Memoria de los 6 slots
     hexLog: {}, // Memoria del registro unificado
     selectorIndex: null, // Índice para saber qué slot de party estamos cambiando
-    modoSincronizado: true // <--- ¡AHORA ESTÁ ACTIVADO POR DEFECTO!
+    modoSincronizado: true // Activado por defecto
 };
 
 export function guardar() {
