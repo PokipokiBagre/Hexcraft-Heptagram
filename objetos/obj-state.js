@@ -13,18 +13,20 @@ export let estadoUI = {
     logCopy: "", 
     esAdmin: false,
     cambiosSesion: {},
-    modoSincronizado: true, // Switch Auto a 10s
-    partyLoot: [], // Jugadores seleccionados en el OP
-    lootMult: 1, // Modificador (x1, x5, etc)
-    transOrigen: null, // Para transferencias
-    transDestino: null
+    modoSincronizado: true,
+    
+    // MULTIPLICADORES Y ESTADOS OP
+    partyLoot: [], 
+    partyMult: 1, 
+    transOrigen: null, 
+    transDestino: null,
+    transMult: 1,
+    editMult: 1,
+    editModo: 1 // 1 para sumar, -1 para restar
 };
 
 export function guardar() { 
     localStorage.setItem('hex_obj_v4', JSON.stringify({ 
-        inv: invGlobal, 
-        obj: objGlobal, 
-        his: historial,
-        modoSync: estadoUI.modoSincronizado 
+        inv: invGlobal, obj: objGlobal, his: historial, modoSync: estadoUI.modoSincronizado 
     })); 
 }
