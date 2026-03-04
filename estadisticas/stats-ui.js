@@ -93,7 +93,6 @@ export function dibujarCatalogo() {
 
         const claseInactiva = p.isActive ? '' : 'inactive-card';
         
-        // El nombre vuelve a ser solo la variable limpia
         html += `
         <div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')">
             <img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}">
@@ -138,9 +137,8 @@ export function dibujarDetalle() {
 
     let estadosHTML = ''; 
 
-    // NUEVO: Etiqueta (Badge) de Copia en la zona de efectos
     if (p.iconoOverride) {
-        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon completo de ${p.iconoOverride.toUpperCase()}</span></div>`;
+        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
     }
 
     listaEstados.forEach(e => {
@@ -356,7 +354,6 @@ export function dibujarFormularioEditar() {
     
     const iconoGrande = normalizar(p.iconoOverride || estadoUI.personajeSeleccionado);
     
-    // NUEVO: Etiqueta discreta en el OP si es clon
     let copiaBadge = '';
     if (p.iconoOverride) {
         copiaBadge = `<span style="font-size:0.5em; color:#d4af37; border: 1px dashed #d4af37; padding: 2px 6px; border-radius:4px; vertical-align:middle; margin-left:10px;">COPIA DE: ${p.iconoOverride.toUpperCase()}</span>`;
