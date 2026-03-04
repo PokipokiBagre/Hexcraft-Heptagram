@@ -291,7 +291,6 @@ export function dibujarMenuOP() {
     `;
 }
 
-// ---------------- GESTOR DE HEX Y PARTY ----------------
 export function dibujarHexOP() {
     let html = `<div style="text-align:center; max-width:1200px; margin:0 auto;">
         <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party</h2>
@@ -302,7 +301,7 @@ export function dibujarHexOP() {
     
     for(let i=0; i<6; i++) {
         const char = estadoUI.party[i];
-        if(char) {
+        if(char && statsGlobal[char]) {
             const icono = normalizar(statsGlobal[char]?.iconoOverride || char);
             html += `<div onclick="window.abrirSelectorParty(${i})" style="width:80px; height:80px; border:2px solid var(--gold); border-radius:8px; cursor:pointer; background:url('../img/imgpersonajes/${icono}icon.png'); background-size:cover; position:relative;" title="${char}">
                 <div style="position:absolute; bottom:0; background:rgba(0,0,0,0.7); width:100%; font-size:0.6em; text-align:center;">${char}</div>
@@ -314,13 +313,13 @@ export function dibujarHexOP() {
     
     html += `</div>
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-                <button type="button" onclick="window.establecerPartyActiva()" style="background:#004a00; border-color:#00ff00; color:white;">ESTABLECER COMO JUGADORES ACTIVOS</button>
-                <button type="button" onclick="window.addAsistenciaGlobal()" style="background:#4a004a; border-color:#8a008a; color:white;">SUMAR ASISTENCIA (+1) A ACTIVOS</button>
+                <button type="button" onclick="window.autoLlenarParty()" style="background:#004a4a; border-color:#00ffff; color:white;">SELECCIONAR A JUGADORES ACTIVOS</button>
+                <button type="button" onclick="window.addAsistenciaGlobal()" style="background:#4a004a; border-color:#8a008a; color:white;">SUMAR ASISTENCIA (+1) A PARTY</button>
             </div>
         </div>
         
         <div style="background:#0a0014; padding:15px; border-radius:8px; border:1px solid var(--blue-life); margin-bottom:20px;">
-            <h3 style="color:var(--blue-life); margin-top:0;">Dar HEX Global (Todos los Activos)</h3>
+            <h3 style="color:var(--blue-life); margin-top:0;">Dar HEX Global (Toda la Party)</h3>
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
                 <button type="button" onclick="window.modHexGlobal(10)" class="btn-plus">+10</button>
                 <button type="button" onclick="window.modHexGlobal(-10)" class="btn-minus">-10</button>
@@ -335,10 +334,11 @@ export function dibujarHexOP() {
 
         <div class="edit-grid">`;
 
-    Object.keys(statsGlobal).sort().forEach(nombre => {
-        const p = statsGlobal[nombre];
-        if (p.isPlayer && p.isActive) {
-            const asisTexto = `(${p.asistencia || 1}/7)`;
+    // Renderiza tarjetas individuales SOLAMENTE para los que están visualmente en los 6 slots de la Party
+    estadoUI.party.forEach(nombre => {
+        if (nombre && statsGlobal[nombre]) {
+            const p = statsGlobal[nombre];
+            const asisTexto = p.isPlayer ? `(${p.asistencia || 1}/7)` : `(NPC)`;
             const iconoMuestra = normalizar(p.iconoOverride || nombre);
             html += `
             <div class="edit-card" style="border-color:var(--gold);">
