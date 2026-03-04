@@ -6,10 +6,10 @@ export let estadoUI = {
     esAdmin: false,
     filtroRol: 'Todos',
     filtroAct: 'Todos',
-    party: [null, null, null, null, null, null], // Memoria de los 6 slots
-    hexLog: {}, // Memoria del registro unificado agrupado
-    selectorIndex: null, // Índice para saber qué slot de party estamos cambiando
-    modoSincronizado: true // Sincronización Auto a 10s Activada
+    party: [null, null, null, null, null, null], 
+    hexLog: {}, // Memoria del Log Agrupado Inteligente
+    selectorIndex: null, 
+    modoSincronizado: true // Sincronización a 10s activada por defecto
 };
 
 export function guardar() {
