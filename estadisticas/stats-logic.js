@@ -60,5 +60,6 @@ export function descargarArchivoCSV(contenido, nombreArchivo) {
     const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([contenido], { type: 'text/csv;charset=utf-8;' }));
     link.download = nombreArchivo; link.click();
 }
-}
+
+
 
