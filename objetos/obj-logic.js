@@ -65,12 +65,3 @@ export function descargarLog() {
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     link.download = 'log_objetos.csv'; link.click();
 }
-
-export async function descargarInventariosJPG() {
-    const jugadores = Object.keys(invGlobal);
-    for (const j of jugadores) {
-        window.setInv(j); await new Promise(r => setTimeout(r, 1800));
-        const canvas = await html2canvas(document.getElementById('contenedor-jugadores'), { backgroundColor: '#120024', scale: 2, useCORS: true });
-        const link = document.createElement('a'); link.download = `Inv_${j}.jpg`; link.href = canvas.toDataURL("image/jpeg", 0.9); link.click();
-    }
-}
