@@ -188,7 +188,6 @@ window.toggleEstado = (estadoId) => {
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 
-// CLONACIÓN ACTUALIZADA CON OPCIÓN HEX
 window.ejecutarClonacion = (tipo) => {
     const sourceSelect = document.getElementById('clon-source'); if(!sourceSelect) return;
     const sourceName = sourceSelect.value; if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
@@ -196,18 +195,28 @@ window.ejecutarClonacion = (tipo) => {
     const source = statsGlobal[sourceName]; const target = statsGlobal[targetName];
     
     let msg = '';
-    if (tipo === 'estados') msg = `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?`;
+    if (tipo === 'estados') msg = `¿Seguro que deseas IMPORTAR solo los ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?`;
+    else if (tipo === 'efectosExtras') msg = `¿Seguro que deseas COPIAR LOS EFECTOS DE HECHIZOS Y BUFFS EXTRAS desde ${sourceName} hacia ${targetName}?`;
     else if (tipo === 'hex') msg = `¿Seguro que deseas COPIAR EL HEX (${source.hex}) desde ${sourceName} hacia ${targetName}?\n(El HEX actual de ${targetName} se sobrescribirá).`;
     else if (tipo === 'completo') msg = `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?\n\n(Esto copiará estadísticas, afinidades, estados e IMÁGENES. El personaje ${targetName} se verá como ${sourceName}).`;
     
     if(!confirm(msg)) return;
 
     if (tipo === 'estados' || tipo === 'completo') {
-        target.buffs = JSON.parse(JSON.stringify(source.buffs));
         target.estados = JSON.parse(JSON.stringify(source.estados));
     }
 
-    // Copia HEX de forma independiente o como parte del clonado completo
+    if (tipo === 'efectosExtras' || tipo === 'completo') {
+        target.buffs = JSON.parse(JSON.stringify(source.buffs));
+        target.hechizosEfecto = JSON.parse(JSON.stringify(source.hechizosEfecto || {}));
+        
+        // Al copiar magia o vida extra la vida máxima puede achicarse; nos aseguramos de no desbordarla.
+        if (tipo !== 'completo') {
+            const newMaxRojo = calcularVidaRojaMax(target);
+            if (target.vidaRojaActual > newMaxRojo) target.vidaRojaActual = newMaxRojo;
+        }
+    }
+
     if (tipo === 'hex' || tipo === 'completo') {
         target.hex = source.hex;
     }
@@ -220,7 +229,6 @@ window.ejecutarClonacion = (tipo) => {
         
         target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
         target.hechizos = JSON.parse(JSON.stringify(source.hechizos || {}));
-        target.hechizosEfecto = JSON.parse(JSON.stringify(source.hechizosEfecto || {}));
         
         target.vex = source.vex;
         target.iconoOverride = source.iconoOverride || normalizar(sourceName);
@@ -313,5 +321,4 @@ async function iniciar() {
     finally { refrescarVistas(); }
 }
 iniciar();
-
 
