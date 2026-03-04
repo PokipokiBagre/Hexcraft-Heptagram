@@ -44,7 +44,6 @@ export function procesarTextoCSV(texto) {
 
     filas.slice(1).forEach((f) => {
         const nombre = f[0]; if (!nombre) return;
-        // NUEVO: Aumentado a 19 para leer la columna S (Copia)
         const cols = Array.from({length: 19}, (_, i) => f[i] || '');
         const est = cols[16].split('-');
         
@@ -52,9 +51,13 @@ export function procesarTextoCSV(texto) {
         const idenParts = idenStr.split('_');
         const esJugador = idenParts[0] === '1';
         const esActivo = idenParts[1] === '1';
-        
-        // NUEVO: Extracción del nombre a copiar
         const copiaOverride = cols[18].trim();
+
+        // LECTURA COMPUESTA DE HEX_ASISTENCIA
+        const hexRaw = cols[1] || '0';
+        const hexParts = hexRaw.toString().split('_');
+        const hexVal = parseInt(hexParts[0]) || 0;
+        const asisVal = hexParts.length > 1 ? parseInt(hexParts[1]) : (esJugador ? 1 : 0);
 
         const fFis = parseCell(cols[3]); const fEne = parseCell(cols[4]);
         const fEsp = parseCell(cols[5]); const fMan = parseCell(cols[6]);
@@ -75,8 +78,8 @@ export function procesarTextoCSV(texto) {
 
         statsGlobal[nombre] = {
             isPlayer: esJugador, isNPC: !esJugador, isActive: esActivo,
-            iconoOverride: copiaOverride !== '' ? copiaOverride : null, // NUEVO
-            hex: parseInt(cols[1]) || 0, vex: parseInt(cols[2]) || 0,
+            iconoOverride: copiaOverride !== '' ? copiaOverride : null, 
+            hex: hexVal, asistencia: asisVal, vex: parseInt(cols[2]) || 0,
             
             afinidades: { fisica: fFis.base, energetica: fEne.base, espiritual: fEsp.base, mando: fMan.base, psiquica: fPsi.base, oscura: fOsc.base },
             hechizos: { fisica: fFis.spells, energetica: fEne.spells, espiritual: fEsp.spells, mando: fMan.spells, psiquica: fPsi.spells, oscura: fOsc.spells, danoRojo: fDR.spells, danoAzul: fDA.spells, elimDorada: fED.spells, vidaRojaMaxExtra: fVRM.spells, vidaAzulExtra: fVA.spells, guardaDoradaExtra: fGD.spells },
@@ -84,10 +87,11 @@ export function procesarTextoCSV(texto) {
             buffs: { fisica: fFis.extra, energetica: fEne.extra, espiritual: fEsp.extra, mando: fMan.extra, psiquica: fPsi.extra, oscura: fOsc.extra, danoRojo: fDR.extra, danoAzul: fDA.extra, elimDorada: fED.extra, vidaRojaMaxExtra: fVRM.extra, vidaAzulExtra: fVA.extra, guardaDoradaExtra: fGD.extra },
             
             vidaRojaActual: parseInt(cols[9]) || 0, vidaRojaMax: baseVRM,
-            vidaAzul: baseVA, guardaDorada: fGD.base,
+            vidaAzul: baseVA, baseVidaAzul: baseVA, guardaDorada: fGD.base, baseGuardaDorada: fGD.base,
             danoRojo: fDR.base, danoAzul: fDA.base, elimDorada: fED.base,
             estados: estadosPers 
         };
     });
     guardar();
 }
+
