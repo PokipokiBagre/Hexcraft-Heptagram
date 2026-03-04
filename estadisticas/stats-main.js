@@ -5,10 +5,10 @@ import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMys
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
-// --- SISTEMA DE LOGS DE HEX (REPARADO PARA EVITAR BORRADO POR REDIBUJO) ---
+// --- SISTEMA DE LOGS DE HEX Y ACTUALIZADOR SEGURO ---
 function updateHexLogText() {
     const textarea = document.getElementById('hex-log-textarea');
-    if (!textarea) return; // Si no existe en la pantalla actual, no hace nada
+    if (!textarea) return; 
     
     let finalOutput = "";
     Object.keys(estadoUI.hexLog).sort().forEach(char => {
@@ -18,7 +18,7 @@ function updateHexLogText() {
     });
     
     textarea.value = finalOutput;
-    textarea.scrollTop = textarea.scrollHeight; // Auto-scroll hacia abajo
+    textarea.scrollTop = textarea.scrollHeight; 
 }
 
 window.addHexLogEntry = (nombre, amount, isExtra = false) => {
@@ -27,14 +27,13 @@ window.addHexLogEntry = (nombre, amount, isExtra = false) => {
     if (!p) return;
     
     const sign = amount >= 0 ? "+" : ""; 
-    const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
+    const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : ""; // Los NPCs no mostrarán nada aquí
     
     if(isExtra) {
         estadoUI.hexLog[nombre].push(`${nombre} +1000 Hex ¡EXTRA! (${p.hex})${asisStr}`);
     } else {
         estadoUI.hexLog[nombre].push(`${nombre} ${sign}${amount} Hex (${p.hex})${asisStr}`);
     }
-    // No llamamos updateHexLogText() aquí porque el redibujado de la UI lo hará
 };
 
 window.limpiarHexLog = () => { 
@@ -51,7 +50,7 @@ window.copiarHexLog = () => {
     }
 };
 
-// --- NAVEGACIÓN Y RENDERIZADO (INYECCIÓN SEGURA DEL LOG) ---
+// --- NAVEGACIÓN Y RENDERIZADO AISLADO PARA EVITAR BUCLES ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -69,7 +68,7 @@ function repintarConScroll(vista) {
             else container.innerHTML = dibujarFormularioEditar();
         }
         
-        // ¡LA MAGIA! Solo después de redibujar la pantalla de HEX, rellenamos la caja negra.
+        // REGLA DE ORO: Si acabamos de dibujar la pantalla HEX, inyectamos el Log inmediatamente.
         if (estadoUI.vistaActual === 'hex') {
             updateHexLogText();
         }
@@ -101,7 +100,7 @@ function refrescarVistas() {
         
         if (estadoUI.vistaActual === 'hex') {
             sub.innerHTML = dibujarHexOP();
-            updateHexLogText(); // Rellena el log al entrar
+            updateHexLogText(); 
         }
         else if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
         else sub.innerHTML = dibujarFormularioEditar();
@@ -132,7 +131,7 @@ window.setFiltro = (tipo, valor) => {
     refrescarVistas();
 };
 
-// --- GESTIÓN DE PARTY ---
+// --- GESTIÓN DE PARTY DINÁMICA ---
 window.abrirSelectorParty = (index) => {
     estadoUI.selectorIndex = index;
     const container = document.getElementById('party-selector-container');
@@ -145,6 +144,7 @@ window.abrirSelectorParty = (index) => {
     let html = '';
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
+        // EXCLUSIVO JUGADORES QUE NO ESTÉN YA SELECCIONADOS
         if (p.isPlayer && !estadoUI.party.includes(nombre)) {
             const iconoMuestra = normalizar(p.iconoOverride || nombre);
             html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px;">
@@ -181,6 +181,7 @@ window.vaciarParty = () => {
     repintarConScroll('hex');
 };
 
+// Autollenado inteligente de slots de party vacíos
 window.autoLlenarParty = () => {
     const jugadoresActivos = Object.keys(statsGlobal).filter(n => statsGlobal[n].isPlayer && statsGlobal[n].isActive).sort();
     estadoUI.party = [null, null, null, null, null, null];
@@ -428,8 +429,6 @@ window.toggleEstado = (estadoId) => {
     p.estados[estadoId] = !p.estados[estadoId]; guardar(); repintarConScroll('op');
 };
 
-const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-
 window.ejecutarClonacion = (tipo) => {
     const sourceSelect = document.getElementById('clon-source'); if(!sourceSelect) return;
     const sourceName = sourceSelect.value; if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
@@ -575,8 +574,6 @@ async function iniciar() {
             btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
         }
         refrescarVistas(); 
-        // Seguro extra para cargar el log si se recarga la página estando en OP
-        if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
 iniciar();
