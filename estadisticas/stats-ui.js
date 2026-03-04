@@ -43,8 +43,11 @@ export function dibujarCatalogo() {
     <div class="catalogo-grid">`;
 
     const getSortValue = (p) => {
-        if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; 
-        if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
+        if (p.isPlayer && p.isActive) return 1; 
+        if (!p.isPlayer && p.isActive) return 2; 
+        if (!p.isPlayer && !p.isActive) return 3; 
+        if (p.isPlayer && !p.isActive) return 4; 
+        return 5;
     };
 
     const sortedNames = Object.keys(statsGlobal).sort((a, b) => {
@@ -54,18 +57,36 @@ export function dibujarCatalogo() {
 
     sortedNames.forEach(nombre => {
         const p = statsGlobal[nombre]; asegurarEstructuras(p);
-        if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return; if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
-        if (estadoUI.filtroAct === 'Activo' && !p.isActive) return; if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
+        if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return;
+        if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
+        if (estadoUI.filtroAct === 'Activo' && !p.isActive) return;
+        if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
 
         const iconoMuestra = normalizar(p.iconoOverride || nombre);
-        let borderStyle = ""; let bgStyle = "background: #1e0535;"; 
-        if (p.isPlayer && p.isActive) { borderStyle = "border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);"; } 
-        else if (!p.isPlayer && p.isActive) { borderStyle = "border: 2px solid #00ffff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);"; bgStyle = "background: #0a1128;"; } 
-        else if (!p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #555555;"; bgStyle = "background: #111111;"; } 
-        else if (p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; bgStyle = "background: #220000;"; }
+        
+        let borderStyle = "";
+        let bgStyle = "background: #1e0535;"; 
+        if (p.isPlayer && p.isActive) {
+            borderStyle = "border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);";
+        } else if (!p.isPlayer && p.isActive) {
+            borderStyle = "border: 2px solid #00ffff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);"; 
+            bgStyle = "background: #0a1128;";
+        } else if (!p.isPlayer && !p.isActive) {
+            borderStyle = "border: 2px solid #555555;"; 
+            bgStyle = "background: #111111;";
+        } else if (p.isPlayer && !p.isActive) {
+            borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; 
+            bgStyle = "background: #220000;";
+        }
 
         const claseInactiva = p.isActive ? '' : 'inactive-card';
-        html += `<div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')"><img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}"><h3>${nombre}</h3><p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p></div>`;
+        
+        html += `
+        <div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')">
+            <img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}">
+            <h3>${nombre}</h3>
+            <p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p>
+        </div>`;
     }); 
     contenedor.innerHTML = html + `</div>`;
 }
@@ -75,28 +96,48 @@ export function dibujarDetalle() {
     if(!p) return; asegurarEstructuras(p);
     const contenedor = document.getElementById('vista-detalle');
 
-    let vidaRojaVisual = calcularVidaRojaMax(p); let vexVisual = calcularVexMax(p);
+    let vidaRojaVisual = calcularVidaRojaMax(p); 
+    let vexVisual = calcularVexMax(p);
     let hexPercent = Math.min((p.hex / 4000) * 100, 100); let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
-    let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual); let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual); let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
-    let corazonesRojosHTML = ''; for(let i=0; i<normalRojo; i++) corazonesRojosHTML += `<div class="heart-red"></div>`; for(let i=0; i<vaciosRojo; i++) corazonesRojosHTML += `<div class="heart-red empty"></div>`; for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
+    let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual); 
+    let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual); 
+    let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
+    let corazonesRojosHTML = ''; 
+    for(let i=0; i<normalRojo; i++) corazonesRojosHTML += `<div class="heart-red"></div>`; 
+    for(let i=0; i<vaciosRojo; i++) corazonesRojosHTML += `<div class="heart-red empty"></div>`; 
+    for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    let normalAzul = Math.max(0, p.vidaAzul || 0); let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.hechizosEfecto.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
-    let corazonesAzulesHTML = ''; for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
+    let normalAzul = Math.max(0, p.vidaAzul || 0); 
+    let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.hechizosEfecto.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
+    let corazonesAzulesHTML = ''; 
+    for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; 
+    for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    let normalGuarda = Math.max(0, p.guardaDorada || 0); let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.hechizosEfecto.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
-    let guardasHTML = ''; for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
+    let normalGuarda = Math.max(0, p.guardaDorada || 0); 
+    let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.hechizosEfecto.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
+    let guardasHTML = ''; 
+    for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; 
+    for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
     let estadosHTML = ''; 
-    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
-    
+
+    if (p.iconoOverride) {
+        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
+    }
+
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        if (e.tipo === 'numero' && val > 0) estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
-        else if (e.tipo === 'booleano' && val) { let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`; }
+        if (e.tipo === 'numero' && val > 0) {
+            estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
+        } else if (e.tipo === 'booleano' && val) {
+            let colorTexto = e.id === 'huesos' ? '#000' : '#fff';
+            let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid';
+            estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`;
+        }
     });
 
     const iconoGrande = normalizar(p.iconoOverride || nombre);
@@ -105,11 +146,18 @@ export function dibujarDetalle() {
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'};">
         <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #d4af37; object-fit: cover;" onerror="${imgError}">
-        <div style="text-align:left;"><h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''} ${!p.isActive ? '<span style="font-size:0.4em; color:#ff0000">[INACTIVO]</span>' : ''}</h1>${asisUI}<div class="status-container">${estadosHTML}</div></div>
+        <div style="text-align:left;">
+            <h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''} ${!p.isActive ? '<span style="font-size:0.4em; color:#ff0000">[INACTIVO]</span>' : ''}</h1>
+            ${asisUI}
+            <div class="status-container">${estadosHTML}</div>
+        </div>
         ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#1a0033; border-color:#d4af37;">Editar Ficha Base</button>` : ''}
     </div>
 
-    <div class="circle-wrap"><div class="stat-circle" style="background: conic-gradient(var(--gold) ${hexPercent}%, #222 0);"><div class="inner"><strong>${p.hex}</strong><span>HEX</span></div></div><div class="stat-circle" style="background: conic-gradient(var(--blue-life) ${vexPercent}%, #222 0);"><div class="inner"><strong>${vexVisual}</strong><span>VEX</span></div></div></div>
+    <div class="circle-wrap">
+        <div class="stat-circle" style="background: conic-gradient(var(--gold) ${hexPercent}%, #222 0);"><div class="inner"><strong>${p.hex}</strong><span>HEX</span></div></div>
+        <div class="stat-circle" style="background: conic-gradient(var(--blue-life) ${vexPercent}%, #222 0);"><div class="inner"><strong>${vexVisual}</strong><span>VEX</span></div></div>
+    </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
         <div>
@@ -231,6 +279,7 @@ export function dibujarMenuOP() {
     `;
 }
 
+// ---------------- NUEVA PANTALLA: GESTOR DE HEX Y PARTY ----------------
 export function dibujarHexOP() {
     let html = `<div style="text-align:center; max-width:1200px; margin:0 auto;">
         <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party</h2>
@@ -239,6 +288,7 @@ export function dibujarHexOP() {
             <h3 style="color:var(--gold); margin-top:0;">Party Activa (Selección)</h3>
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">`;
     
+    // Dibujar los 6 slots
     for(let i=0; i<6; i++) {
         const char = estadoUI.party[i];
         if(char && statsGlobal[char]) {
@@ -264,7 +314,7 @@ export function dibujarHexOP() {
 
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
                 <button type="button" onclick="window.establecerPartyActiva()" style="background:#004a00; border-color:#00ff00; color:white;">ESTABLECER COMO JUGADORES ACTIVOS</button>
-                <button type="button" onclick="window.autoLlenarParty()" style="background:#004a4a; border-color:#00ffff; color:white;">AUTO-LLENAR JUGADORES</button>
+                <button type="button" onclick="window.autoLlenarParty()" style="background:#004a4a; border-color:#00ffff; color:white;">LLENAR AUTOMÁTICO</button>
                 <button type="button" onclick="window.vaciarParty()" style="background:#4a0000; border-color:#ff0000; color:white;">VACIAR SLOTS</button>
                 <button type="button" onclick="window.addAsistenciaGlobal()" style="background:#4a004a; border-color:#8a008a; color:white;">SUMAR ASISTENCIA (+1) A PARTY</button>
             </div>
@@ -286,6 +336,7 @@ export function dibujarHexOP() {
 
         <div class="edit-grid">`;
 
+    // Tarjetas de HEX individuales (Solo renderiza si el jugador está en la party)
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
             const p = statsGlobal[nombre];
