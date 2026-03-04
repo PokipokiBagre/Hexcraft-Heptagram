@@ -24,11 +24,7 @@ export function refrescarUI() {
     else if (estadoUI.vistaActual === 'transfer') dibujarTransferencia();
 }
 
-const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
-const normalizarNombre = (str) => {
-    if (!str) return "";
-    return str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,''); 
-};
+const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
 
 export function dibujarGrillaPersonajes() {
     let html = `<h2 style="margin-top:0;">Inventarios</h2><div class="catalogo-grid">`;
@@ -56,38 +52,14 @@ export function dibujarGrillaPersonajes() {
 
 export function dibujarInventarios() {
     if (!estadoUI.jugadorInv) return;
-    const j = estadoUI.jugadorInv;
-    const term = (estadoUI.busquedaInv || "").toLowerCase();
-    
-    let html = `
-    <button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
+    const j = estadoUI.jugadorInv; const term = (estadoUI.busquedaInv || "").toLowerCase();
+    let html = `<button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
     <div class="player-header">
         <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-        <div style="text-align:left; flex:1;">
-            <h1 style="margin: 0; color:var(--gold);">${j.toUpperCase()}</h1>
-        </div>
+        <div style="text-align:left; flex:1;"><h1 style="margin: 0; color:var(--gold);">${j.toUpperCase()}</h1></div>
         ${estadoUI.esAdmin ? `<button onclick="window.mostrarPagina('control')" style="background:#4a004a; border-color:var(--gold);">Editar Stock / OP</button>` : ''}
     </div>
     <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
-
-    const destacados = Object.keys(invGlobal[j])
-        .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
-        .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
-        .slice(0, 5);
-
-    if (destacados.length > 0) {
-        html += `<div class="top-items-grid">`;
-        destacados.forEach(o => {
-            const imgFile = normalizarNombre(o);
-            const rarClase = objGlobal[o]?.rar === 'Raro' ? 'rarity-raro' : (objGlobal[o]?.rar === 'Legendario' ? 'rarity-legendario' : '');
-            html += `
-            <div class="top-item-card ${rarClase}">
-                <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</span>
-            </div>`;
-        });
-        html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
-    }
 
     html += `<div class="table-responsive"><table><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
     Object.keys(invGlobal[j]).sort().forEach(o => {
@@ -100,31 +72,21 @@ export function dibujarInventarios() {
             </tr>`;
         }
     });
-    html += "</table></div>";
-    drawnHEXPreserveFocus('contenedor-jugadores', html);
+    drawnHEXPreserveFocus('contenedor-jugadores', html + "</table></div>");
 }
 
 export function dibujarCatalogo() {
     let html = "<h2>Catálogo Completo</h2><div class='filter-group'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
-        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
-        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
-    });
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => { html += `<button onclick="window.setRar('${r}')" ${estadoUI.filtroRar === r ? 'class="btn-active"' : ''}>${r}</button> `; });
     html += "</div><div class='filter-group'>";
-    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
-        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
-        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
-    });
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => { html += `<button onclick="window.setMat('${m}')" ${estadoUI.filtroMat === m ? 'class="btn-active-mat"' : ''}>${m}</button> `; });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
     <div class="table-responsive"><table><tr><th>Imagen</th><th>Nombre</th><th>Tipo</th><th>Efecto</th><th>Rareza</th></tr>`;
     
     const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
-        const matchR = estadoUI.filtroRar === 'Todos' || item.rar.trim() === estadoUI.filtroRar;
-        const matchM = estadoUI.filtroMat === 'Todos' || item.mat.trim() === estadoUI.filtroMat;
-        
-        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
+        if ((estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar) && (estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat) && (!term || o.toLowerCase().includes(term))) {
             html += `<tr>
                 <td><img src="../img/imgobjetos/${normalizarNombre(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
                 <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
@@ -138,33 +100,37 @@ export function dibujarCatalogo() {
 }
 
 export function dibujarControl() {
-    if (!estadoUI.jugadorInv) return;
-    const j = estadoUI.jugadorInv; 
-    
-    let html = `<h2>Edición In-Situ: ${j}</h2>
-                <button onclick="window.mostrarPagina('inventario')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Inventario</button>`;
+    if (!estadoUI.jugadorInv) return; const j = estadoUI.jugadorInv; 
+    let html = `<h2>Edición In-Situ: ${j}</h2><button onclick="window.mostrarPagina('inventario')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Inventario</button>`;
     
     html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                 <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
                 <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
-             </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto para sumar/restar..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
+             </div>
+             
+             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px;">
+                <button onclick="window.setEditModo(1)" style="background:${estadoUI.editModo === 1 ? '#004a00' : '#222'}">SUMAR (+)</button>
+                <button onclick="window.setEditModo(-1)" style="background:${estadoUI.editModo === -1 ? '#660000' : '#222'}">RESTAR (-)</button>
+             </div>
+             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                ${[1, 5, 10, 100].map(m => `<button onclick="window.setEditMult(${m})" style="background:${estadoUI.editMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.editMult === m ? '#000' : '#fff'}">x${m}</button>`).join('')}
+             </div>
+             
+             <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
              <div class="grid-control">`;
     
-    function ordenarItemsLogico() {
-        return Object.keys(objGlobal).sort((a, b) => {
-            const sA = invGlobal[j][a] || 0; const sB = invGlobal[j][b] || 0;
-            if (sB !== sA) return sB - sA; return a.localeCompare(b);
-        });
-    }
-
-    ordenarItemsLogico().forEach(o => {
+    Object.keys(objGlobal).sort((a, b) => (invGlobal[j][b]||0) - (invGlobal[j][a]||0) || a.localeCompare(b)).forEach(o => {
         const term = estadoUI.busquedaOP.toLowerCase();
         if (!term || o.toLowerCase().includes(term)) {
             const c = invGlobal[j][o] || 0;
+            const actionColor = estadoUI.editModo === 1 ? '#00ff00' : '#ff0000';
             html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
-                        <span class="item-name">${o} (<b>${c}</b>)</span>
-                        <div class="item-btns"><button onclick="window.hexMod('${j}','${o}',1)">+1</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button></div>
-                        <div class="item-btns" style="margin-top:5px"><button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)" style="background:#4a0000">-5</button></div>
+                        <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
+                             onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
+                             style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid ${actionColor}; transition:0.2s;"
+                             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                             onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Click para aplicar">
+                        <span class="item-name" style="margin-top:10px;">${o} (<b>${c}</b>)</span>
                      </div>`;
         }
     });
@@ -176,23 +142,22 @@ export function dibujarMenuOP() {
         <h2 style="margin-top:0;">Panel OP Maestro</h2>
         <div class="op-grid">
             <button onclick="window.mostrarPagina('party-loot')" style="background:#b8860b; color:#000;">Repartir Loot a Party</button>
-            <button onclick="window.mostrarPagina('transfer')" style="background:#006400; color:#fff;">Mercado de Transferencias</button>
+            <button onclick="window.mostrarPagina('transfer')" style="background:#1a4b8c; color:#fff;">Mercado de Transferencias</button>
             <button onclick="window.mostrarCreacionObjeto()" style="background:#4a004a">Creación Rápida de Objeto</button>
             <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar todos los JPGs</button>
-            <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log Histórico</button>
+            <button onclick="window.descargarLog()" style="background:#004a00">Descargar Log Histórico</button>
             <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#000">Descargar CSV Actual</button>
         </div>`;
 }
 
-// ---------------- NUEVAS PANTALLAS OP ----------------
+// ---------------- LOOT MASIVO Y TRANSFERENCIAS (CON IMÁGENES Y MULTIPLICADOR) ----------------
 
 export function dibujarPartyLoot() {
     const term = (estadoUI.busquedaOP || "").toLowerCase();
-    
     let html = `<h2>Loot Rápido para la Party</h2>
                 <button onclick="window.mostrarPagina('op-menu')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Panel OP</button>
                 <div style="background:#1a0033; padding:15px; border-radius:8px; border:1px dashed var(--gold); margin-bottom:20px;">
-                    <h4 style="color:var(--gold); margin-top:0;">1. Selecciona a quién darle los objetos</h4>
+                    <h4 style="color:var(--gold); margin-top:0;">1. Selecciona los destinatarios</h4>
                     <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">`;
     
     Object.keys(invGlobal).sort().forEach(j => {
@@ -205,12 +170,11 @@ export function dibujarPartyLoot() {
     });
 
     html += `   </div>
-                <h4 style="color:var(--blue-life); margin-top:20px;">2. Multiplicador de Entrega (Por Clic)</h4>
-                <div style="display:flex; justify-content:center; gap:10px;">`;
+                <h4 style="color:var(--blue-life); margin-top:20px;">2. Multiplicador de Entrega</h4>
+                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">`;
     
     [1, 5, 10, 50, 100].forEach(m => {
-        const active = estadoUI.lootMult === m ? 'background:var(--gold); color:#000;' : 'background:#222;';
-        html += `<button onclick="window.setLootMult(${m})" style="${active} width:60px; font-size:1.2em;">x${m}</button>`;
+        html += `<button onclick="window.setPartyMult(${m})" style="background:${estadoUI.partyMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.partyMult === m ? '#000' : '#fff'}">x${m}</button>`;
     });
 
     html += `   </div>
@@ -221,21 +185,24 @@ export function dibujarPartyLoot() {
                 <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-loot')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
             </div>
             
-            <h4 style="color:var(--gold);">3. Haz clic en un objeto para entregar <span style="color:white;">x${estadoUI.lootMult}</span> a los seleccionados</h4>
+            <h4 style="color:var(--gold);">3. Haz clic en un objeto para entregar <span style="color:white;">x${estadoUI.partyMult}</span> a la party</h4>
             <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:10px;">`;
+            <div class="grid-control">`;
 
     Object.keys(objGlobal).sort().forEach(o => {
         if (!term || o.toLowerCase().includes(term)) {
-            html += `<div class="control-card" style="cursor:pointer;" onclick="window.giveLootToParty('${o}')">
-                        <img src="../img/imgobjetos/${normalizarNombre(o)}.png" style="width:60px; height:60px; object-fit:cover; border:1px solid #444; border-radius:4px; background:#000; margin-bottom:5px;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                        <span style="font-size:0.8em; display:block; color:#fff;">${o}</span>
+            html += `<div class="control-card">
+                        <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
+                             onclick="window.giveLootToParty('${o}')" 
+                             style="width:80px; height:80px; object-fit:cover; border:2px solid var(--gold); border-radius:8px; background:#000; cursor:pointer; transition:0.2s;" 
+                             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                             onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                        <span class="item-name" style="margin-top:10px; color:#fff;">${o}</span>
                      </div>`;
         }
     });
 
-    html += `</div>`;
-    drawnHEXPreserveFocus('panel-party-loot', html);
+    drawnHEXPreserveFocus('panel-party-loot', html + `</div>`);
 }
 
 export function dibujarTransferencia() {
@@ -270,22 +237,27 @@ export function dibujarTransferencia() {
                         <textarea id="copy-log-trans" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
                         <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-trans')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                      </div>
-                     <h3 style="color:var(--gold); margin-top:20px;">Inventario de ${j}</h3>
+                     
+                     <h4 style="color:var(--blue-life); margin-top:20px;">Multiplicador de Transferencia</h4>
+                     <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                        ${[1, 3, 5, 10, 50, 'TODO'].map(m => `<button onclick="window.setTransMult('${m}')" style="background:${estadoUI.transMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.transMult === m ? '#000' : '#fff'}">x${m}</button>`).join('')}
+                     </div>
+
+                     <h3 style="color:var(--gold);">Inventario de ${j} (Haz clic para transferir)</h3>
                      <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto a transferir..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
                      <div class="grid-control">`;
             
             Object.keys(invGlobal[j]).sort().forEach(o => {
                 if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
                     const c = invGlobal[j][o];
+                    const cantToPass = estadoUI.transMult === 'TODO' ? c : estadoUI.transMult;
                     html += `<div class="control-card item-con-stock">
-                                <span class="item-name">${o} (<b>${c} disponibles</b>)</span>
-                                <div style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-top:10px;">
-                                    <button onclick="window.ejecutarTransfer('${o}', 1)" style="padding:5px 10px; font-size:0.9em; background:#004a4a;">Pasa 1</button>
-                                    ${c >= 3 ? `<button onclick="window.ejecutarTransfer('${o}', 3)" style="padding:5px 10px; font-size:0.9em; background:#004a4a;">Pasa 3</button>` : ''}
-                                    ${c >= 5 ? `<button onclick="window.ejecutarTransfer('${o}', 5)" style="padding:5px 10px; font-size:0.9em; background:#004a4a;">Pasa 5</button>` : ''}
-                                    ${c >= 10 ? `<button onclick="window.ejecutarTransfer('${o}', 10)" style="padding:5px 10px; font-size:0.9em; background:#004a4a;">Pasa 10</button>` : ''}
-                                    <button onclick="window.ejecutarTransfer('${o}', ${c})" style="padding:5px 10px; font-size:0.9em; background:#4a004a; border-color:#d4af37;">Pasa TODO</button>
-                                </div>
+                                <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
+                                     onclick="window.ejecutarTransfer('${o}', ${cantToPass})" 
+                                     style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid #00ff00; transition:0.2s;"
+                                     onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                                     onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Transferir ${cantToPass}">
+                                <span class="item-name" style="margin-top:10px;">${o} (<b>${c}</b>)</span>
                              </div>`;
                 }
             });
