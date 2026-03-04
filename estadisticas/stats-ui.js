@@ -91,7 +91,7 @@ export function dibujarDetalle() {
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
     let estadosHTML = ''; 
-    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
+    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon completo de ${p.iconoOverride.toUpperCase()}</span></div>`;
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
@@ -176,6 +176,7 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modGoldExtra(1)">+1</button><button type="button" class="btn-minus" onclick="window.modGoldExtra(-1)">-1</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
             </div>
+            
             ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (BASE)', val: p.vidaRojaMax }, 'baseTop')}
             
             <div class="edit-card" style="grid-column: 1 / -1; background:#1a1a00; border-color:#b8860b;">
