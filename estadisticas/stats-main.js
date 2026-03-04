@@ -47,12 +47,11 @@ window.toggleIdentidad = (prop) => {
     guardar(); repintarConScroll('op');
 };
 
-// EL MOTOR DELTA: Envuelve CUALQUIER cambio para auto-curar o auto-dañar
 function recalcularVidas(p, accion) {
     const prevRojo = calcularVidaRojaMax(p);
     const prevMystic = getMysticBonus(p);
     
-    accion(); // Se ejecuta el cambio de stats
+    accion();
     
     const newRojo = calcularVidaRojaMax(p);
     const newMystic = getMysticBonus(p);
@@ -63,7 +62,6 @@ function recalcularVidas(p, accion) {
     if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     if (deltaMystic !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaMystic);
     
-    // Seguro Anti-Desborde Rojo
     const finalMax = calcularVidaRojaMax(p);
     if (p.vidaRojaActual > finalMax) p.vidaRojaActual = finalMax;
 }
@@ -77,6 +75,7 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
         else if (tipoAccion === 'baseTop') p[statId] = Math.max(0, val);
         else if (tipoAccion === 'baseAfin') p.afinidades[statId] = Math.max(0, val);
         else if (tipoAccion === 'spellTop' || tipoAccion === 'spellAfin') p.hechizos[statId] = val;
+        else if (tipoAccion === 'spellEffTop' || tipoAccion === 'spellEffAfin') p.hechizosEfecto[statId] = val;
         else if (tipoAccion === 'directo') p[statId] = Math.max(0, val);
     });
 
@@ -111,6 +110,18 @@ window.modSpellTop = (statId, cantidad) => {
 window.modSpellAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     recalcularVidas(p, () => { p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad; });
+    guardar(); repintarConScroll('op');
+};
+
+window.modSpellEffTop = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    recalcularVidas(p, () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + cantidad; });
+    guardar(); repintarConScroll('op');
+};
+
+window.modSpellEffAfin = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    recalcularVidas(p, () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + cantidad; });
     guardar(); repintarConScroll('op');
 };
 
@@ -168,6 +179,7 @@ window.ejecutarClonacion = (tipo) => {
         target.guardaDorada = source.guardaDorada; target.baseGuardaDorada = source.baseGuardaDorada;
         target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
         target.hechizos = JSON.parse(JSON.stringify(source.hechizos || {}));
+        target.hechizosEfecto = JSON.parse(JSON.stringify(source.hechizosEfecto || {}));
         target.danoRojo = source.danoRojo; target.danoAzul = source.danoAzul; target.elimDorada = source.elimDorada;
         target.hex = source.hex; target.vex = source.vex;
     }
@@ -185,10 +197,11 @@ window.ejecutarCreacionNPC = () => {
     statsGlobal[nombre] = {
         isPlayer: false, isNPC: true, isActive: true, hex: parseInt(document.getElementById('npc-hex').value) || 0, vex: parseInt(document.getElementById('npc-vex').value) || 0,
         vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
-        vidaAzul: vidaA, guardaDorada: guardaD,
+        vidaAzul: vidaA, baseVidaAzul: vidaA, guardaDorada: guardaD, baseGuardaDorada: guardaD,
         danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, danoAzul: parseInt(document.getElementById('npc-da').value) || 0, elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
         afinidades: { fisica: parseInt(document.getElementById('npc-fis').value) || 0, energetica: parseInt(document.getElementById('npc-ene').value) || 0, espiritual: parseInt(document.getElementById('npc-esp').value) || 0, mando: parseInt(document.getElementById('npc-man').value) || 0, psiquica: parseInt(document.getElementById('npc-psi').value) || 0, oscura: parseInt(document.getElementById('npc-osc').value) || 0 },
         hechizos: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
+        hechizosEfecto: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         estados: stInit
     };
