@@ -3,6 +3,9 @@ import { cargarTodoDesdeCSV, procesarTextoCSV, cargarDiccionarioEstados } from '
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMysticBonus } from './stats-logic.js';
 
+// NUEVO: Bandera para saber si el máster modificó la vida a mano durante la creación
+let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
+
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -32,7 +35,11 @@ window.abrirMenuOP = () => {
 window.mostrarPaginaOP = (subvista) => {
     estadoUI.vistaActual = 'op'; refrescarVistas();
     const sub = document.getElementById('sub-vista-op');
-    if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear(); if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
+    if(subvista === 'crear') {
+        formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false }; // Resetea las flags
+        sub.innerHTML = dibujarFormularioCrear();
+    }
+    if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
 };
 
 window.setFiltro = (tipo, valor) => {
@@ -171,9 +178,49 @@ window.modGoldExtra = (cantidad) => {
     guardar(); repintarConScroll('detalle');
 };
 
+// NUEVO: REVISIÓN DE MANUAL OVERRIDE EN CREACIÓN DE PERSONAJE
+window.checkFormOverrides = (inputId) => {
+    if (['npc-vrm', 'npc-vra', 'npc-va'].includes(inputId)) {
+        formOverrides[inputId] = true;
+    }
+
+    const fis = parseInt(document.getElementById('npc-fis')?.value) || 0;
+    const ene = parseInt(document.getElementById('npc-ene')?.value) || 0;
+    const esp = parseInt(document.getElementById('npc-esp')?.value) || 0;
+    const man = parseInt(document.getElementById('npc-man')?.value) || 0;
+    const psi = parseInt(document.getElementById('npc-psi')?.value) || 0;
+
+    const calcVrm = 10 + Math.floor(fis / 2);
+    const calcVa = Math.floor((ene + esp + man + psi) / 4);
+
+    if (!formOverrides['npc-vrm']) {
+        const elVrm = document.getElementById('npc-vrm');
+        if (elVrm && elVrm.value != calcVrm) elVrm.value = calcVrm;
+    }
+    
+    if (!formOverrides['npc-vra']) {
+        const elVra = document.getElementById('npc-vra');
+        const targetVra = formOverrides['npc-vrm'] ? parseInt(document.getElementById('npc-vrm')?.value || 10) : calcVrm;
+        if (elVra && elVra.value != targetVra) elVra.value = targetVra;
+    }
+    
+    if (!formOverrides['npc-va']) {
+        const elVa = document.getElementById('npc-va');
+        if (elVa && elVa.value != calcVa) elVa.value = calcVa;
+    }
+};
+
+window.modFormInput = (inputId) => {
+    window.checkFormOverrides(inputId);
+};
+
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
-    if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
+    if(input) { 
+        let val = parseInt(input.value) || 0; 
+        input.value = Math.max(0, val + cantidad); 
+        window.checkFormOverrides(inputId); 
+    }
 };
 
 window.modEstado = (estadoId, cantidad) => {
@@ -202,12 +249,10 @@ window.ejecutarClonacion = (tipo) => {
     
     if(!confirm(msg)) return;
 
-    // Solo copia estados (veneno, radiación, etc)
     if (tipo === 'estados' || tipo === 'completo') {
         target.estados = JSON.parse(JSON.stringify(source.estados));
     }
 
-    // Copia los modificadores mágicos y extras de vida
     if (tipo === 'efectosExtras' || tipo === 'completo') {
         target.buffs = JSON.parse(JSON.stringify(source.buffs));
         target.hechizosEfecto = JSON.parse(JSON.stringify(source.hechizosEfecto || {}));
@@ -245,7 +290,20 @@ window.ejecutarCreacionNPC = () => {
     const isPlayer = document.getElementById('btn-crear-rol').dataset.val === 'jugador';
     const isActive = document.getElementById('btn-crear-act').dataset.val === 'activo';
     
-    const vidaA = parseInt(document.getElementById('npc-va').value) || 0; 
+    const fis = parseInt(document.getElementById('npc-fis').value) || 0;
+    const ene = parseInt(document.getElementById('npc-ene').value) || 0;
+    const esp = parseInt(document.getElementById('npc-esp').value) || 0;
+    const man = parseInt(document.getElementById('npc-man').value) || 0;
+    const psi = parseInt(document.getElementById('npc-psi').value) || 0;
+    const osc = parseInt(document.getElementById('npc-osc').value) || 0;
+
+    // NUEVO: El guardado descuenta la matemática que se aplica visualmente 
+    // Para que al leerlo no lo duplique.
+    const inputVrm = parseInt(document.getElementById('npc-vrm').value) || 0;
+    const inputVa = parseInt(document.getElementById('npc-va').value) || 0;
+    const pureBaseVrm = inputVrm - Math.floor(fis / 2);
+    const pureBaseVa = inputVa - Math.floor((ene + esp + man + psi) / 4);
+    
     const guardaD = parseInt(document.getElementById('npc-gd').value) || 0;
     
     let stInit = {};
@@ -256,20 +314,13 @@ window.ejecutarCreacionNPC = () => {
         hex: parseInt(document.getElementById('npc-hex').value) || 0, 
         vex: parseInt(document.getElementById('npc-vex').value) || 0,
         vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, 
-        vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
-        vidaAzul: vidaA, baseVidaAzul: vidaA, 
+        vidaRojaMax: pureBaseVrm, 
+        vidaAzul: pureBaseVa, baseVidaAzul: pureBaseVa, 
         guardaDorada: guardaD, baseGuardaDorada: guardaD,
         danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, 
         danoAzul: parseInt(document.getElementById('npc-da').value) || 0, 
         elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
-        afinidades: { 
-            fisica: parseInt(document.getElementById('npc-fis').value) || 0, 
-            energetica: parseInt(document.getElementById('npc-ene').value) || 0, 
-            espiritual: parseInt(document.getElementById('npc-esp').value) || 0, 
-            mando: parseInt(document.getElementById('npc-man').value) || 0, 
-            psiquica: parseInt(document.getElementById('npc-psi').value) || 0, 
-            oscura: parseInt(document.getElementById('npc-osc').value) || 0 
-        },
+        afinidades: { fisica: fis, energetica: ene, espiritual: esp, mando: man, psiquica: psi, oscura: osc },
         hechizos: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         hechizosEfecto: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
