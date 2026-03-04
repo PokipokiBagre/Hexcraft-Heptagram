@@ -1,12 +1,16 @@
 import { statsGlobal, listaEstados, guardar } from './stats-state.js';
 
 const parseCell = (str) => {
-    if (!str) return { total: 0, base: 0, spells: 0, extra: 0 };
+    if (!str) return { total: 0, base: 0, spells: 0, spellEff: 0, extra: 0 };
     str = str.toString().trim();
     const parts = str.split('_');
-    if (parts.length === 4) return { total: parseInt(parts[0])||0, base: parseInt(parts[1])||0, spells: parseInt(parts[2])||0, extra: parseInt(parts[3])||0 };
-    if (parts.length === 2) return { total: (parseInt(parts[0])||0)+(parseInt(parts[1])||0), base: parseInt(parts[0])||0, spells: 0, extra: parseInt(parts[1])||0 };
-    const v = parseInt(str)||0; return { total: v, base: v, spells: 0, extra: 0 };
+    // NUEVO: Formato de 5 Fases (Total_Base_Conteo_Efecto_Extra)
+    if (parts.length === 5) return { total: parseInt(parts[0])||0, base: parseInt(parts[1])||0, spells: parseInt(parts[2])||0, spellEff: parseInt(parts[3])||0, extra: parseInt(parts[4])||0 };
+    // Legado 4 Fases
+    if (parts.length === 4) return { total: parseInt(parts[0])||0, base: parseInt(parts[1])||0, spells: parseInt(parts[2])||0, spellEff: 0, extra: parseInt(parts[3])||0 };
+    // Legado 2 Fases
+    if (parts.length === 2) return { total: (parseInt(parts[0])||0)+(parseInt(parts[1])||0), base: parseInt(parts[0])||0, spells: 0, spellEff: 0, extra: parseInt(parts[1])||0 };
+    const v = parseInt(str)||0; return { total: v, base: v, spells: 0, spellEff: 0, extra: 0 };
 };
 
 export async function cargarDiccionarioEstados() {
@@ -74,13 +78,12 @@ export function procesarTextoCSV(texto) {
             
             afinidades: { fisica: fFis.base, energetica: fEne.base, espiritual: fEsp.base, mando: fMan.base, psiquica: fPsi.base, oscura: fOsc.base },
             hechizos: { fisica: fFis.spells, energetica: fEne.spells, espiritual: fEsp.spells, mando: fMan.spells, psiquica: fPsi.spells, oscura: fOsc.spells, danoRojo: fDR.spells, danoAzul: fDA.spells, elimDorada: fED.spells, vidaRojaMaxExtra: fVRM.spells, vidaAzulExtra: fVA.spells, guardaDoradaExtra: fGD.spells },
+            hechizosEfecto: { fisica: fFis.spellEff, energetica: fEne.spellEff, espiritual: fEsp.spellEff, mando: fMan.spellEff, psiquica: fPsi.spellEff, oscura: fOsc.spellEff, danoRojo: fDR.spellEff, danoAzul: fDA.spellEff, elimDorada: fED.spellEff, vidaRojaMaxExtra: fVRM.spellEff, vidaAzulExtra: fVA.spellEff, guardaDoradaExtra: fGD.spellEff },
             buffs: { fisica: fFis.extra, energetica: fEne.extra, espiritual: fEsp.extra, mando: fMan.extra, psiquica: fPsi.extra, oscura: fOsc.extra, danoRojo: fDR.extra, danoAzul: fDA.extra, elimDorada: fED.extra, vidaRojaMaxExtra: fVRM.extra, vidaAzulExtra: fVA.extra, guardaDoradaExtra: fGD.extra },
             
             vidaRojaActual: parseInt(cols[9]) || 0, vidaRojaMax: baseVRM,
-            vidaAzul: baseVA, // Vida Azul entra directo a la piscina
-            guardaDorada: fGD.base, // Guarda dorada entra directo a la piscina
+            vidaAzul: baseVA, guardaDorada: fGD.base,
             danoRojo: fDR.base, danoAzul: fDA.base, elimDorada: fED.base,
-            
             estados: estadosPers 
         };
     });
