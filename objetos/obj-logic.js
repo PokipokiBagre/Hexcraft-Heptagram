@@ -51,7 +51,11 @@ export function descargarEstadoCSV() {
     Object.keys(objGlobal).sort().forEach(o => {
         const info = objGlobal[o]; let d = [], c = [];
         Object.keys(invGlobal).forEach(jug => { if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); } });
-        csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
+        if(d.length > 0) {
+            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
+        } else {
+            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","Nadie","0"\n`;
+        }
     });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
