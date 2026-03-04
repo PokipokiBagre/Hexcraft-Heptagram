@@ -252,9 +252,19 @@ export function dibujarHexOP() {
     }
     
     html += `</div>
+            
+            <div id="party-selector-container" style="display:none; background:#0a0014; border:1px dashed #00ffff; border-radius:8px; padding:15px; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0; color:#00ffff;">Selecciona un Jugador para el Slot <span id="party-slot-label"></span></h4>
+                    <button type="button" onclick="document.getElementById('party-selector-container').style.display='none'" style="background:transparent; border:none; color:#ff0000; font-size:1.2em; cursor:pointer;">✖</button>
+                </div>
+                <div id="party-modal-grid" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+                <button type="button" id="btn-quitar-slot" onclick="window.quitarDeParty()" style="margin-top:15px; width:100%; background:#4a0000; display:none;">VACIAR ESTE SLOT</button>
+            </div>
 
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-                <button type="button" onclick="window.autoLlenarParty()" style="background:#004a4a; border-color:#00ffff; color:white;">SELECCIONAR A JUGADORES ACTIVOS</button>
+                <button type="button" onclick="window.establecerPartyActiva()" style="background:#004a00; border-color:#00ff00; color:white;">ESTABLECER COMO JUGADORES ACTIVOS</button>
+                <button type="button" onclick="window.autoLlenarParty()" style="background:#004a4a; border-color:#00ffff; color:white;">AUTO-LLENAR JUGADORES</button>
                 <button type="button" onclick="window.vaciarParty()" style="background:#4a0000; border-color:#ff0000; color:white;">VACIAR SLOTS</button>
                 <button type="button" onclick="window.addAsistenciaGlobal()" style="background:#4a004a; border-color:#8a008a; color:white;">SUMAR ASISTENCIA (+1) A PARTY</button>
             </div>
@@ -311,19 +321,7 @@ export function dibujarHexOP() {
                 <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white;">LIMPIAR LOG</button>
             </div>
         </div>
-    </div>
-
-    <div id="party-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center;">
-        <div style="background:#1a0033; border:2px solid var(--gold); border-radius:8px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; box-shadow:0 0 20px #000;">
-            <h3 style="color:var(--gold); margin-top:0; text-align:center;">Selecciona Jugador para el Slot <span id="party-slot-label"></span></h3>
-            <div id="party-modal-grid" style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin-top:20px;"></div>
-            <div style="display:flex; gap:10px; margin-top:30px;">
-                <button type="button" onclick="document.getElementById('party-modal').style.display='none'" style="flex:1; background:#444; color:white;">CANCELAR</button>
-                <button type="button" id="btn-quitar-slot" onclick="window.quitarDeParty()" style="flex:1; background:#4a0000; color:white; display:none;">VACIAR SLOT</button>
-            </div>
-        </div>
     </div>`;
-    
     return html;
 }
 
