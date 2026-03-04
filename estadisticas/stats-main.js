@@ -41,7 +41,6 @@ window.setFiltro = (tipo, valor) => {
     refrescarVistas();
 };
 
-// TOGGLES DURANTE LA CREACIÓN
 window.toggleCrearRol = () => {
     const btn = document.getElementById('btn-crear-rol');
     if (btn.dataset.val === 'npc') {
@@ -172,7 +171,6 @@ window.modGoldExtra = (cantidad) => {
     guardar(); repintarConScroll('detalle');
 };
 
-// ESTA FUNCIÓN AHORA RECIBE EL ID EXACTO Y SUMA CORRECTAMENTE
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
     if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
@@ -190,21 +188,29 @@ window.toggleEstado = (estadoId) => {
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 
+// CLONACIÓN ACTUALIZADA CON OPCIÓN HEX
 window.ejecutarClonacion = (tipo) => {
     const sourceSelect = document.getElementById('clon-source'); if(!sourceSelect) return;
     const sourceName = sourceSelect.value; if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
     const targetName = estadoUI.personajeSeleccionado; 
+    const source = statsGlobal[sourceName]; const target = statsGlobal[targetName];
     
-    const msg = tipo === 'estados' ? 
-        `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` : 
-        `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?\n\n(Esto copiará estadísticas, afinidades, estados e IMÁGENES. El personaje ${targetName} se verá como ${sourceName}).`;
+    let msg = '';
+    if (tipo === 'estados') msg = `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?`;
+    else if (tipo === 'hex') msg = `¿Seguro que deseas COPIAR EL HEX (${source.hex}) desde ${sourceName} hacia ${targetName}?\n(El HEX actual de ${targetName} se sobrescribirá).`;
+    else if (tipo === 'completo') msg = `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?\n\n(Esto copiará estadísticas, afinidades, estados e IMÁGENES. El personaje ${targetName} se verá como ${sourceName}).`;
     
     if(!confirm(msg)) return;
 
-    const source = statsGlobal[sourceName]; const target = statsGlobal[targetName];
-    
-    target.buffs = JSON.parse(JSON.stringify(source.buffs));
-    target.estados = JSON.parse(JSON.stringify(source.estados));
+    if (tipo === 'estados' || tipo === 'completo') {
+        target.buffs = JSON.parse(JSON.stringify(source.buffs));
+        target.estados = JSON.parse(JSON.stringify(source.estados));
+    }
+
+    // Copia HEX de forma independiente o como parte del clonado completo
+    if (tipo === 'hex' || tipo === 'completo') {
+        target.hex = source.hex;
+    }
 
     if (tipo === 'completo') {
         target.vidaRojaActual = source.vidaRojaActual; target.vidaRojaMax = source.vidaRojaMax;
@@ -216,14 +222,13 @@ window.ejecutarClonacion = (tipo) => {
         target.hechizos = JSON.parse(JSON.stringify(source.hechizos || {}));
         target.hechizosEfecto = JSON.parse(JSON.stringify(source.hechizosEfecto || {}));
         
-        target.hex = source.hex; target.vex = source.vex;
+        target.vex = source.vex;
         target.iconoOverride = source.iconoOverride || normalizar(sourceName);
     }
     
     guardar(); sourceSelect.value = ""; repintarConScroll('detalle'); 
 };
 
-// CORRECCIÓN: LECTURA DE SWITCHES EN CREACIÓN
 window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta dar un nombre.");
@@ -262,7 +267,7 @@ window.ejecutarCreacionNPC = () => {
         estados: stInit
     };
     guardar(); 
-    estadoUI.personajeSeleccionado = nombre; // Evita perder foco
+    estadoUI.personajeSeleccionado = nombre; 
     window.abrirDetalle(nombre); 
     window.scrollTo(0,0);
 };
@@ -308,5 +313,5 @@ async function iniciar() {
     finally { refrescarVistas(); }
 }
 iniciar();
-iniciar();
+
 
