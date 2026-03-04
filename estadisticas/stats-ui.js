@@ -235,6 +235,7 @@ export function dibujarMenuOP() {
     `;
 }
 
+// CORRECCIÓN VITAL: El targetId soluciona el bug de los botones en la Edición OP
 function genCard(f, tipoAccion) {
     let btns = ''; let clickMod = '';
     if (tipoAccion === 'buff') clickMod = 'window.modificarBuff'; 
@@ -249,15 +250,21 @@ function genCard(f, tipoAccion) {
 
     const visualVal = f.val !== undefined ? f.val : 0;
     
+    // ID HTML
     const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
+    // Actualización manual vía teclado
     const attrInput = tipoAccion === 'form' ? '' : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
+    
+    // SOLUCIÓN: Si estamos en Creación manda el ID del HTML para que la función modForm lo encuentre,
+    // Si estamos editando un personaje manda el nombre de la variable (f.id) directo a la memoria.
+    const paramId = tipoAccion === 'form' ? inputId : f.id;
     
     let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
 
     if (f.esHex) {
-        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${inputId}', 10)">+10</button><button type="button" class="btn-minus" onclick="${clickMod}('${inputId}', -10)">-10</button></div><div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${inputId}', 50)">+50</button><button type="button" class="btn-minus" onclick="${clickMod}('${inputId}', -50)">-50</button></div><div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', -100)">-100</button></div>`;
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -10)">-10</button></div><div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 50)">+50</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -50)">-50</button></div><div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', -100)">-100</button></div>`;
     } else {
-        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${inputId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${inputId}', -1)">-1</button></div><div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${inputId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${inputId}', -5)">-5</button></div><div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', 10)">+10</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', -10)">-10</button></div>`;
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -1)">-1</button></div><div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${paramId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${paramId}', -5)">-5</button></div><div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', -10)">-10</button></div>`;
     }
     return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
 }
