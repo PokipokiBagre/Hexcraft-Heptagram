@@ -2,23 +2,34 @@ import { statsGlobal, listaEstados, estadoUI } from './stats-state.js';
 import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-const calcTotal = (base, spells, buff) => (base || 0) + (spells || 0) + (buff || 0);
+const calcTotal = (base, spells, spellEff, buff) => (base || 0) + (spells || 0) + (spellEff || 0) + (buff || 0);
 
-const bTextSplit = (spells, buff) => {
+const bTextSplit = (spells, spellEff, buff) => {
     let html = '';
     if (spells !== 0) html += `<span style="color:#d4af37; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${spells > 0 ? '+' : ''}${spells})</span>`;
+    if (spellEff !== 0) html += `<span style="color:#4a90e2; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${spellEff > 0 ? '+' : ''}${spellEff})</span>`;
     if (buff !== 0) html += `<span style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${buff > 0 ? '+' : ''}${buff})</span>`;
     return html;
 };
 
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
+// ESTE ES EL BLINDAJE QUE PREVIENE LA ROTURA BLANCA
 function asegurarEstructuras(p) {
-    if(!p.buffs) p.buffs = {}; if(!p.hechizos) p.hechizos = {};
+    if(!p.buffs) p.buffs = {}; 
+    if(!p.hechizos) p.hechizos = {}; 
+    if(!p.hechizosEfecto) p.hechizosEfecto = {}; // CREACIÓN DE LA CAPA EFECTO EN CACHÉS VIEJOS
     if(!p.estados) p.estados = {};
+    
     listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
+    
     const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
-    props.forEach(pr => { p.buffs[pr] = p.buffs[pr] || 0; p.hechizos[pr] = p.hechizos[pr] || 0; if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; });
+    props.forEach(pr => { 
+        p.buffs[pr] = p.buffs[pr] || 0; 
+        p.hechizos[pr] = p.hechizos[pr] || 0; 
+        p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; // RELLENO DE 0 PARA PREVENIR NaN
+        if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; 
+    });
     if(p.isActive === undefined) p.isActive = true;
 }
 
@@ -49,9 +60,7 @@ export function dibujarCatalogo() {
         if (estadoUI.filtroAct === 'Activo' && !p.isActive) return;
         if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
 
-        // NUEVO: Usar iconoOverride si existe (para clonación de imagen)
         const iconoMuestra = p.iconoOverride || normalizar(nombre);
-
         const claseCarta = p.isPlayer ? 'player-card' : ''; const claseInactiva = p.isActive ? '' : 'inactive-card';
         html += `<div class="char-card ${claseCarta} ${claseInactiva}" onclick="window.abrirDetalle('${nombre}')"><img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}"><h3>${nombre}</h3><p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p></div>`;
     }); 
@@ -67,7 +76,6 @@ export function dibujarDetalle() {
     let vexVisual = calcularVexMax(p);
     let hexPercent = Math.min((p.hex / 4000) * 100, 100); let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
-    // VIDA ROJA
     let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual); 
     let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual); 
     let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
@@ -77,23 +85,20 @@ export function dibujarDetalle() {
     for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    // VIDA AZUL
     let normalAzul = Math.max(0, p.vidaAzul || 0); 
-    let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
+    let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.hechizosEfecto.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
     let corazonesAzulesHTML = ''; 
     for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; 
     for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    // GUARDA DORADA
     let normalGuarda = Math.max(0, p.guardaDorada || 0); 
-    let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
+    let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.hechizosEfecto.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
     let guardasHTML = ''; 
     for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; 
     for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
-    // DECODIFICADOR A TOOLTIPS
     let estadosHTML = ''; 
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
@@ -106,7 +111,6 @@ export function dibujarDetalle() {
         }
     });
 
-    // NUEVO: Usar iconoOverride si existe (para clonación de imagen)
     const iconoGrande = p.iconoOverride || normalizar(nombre);
 
     let html = `
@@ -133,20 +137,20 @@ export function dibujarDetalle() {
             
             <h3 style="margin-top:20px;">Ofensiva Totales</h3>
             <div class="affinities-grid">
-                <div class="affinity-box"><label style="color:var(--red-life)">Daño Rojo</label><span style="font-size:1.4em;">${calcTotal(p.danoRojo, p.hechizos.danoRojo, p.buffs.danoRojo)}</span>${bTextSplit(p.hechizos.danoRojo, p.buffs.danoRojo)}</div>
-                <div class="affinity-box"><label style="color:var(--blue-life)">Daño Azul</label><span style="font-size:1.4em;">${calcTotal(p.danoAzul, p.hechizos.danoAzul, p.buffs.danoAzul)}</span>${bTextSplit(p.hechizos.danoAzul, p.buffs.danoAzul)}</div>
-                <div class="affinity-box"><label style="color:var(--gold)">Elim. Dorada</label><span style="font-size:1.4em;">${calcTotal(p.elimDorada, p.hechizos.elimDorada, p.buffs.elimDorada)}</span>${bTextSplit(p.hechizos.elimDorada, p.buffs.elimDorada)}</div>
+                <div class="affinity-box"><label style="color:var(--red-life)">Daño Rojo</label><span style="font-size:1.4em;">${calcTotal(p.danoRojo, p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo)}</span>${bTextSplit(p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo)}</div>
+                <div class="affinity-box"><label style="color:var(--blue-life)">Daño Azul</label><span style="font-size:1.4em;">${calcTotal(p.danoAzul, p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul)}</span>${bTextSplit(p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul)}</div>
+                <div class="affinity-box"><label style="color:var(--gold)">Elim. Dorada</label><span style="font-size:1.4em;">${calcTotal(p.elimDorada, p.hechizos.elimDorada, p.hechizosEfecto.elimDorada, p.buffs.elimDorada)}</span>${bTextSplit(p.hechizos.elimDorada, p.hechizosEfecto.elimDorada, p.buffs.elimDorada)}</div>
             </div>
         </div>
         <div>
             <h3 style="margin-top:0;">Afinidades Totales</h3>
             <div class="affinities-grid">
-                <div class="affinity-box"><label>Física</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.fisica, p.hechizos.fisica, p.buffs.fisica)}</span>${bTextSplit(p.hechizos.fisica, p.buffs.fisica)}</div>
-                <div class="affinity-box"><label>Energética</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.energetica, p.hechizos.energetica, p.buffs.energetica)}</span>${bTextSplit(p.hechizos.energetica, p.buffs.energetica)}</div>
-                <div class="affinity-box"><label>Espiritual</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.espiritual, p.hechizos.espiritual, p.buffs.espiritual)}</span>${bTextSplit(p.hechizos.espiritual, p.buffs.espiritual)}</div>
-                <div class="affinity-box"><label>Mando</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.mando, p.hechizos.mando, p.buffs.mando)}</span>${bTextSplit(p.hechizos.mando, p.buffs.mando)}</div>
-                <div class="affinity-box"><label>Psíquica</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.psiquica, p.hechizos.psiquica, p.buffs.psiquica)}</span>${bTextSplit(p.hechizos.psiquica, p.buffs.psiquica)}</div>
-                <div class="affinity-box"><label>Oscura</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.buffs.oscura)}</span>${bTextSplit(p.hechizos.oscura, p.buffs.oscura)}</div>
+                <div class="affinity-box"><label>Física</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}</span>${bTextSplit(p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}</div>
+                <div class="affinity-box"><label>Energética</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}</span>${bTextSplit(p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}</div>
+                <div class="affinity-box"><label>Espiritual</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.espiritual, p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual)}</span>${bTextSplit(p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual)}</div>
+                <div class="affinity-box"><label>Mando</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</span>${bTextSplit(p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</div>
+                <div class="affinity-box"><label>Psíquica</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</span>${bTextSplit(p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</div>
+                <div class="affinity-box"><label>Oscura</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</span>${bTextSplit(p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</div>
             </div>
         </div>
     </div>
@@ -160,9 +164,8 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('hex', 10)">+10</button><button class="btn-minus" onclick="window.modLibre('hex', -10)">-10</button></div>
                 <div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 50)">+50</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -50)">-50</button></div>
                 <div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 100)">+100</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button></div>
-                
-                <div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -500)">-500</button></div>
-                <div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -500)">-500</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
             </div>
             <div class="edit-card">
                 <h4>Vida Roja (Actual)</h4>
