@@ -137,3 +137,15 @@ tr:hover td { background: rgba(212, 175, 55, 0.1); }
     .char-card img { width: 75px !important; height: 75px !important; }
     .char-card h3 { font-size: 1.1em !important; margin: 8px 0 !important; }
 }
+
+/* =======================================================
+   🛡️ FÍSICAS MODO LIBRE (REPISAS)
+   ======================================================= */
+.shelf {
+    position: absolute;
+    background: linear-gradient(to bottom, #2e004f, #1a0033);
+    border-top: 4px solid var(--gold);
+    border-radius: 50% 50% 10px 10px; /* Forma de Media Luna */
+    box-shadow: 0 15px 25px rgba(0,0,0,0.9), inset 0 5px 10px rgba(212,175,55,0.2);
+    z-index: 8999;
+}
