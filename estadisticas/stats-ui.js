@@ -279,7 +279,6 @@ export function dibujarMenuOP() {
     `;
 }
 
-// ---------------- GESTOR DE HEX Y PARTY (MODIFICADO SIN MODAL) ----------------
 export function dibujarHexOP() {
     let html = `<div style="text-align:center; max-width:1200px; margin:0 auto;">
         <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party</h2>
@@ -319,7 +318,7 @@ export function dibujarHexOP() {
         </div>
         
         <div style="background:#0a0014; padding:15px; border-radius:8px; border:1px solid var(--blue-life); margin-bottom:20px;">
-            <h3 style="color:var(--blue-life); margin-top:0;">Dar HEX Global (Toda la Party)</h3>
+            <h3 style="color:var(--blue-life); margin-top:0;">Dar HEX Global (A los 6 Slots)</h3>
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
                 <button type="button" onclick="window.modHexGlobal(10)" class="btn-plus">+10</button>
                 <button type="button" onclick="window.modHexGlobal(-10)" class="btn-minus">-10</button>
@@ -334,7 +333,6 @@ export function dibujarHexOP() {
 
         <div class="edit-grid">`;
 
-    // Renderiza tarjetas individuales SOLAMENTE para los que están en los 6 slots
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
             const p = statsGlobal[nombre];
