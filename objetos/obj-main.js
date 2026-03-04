@@ -23,13 +23,12 @@ window.toggleSync = () => {
     guardar();
 };
 
-// Generador de imágenes ahora vive aquí para no causar conflictos de módulos
 window.descargarInventariosJPG = async () => {
     const jugadores = Object.keys(invGlobal);
     for (const j of jugadores) {
         estadoUI.jugadorInv = j;
         window.mostrarPagina('inventario');
-        await new Promise(r => setTimeout(r, 1500)); // Esperar a que renderice
+        await new Promise(r => setTimeout(r, 1500)); 
         const canvas = await html2canvas(document.getElementById('contenedor-jugadores'), { backgroundColor: '#120024', scale: 2, useCORS: true });
         const link = document.createElement('a'); link.download = `Inv_${j}.jpg`; link.href = canvas.toDataURL("image/jpeg", 0.9); link.click();
     }
@@ -92,6 +91,7 @@ async function iniciar() {
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
     
+    // NAVEGACIÓN Y MENÚS
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
@@ -114,7 +114,7 @@ async function iniciar() {
     window.abrirInventario = (j) => { estadoUI.jugadorInv = j; window.mostrarPagina('inventario'); };
     window.volverAGrilla = () => { estadoUI.jugadorInv = null; window.mostrarPagina('grilla'); };
 
-    // CONTROL IN-SITU
+    // CONTROL Y MULTIPLICADORES (EDICIÓN IN-SITU)
     window.setEditMult = (val) => { estadoUI.editMult = val; refrescarUI(); };
     window.setEditModo = (val) => { estadoUI.editModo = val; refrescarUI(); };
     window.hexMod = (j, o, c) => {
@@ -161,12 +161,21 @@ async function iniciar() {
         transferir(origen, dest, item, cantToPass, refrescarUI);
     };
 
+    // BUSCADORES Y CREADOR
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
     window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
     
+    window.updateCreationLog = () => {
+        const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
+        let l = []; document.querySelectorAll('.cant-input').forEach(i => {
+            const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
+        });
+        const out = document.getElementById('copy-log-crea'); if (out) out.value = l.join('\n');
+    };
+
     window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); dibujarCreacionObjeto(); };
     window.ejecutarAgregarObjeto = () => {
         const d = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
@@ -175,7 +184,8 @@ async function iniciar() {
         agregarObjetoManual(d, rep, () => { alert("Objeto Creado"); window.mostrarPagina('op-menu'); });
     };
 
-    window.descargarEstadoCSV = descargarEstadoCSV; window.descargarLog = descargarLog;
+    window.descargarEstadoCSV = descargarEstadoCSV; 
+    window.descargarLog = descargarLog;
     window.toggleLibre = toggleLibre;
     
     window.mostrarPagina('grilla'); 
