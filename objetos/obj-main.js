@@ -2,8 +2,9 @@ import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.
 import { cargarTodoDesdeCSV } from './obj-data.js';
 import { modificar, modificarMulti, transferir, descargarLog, descargarEstadoCSV, descargarInventariosJPG, agregarObjetoManual } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
+import { toggleLibre } from './libre.js';
 
-// MODO SINCRONIZADO A 10 SEGUNDOS
+// MODO SINCRONIZADO AUTO (10 SEGUNDOS)
 setInterval(async () => {
     if (estadoUI.modoSincronizado) {
         console.log("Sincronizando inventarios con la nube...");
@@ -17,8 +18,8 @@ window.toggleSync = () => {
     const btn = document.getElementById('btn-sync');
     if (btn) {
         btn.innerText = estadoUI.modoSincronizado ? "CONECTADO (AUTO)" : "MODO EDICIÓN LOCAL";
-        btn.style.background = estadoUI.modoSincronizado ? "#004a00" : "#4a0000";
-        btn.style.borderColor = estadoUI.modoSincronizado ? "#0f0" : "#f00";
+        btn.style.background = estadoUI.modoSincronizado ? "#006400" : "#8b0000";
+        btn.style.color = "white";
     }
     guardar();
 };
@@ -32,14 +33,13 @@ async function iniciar() {
     estadoUI.cambiosSesion = {};
     estadoUI.vistaActual = 'grilla';
 
-    // Setear el botón de Sync visualmente
     const btn = document.getElementById('btn-sync');
     if(btn) {
         btn.innerText = estadoUI.modoSincronizado ? "CONECTADO (AUTO)" : "MODO EDICIÓN LOCAL";
-        btn.style.background = estadoUI.modoSincronizado ? "#004a00" : "#4a0000";
-        btn.style.borderColor = estadoUI.modoSincronizado ? "#0f0" : "#f00";
+        btn.style.background = estadoUI.modoSincronizado ? "#006400" : "#8b0000";
     }
 
+    // Modal para expandir imágenes
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view'; modal.className = 'hex-modal';
     modal.innerHTML = `<img id="hex-modal-img" src="" draggable="false">`;
@@ -79,73 +79,9 @@ async function iniciar() {
     };
 
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
+    window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
     
-    window.hexMod = (j, o, c) => {
-        if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
-        estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
-        actualizarLogSesion();
-        modificar(j, o, c, refrescarUI);
-    };
-
-    // FUNCIONES DE PARTY LOOT
-    window.togglePartyLoot = (player, isChecked) => {
-        if (isChecked && !estadoUI.partyLoot.includes(player)) estadoUI.partyLoot.push(player);
-        if (!isChecked) estadoUI.partyLoot = estadoUI.partyLoot.filter(p => p !== player);
-        refrescarUI();
-    };
-    window.setLootMult = (val) => { estadoUI.lootMult = val; refrescarUI(); };
-    window.giveLootToParty = (item) => {
-        if (estadoUI.partyLoot.length === 0) return alert("Selecciona al menos un jugador arriba.");
-        const cant = estadoUI.lootMult || 1;
-        estadoUI.partyLoot.forEach(j => {
-            if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
-            estadoUI.cambiosSesion[j][item] = (estadoUI.cambiosSesion[j][item] || 0) + cant;
-        });
-        actualizarLogSesion();
-        modificarMulti(estadoUI.partyLoot, item, cant, refrescarUI);
-    };
-
-    // FUNCIONES DE TRANSFERENCIA
-    window.setTransOrigen = (val) => { estadoUI.transOrigen = val; refrescarUI(); };
-    window.setTransDestino = (val) => { estadoUI.transDestino = val; refrescarUI(); };
-    window.ejecutarTransfer = (item, cant) => {
-        const origen = estadoUI.transOrigen; const dest = estadoUI.transDestino;
-        if (!origen || !dest || origen === dest) return;
-        
-        // Log para origen
-        if (!estadoUI.cambiosSesion[origen]) estadoUI.cambiosSesion[origen] = {};
-        estadoUI.cambiosSesion[origen][item] = (estadoUI.cambiosSesion[origen][item] || 0) - cant;
-        
-        // Log para destino
-        if (!estadoUI.cambiosSesion[dest]) estadoUI.cambiosSesion[dest] = {};
-        estadoUI.cambiosSesion[dest][item] = (estadoUI.cambiosSesion[dest][item] || 0) + cant;
-        
-        actualizarLogSesion();
-        transferir(origen, dest, item, cant, refrescarUI);
-    };
-
-    const _session = 'Y2FuZXk=';
-    window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Log copiado al portapapeles."); };
-    
-    window.ejecutarSyncLog = () => { 
-        const enrutarOP = () => {
-            if (estadoUI.vistaActual === 'inventario') estadoUI.vistaActual = 'control'; 
-            else if (estadoUI.vistaActual === 'grilla' || estadoUI.vistaActual === 'catalogo') estadoUI.vistaActual = 'op-menu'; 
-            window.mostrarPagina(estadoUI.vistaActual);
-        };
-        if (estadoUI.esAdmin) { enrutarOP(); return; } 
-        const i = prompt("Acceso Restringido:"); 
-        if (i === atob(_session)) { estadoUI.esAdmin = true; enrutarOP(); } 
-    };
-    
-    window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); dibujarCreacionObjeto(); };
-    window.ejecutarAgregarObjeto = () => {
-        const d = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
-        const rep = {}; document.querySelectorAll('.cant-input').forEach(i => rep[i.dataset.player] = i.value);
-        if(!d.nombre) return alert("Nombre vacío");
-        agregarObjetoManual(d, rep, () => { alert("Objeto Creado"); window.mostrarPagina('op-menu'); });
-    };
-
+    // NAVEGACIÓN Y MENÚS
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
@@ -154,17 +90,78 @@ async function iniciar() {
         refrescarUI(); 
     };
 
+    const _session = 'Y2FuZXk=';
+    window.ejecutarSyncLog = () => { 
+        const enrutarOP = () => {
+            if (estadoUI.vistaActual === 'inventario') window.mostrarPagina('control'); 
+            else window.mostrarPagina('op-menu');
+        };
+        if (estadoUI.esAdmin) { enrutarOP(); return; } 
+        const i = prompt("Acceso Restringido:"); 
+        if (i === atob(_session)) { estadoUI.esAdmin = true; enrutarOP(); } 
+    };
+
     window.abrirInventario = (j) => { estadoUI.jugadorInv = j; window.mostrarPagina('inventario'); };
     window.volverAGrilla = () => { estadoUI.jugadorInv = null; window.mostrarPagina('grilla'); };
 
+    // CONTROL Y MULTIPLICADORES (EDICIÓN IN-SITU)
+    window.setEditMult = (val) => { estadoUI.editMult = val; refrescarUI(); };
+    window.setEditModo = (val) => { estadoUI.editModo = val; refrescarUI(); };
+    window.hexMod = (j, o, c) => {
+        if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
+        estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
+        actualizarLogSesion();
+        modificar(j, o, c, refrescarUI);
+    };
+
+    // PARTY LOOT MASIVO
+    window.togglePartyLoot = (player, isChecked) => {
+        if (isChecked && !estadoUI.partyLoot.includes(player)) estadoUI.partyLoot.push(player);
+        if (!isChecked) estadoUI.partyLoot = estadoUI.partyLoot.filter(p => p !== player);
+        refrescarUI();
+    };
+    window.setPartyMult = (val) => { estadoUI.partyMult = val; refrescarUI(); };
+    window.giveLootToParty = (item) => {
+        if (estadoUI.partyLoot.length === 0) return alert("Selecciona al menos un jugador arriba.");
+        const cant = estadoUI.partyMult || 1;
+        estadoUI.partyLoot.forEach(j => {
+            if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
+            estadoUI.cambiosSesion[j][item] = (estadoUI.cambiosSesion[j][item] || 0) + cant;
+        });
+        actualizarLogSesion();
+        modificarMulti(estadoUI.partyLoot, item, cant, refrescarUI);
+    };
+
+    // TRANSFERENCIAS
+    window.setTransOrigen = (val) => { estadoUI.transOrigen = val; refrescarUI(); };
+    window.setTransDestino = (val) => { estadoUI.transDestino = val; refrescarUI(); };
+    window.setTransMult = (val) => { estadoUI.transMult = val; refrescarUI(); };
+    window.ejecutarTransfer = (item, cantToPass) => {
+        const origen = estadoUI.transOrigen; const dest = estadoUI.transDestino;
+        if (!origen || !dest || origen === dest) return;
+        if (cantToPass <= 0) return;
+        
+        if (!estadoUI.cambiosSesion[origen]) estadoUI.cambiosSesion[origen] = {};
+        estadoUI.cambiosSesion[origen][item] = (estadoUI.cambiosSesion[origen][item] || 0) - cantToPass;
+        
+        if (!estadoUI.cambiosSesion[dest]) estadoUI.cambiosSesion[dest] = {};
+        estadoUI.cambiosSesion[dest][item] = (estadoUI.cambiosSesion[dest][item] || 0) + cantToPass;
+        
+        actualizarLogSesion();
+        transferir(origen, dest, item, cantToPass, refrescarUI);
+    };
+
+    // BUSCADORES
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
-    window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); }; // Actualiza Party Loot o Transfer
+    window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
     
     window.descargarEstadoCSV = descargarEstadoCSV; window.descargarInventariosJPG = descargarInventariosJPG; window.descargarLog = descargarLog;
+    window.toggleLibre = toggleLibre;
     
     window.mostrarPagina('grilla'); 
 }
 iniciar();
+
