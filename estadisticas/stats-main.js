@@ -5,15 +5,28 @@ import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMys
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
-// --- SISTEMA DE LOGS DE HEX Y ACTUALIZADOR SEGURO ---
+// --- SISTEMA DE LOGS DE HEX AGRUPADO (SUMAS Y RESTAS PERFECTAS) ---
 function updateHexLogText() {
     const textarea = document.getElementById('hex-log-textarea');
     if (!textarea) return; 
     
     let finalOutput = "";
     Object.keys(estadoUI.hexLog).sort().forEach(char => {
-        estadoUI.hexLog[char].forEach(line => {
-            finalOutput += line + "\n";
+        const log = estadoUI.hexLog[char];
+        const p = statsGlobal[char];
+        if (!p) return;
+
+        const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
+
+        // Imprime en el orden en que ocurrieron los tipos de acción
+        log.order.forEach(actionType => {
+            if (actionType === 'pos' && log.pos.amount >= 0) {
+                finalOutput += `${char} +${log.pos.amount} Hex (${log.pos.finalHex})${asisStr}\n`;
+            } else if (actionType === 'neg' && log.neg.amount > 0) {
+                finalOutput += `${char} -${log.neg.amount} Hex (${log.neg.finalHex})${asisStr}\n`;
+            } else if (actionType === 'extra' && log.extra.amount > 0) {
+                finalOutput += `${char} +${log.extra.amount} Hex ¡EXTRA! (${log.extra.finalHex})${asisStr}\n`;
+            }
         });
     });
     
@@ -22,17 +35,42 @@ function updateHexLogText() {
 }
 
 window.addHexLogEntry = (nombre, amount, isExtra = false) => {
-    if (!estadoUI.hexLog[nombre]) estadoUI.hexLog[nombre] = [];
     const p = statsGlobal[nombre];
     if (!p) return;
-    
-    const sign = amount >= 0 ? "+" : ""; 
-    const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : ""; // Los NPCs no mostrarán nada aquí
-    
-    if(isExtra) {
-        estadoUI.hexLog[nombre].push(`${nombre} +1000 Hex ¡EXTRA! (${p.hex})${asisStr}`);
-    } else {
-        estadoUI.hexLog[nombre].push(`${nombre} ${sign}${amount} Hex (${p.hex})${asisStr}`);
+
+    if (!estadoUI.hexLog[nombre]) {
+        estadoUI.hexLog[nombre] = {
+            pos: { amount: 0, finalHex: 0 },
+            neg: { amount: 0, finalHex: 0 },
+            extra: { amount: 0, finalHex: 0 },
+            order: []
+        };
+    }
+
+    const log = estadoUI.hexLog[nombre];
+
+    if (isExtra) {
+        log.extra.amount += amount;
+        log.extra.finalHex = p.hex;
+        log.order = log.order.filter(k => k !== 'extra');
+        log.order.push('extra');
+    } else if (amount > 0) {
+        log.pos.amount += amount;
+        log.pos.finalHex = p.hex;
+        log.order = log.order.filter(k => k !== 'pos');
+        log.order.push('pos');
+    } else if (amount < 0) {
+        log.neg.amount += Math.abs(amount);
+        log.neg.finalHex = p.hex;
+        log.order = log.order.filter(k => k !== 'neg');
+        log.order.push('neg');
+    } else if (amount === 0) {
+        // Si no hay nada registrado, crea una línea base de +0 para mostrar la asistencia
+        if (log.order.length === 0) {
+            log.pos.amount = 0;
+            log.pos.finalHex = p.hex;
+            log.order.push('pos');
+        }
     }
 };
 
@@ -50,7 +88,7 @@ window.copiarHexLog = () => {
     }
 };
 
-// --- NAVEGACIÓN Y RENDERIZADO AISLADO PARA EVITAR BUCLES ---
+// --- NAVEGACIÓN Y RENDERIZADO AISLADO ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -68,7 +106,6 @@ function repintarConScroll(vista) {
             else container.innerHTML = dibujarFormularioEditar();
         }
         
-        // REGLA DE ORO: Si acabamos de dibujar la pantalla HEX, inyectamos el Log inmediatamente.
         if (estadoUI.vistaActual === 'hex') {
             updateHexLogText();
         }
@@ -131,7 +168,7 @@ window.setFiltro = (tipo, valor) => {
     refrescarVistas();
 };
 
-// --- GESTIÓN DE PARTY DINÁMICA ---
+// --- GESTIÓN DE PARTY (SELECTOR NO BLOQUEANTE) ---
 window.abrirSelectorParty = (index) => {
     estadoUI.selectorIndex = index;
     const container = document.getElementById('party-selector-container');
@@ -144,7 +181,7 @@ window.abrirSelectorParty = (index) => {
     let html = '';
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        // EXCLUSIVO JUGADORES QUE NO ESTÉN YA SELECCIONADOS
+        // SOLO JUGADORES Y QUE NO ESTÉN YA EN LOS SLOTS
         if (p.isPlayer && !estadoUI.party.includes(nombre)) {
             const iconoMuestra = normalizar(p.iconoOverride || nombre);
             html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px;">
@@ -158,6 +195,8 @@ window.abrirSelectorParty = (index) => {
     
     grid.innerHTML = html; 
     btnQuitar.style.display = estadoUI.party[index] ? 'block' : 'none';
+    
+    // En vez de un display flex modal, mostramos el contenedor inline
     container.style.display = 'block';
 };
 
@@ -181,7 +220,6 @@ window.vaciarParty = () => {
     repintarConScroll('hex');
 };
 
-// Autollenado inteligente de slots de party vacíos
 window.autoLlenarParty = () => {
     const jugadoresActivos = Object.keys(statsGlobal).filter(n => statsGlobal[n].isPlayer && statsGlobal[n].isActive).sort();
     estadoUI.party = [null, null, null, null, null, null];
@@ -190,6 +228,15 @@ window.autoLlenarParty = () => {
     }
     guardar(); 
     repintarConScroll('hex');
+};
+
+window.establecerPartyActiva = () => {
+    if(!confirm("Esto marcará a los personajes de los slots como 'Activos' y al resto de jugadores como 'Inactivos'. ¿Proceder?")) return;
+    Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) statsGlobal[n].isActive = false; });
+    estadoUI.party.forEach(n => {
+        if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; }
+    });
+    guardar(); repintarConScroll('hex'); alert("Party actualizada correctamente.");
 };
 
 window.modHexInd = (nombre, amount) => {
@@ -375,14 +422,14 @@ window.modLibre = (statId, cantidad) => {
 window.modBlueExtra = (cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad);
-    p.vidaAzul = Math.max(0, (p.vidaAzul || 0) + cantidad);
+    p.vidaAzul = Math.max(0, (p.vidaAzul || 0) + Math.max(-Math.abs(p.vidaAzul || 0), cantidad));
     guardar(); repintarConScroll('detalle');
 };
 
 window.modGoldExtra = (cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra || 0) + cantidad);
-    p.guardaDorada = Math.max(0, (p.guardaDorada || 0) + cantidad);
+    p.guardaDorada = Math.max(0, (p.guardaDorada || 0) + Math.max(-Math.abs(p.guardaDorada || 0), cantidad));
     guardar(); repintarConScroll('detalle');
 };
 
@@ -531,7 +578,7 @@ setInterval(async () => {
         await cargarTodoDesdeCSV();
         refrescarVistas();
     }
-}, 10000); // 10 Segundos
+}, 10000); // Reducido a 10 Segundos
 
 window.forzarSincronizacion = async () => {
     if(confirm("¿Seguro que deseas Actualizar Manualmente? Esto borrará los NPCs locales.")) {
@@ -574,6 +621,7 @@ async function iniciar() {
             btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
         }
         refrescarVistas(); 
+        if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
 iniciar();
