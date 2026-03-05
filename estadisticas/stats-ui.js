@@ -191,12 +191,12 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
             </div>
             
-            ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (TOTAL)', val: p.vidaRojaMax }, 'baseTop')}
+            ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (TOTAL)', val: calcularVidaRojaMax(p) }, 'baseTop')}
             
             <div class="edit-card" style="grid-column: 1 / -1; background:#1a1a00; border-color:#b8860b;">
                 <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
                 <button type="button" onclick="window.recalcularBases()" style="background:#b8860b; color:#000; font-weight:bold; width:100%; padding:15px; font-size:1.1em; border-radius:4px; transition:0.2s;">RECALCULAR CORAZONES (Salud Máxima y Fórmulas Base)</button>
-                <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física Total/2], la Vida Azul a [Magia Total/4] y curará al personaje al máximo.</p>
+                <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física/2], la Vida Azul a [Magia/4] y curará al personaje al máximo.</p>
             </div>
         </div>
     </div>`;
