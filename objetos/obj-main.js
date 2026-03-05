@@ -90,6 +90,7 @@ async function iniciar() {
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
     
+    // NAVEGACIÓN Y MENÚS
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
@@ -159,6 +160,7 @@ async function iniciar() {
         transferir(origen, dest, item, cantToPass, refrescarUI);
     };
 
+    // BUSCADORES Y CREADOR
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
@@ -187,3 +189,4 @@ async function iniciar() {
     window.mostrarPagina('grilla'); 
 }
 iniciar();
+
