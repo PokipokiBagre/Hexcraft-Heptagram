@@ -13,7 +13,6 @@ export function calcularVidaRojaMax(p) {
 export function calcularVexMax(p) {
     if (!p) return 0;
     
-    // Si es Jugador, el VEX es calculado dinámicamente y redondeado en múltiplos de 50
     if (p.isPlayer) {
         const oscBase = p.afinidades?.oscura || 0;
         const oscSpell = p.hechizos?.oscura || 0;
@@ -23,11 +22,8 @@ export function calcularVexMax(p) {
         const totalOscura = oscBase + oscSpell + oscEff + oscBuff;
         const vexCrudo = (totalOscura * 300) / 4;
         
-        // Redondeo exacto a saltos de 50
         return Math.round(vexCrudo / 50) * 50;
     }
-    
-    // Si es NPC, devuelve el valor fijo guardado en el CSV
     return p.vex || 0;
 }
 
@@ -37,7 +33,6 @@ export function getMysticBonus(p) {
     const esp = p.afinidades?.espiritual || 0;
     const man = p.afinidades?.mando || 0;
     const psi = p.afinidades?.psiquica || 0;
-    
     return Math.floor((ene + esp + man + psi) / 4);
 }
 
@@ -65,7 +60,6 @@ export function generarCSVExportacion() {
 
         const hexCompound = `${p.hex || 0}_${p.asistencia || 1}`;
         const identityStr = `${p.isPlayer ? 1 : 0}_${p.isActive ? 1 : 0}`;
-        
         const vexExport = p.isPlayer ? 0 : (p.vex || 0);
 
         const row = [
@@ -80,11 +74,8 @@ export function generarCSVExportacion() {
             fStr(af.oscura, hz.oscura, he.oscura, bf.oscura), 
             p.vidaRojaActual !== undefined ? p.vidaRojaActual : 0, 
             fStr(p.vidaRojaMax, hz.vidaRojaMaxExtra, he.vidaRojaMaxExtra, bf.vidaRojaMaxExtra), 
-            
-            // CORRECCIÓN AQUÍ: Exporta la vida azul actual y la guarda dorada actual, no la "base" original
             fStr(p.vidaAzul !== undefined ? p.vidaAzul : 0, hz.vidaAzulExtra, he.vidaAzulExtra, bf.vidaAzulExtra), 
             fStr(p.guardaDorada !== undefined ? p.guardaDorada : 0, hz.guardaDoradaExtra, he.guardaDoradaExtra, bf.guardaDoradaExtra), 
-            
             fStr(p.danoRojo, hz.danoRojo, he.danoRojo, bf.danoRojo), 
             fStr(p.danoAzul, hz.danoAzul, he.danoAzul, bf.danoAzul), 
             fStr(p.elimDorada, hz.elimDorada, he.elimDorada, bf.elimDorada), 
