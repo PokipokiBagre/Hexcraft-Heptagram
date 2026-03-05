@@ -1,6 +1,5 @@
 import { statsGlobal, listaEstados } from './stats-state.js';
 
-// Calcula la suma de la Vida Roja Base + los Extras Temporales o de Hechizos
 export function calcularVidaRojaMax(p) {
     if (!p) return 0;
     const base = p.vidaRojaMax || 10;
@@ -11,13 +10,11 @@ export function calcularVidaRojaMax(p) {
     return base + hechizos + efectos + buffs;
 }
 
-// Devuelve el VEX Máximo actual
 export function calcularVexMax(p) {
     if (!p) return 0;
     return p.vex || 0;
 }
 
-// Formula de los Corazones Azules Místicos: (Ene + Esp + Man + Psi) / 4
 export function getMysticBonus(p) {
     if (!p) return 0;
     const ene = p.afinidades?.energetica || 0;
@@ -28,41 +25,34 @@ export function getMysticBonus(p) {
     return Math.floor((ene + esp + man + psi) / 4);
 }
 
-// Empaqueta toda la información de la base de datos local a un texto CSV
-// REPARADO: Ahora exporta en el formato "Total_Base_Spells_Efecto_Buff"
 export function generarCSVExportacion() {
     let csv = "Personaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,Corazones Rojo,Corazones Rojos Max,Corazones Azules,Guarda Dorada,Daño Rojo,Daño Azul,Eliminacion Dorada,Estado,Jugador_Activo,Copia\n";
 
-    // Función de ayuda para empaquetar "Total_Base_Conteo_Efecto_Buff"
     const fStr = (base, spells, spellEff, buff) => {
-        const b = base || 0;
-        const s = spells || 0;
-        const se = spellEff || 0;
-        const bf = buff || 0;
-        const total = b + s + se + bf;
-        return `${total}_${b}_${s}_${se}_${bf}`;
+        const b = base || 0; const s = spells || 0; const se = spellEff || 0; const bf = buff || 0;
+        return `${b + s + se + bf}_${b}_${s}_${se}_${bf}`;
     };
 
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        
-        // Aseguramos estructuras
         const af = p.afinidades || {};
         const hz = p.hechizos || {};
         const he = p.hechizosEfecto || {};
         const bf = p.buffs || {};
         const est = p.estados || {};
 
-        // Convertimos los estados de vuelta al formato "val1-val2-val3..."
         const estadoStr = listaEstados.map(e => {
             let v = est[e.id];
             if (e.tipo === 'booleano') return v ? '1' : '0';
             return v || '0';
         }).join('-');
 
+        // AQUÍ EMPAQUETAMOS HEX Y ASISTENCIA (Ej: 4300_4)
+        const hexEmpaquetado = `${p.hex || 0}_${p.asistencia || 1}`;
+
         const row = [
             nombre,
-            p.hex || 0,
+            hexEmpaquetado, 
             p.vex || 0,
             fStr(af.fisica, hz.fisica, he.fisica, bf.fisica),
             fStr(af.energetica, hz.energetica, he.energetica, bf.energetica),
@@ -82,11 +72,9 @@ export function generarCSVExportacion() {
             p.iconoOverride || ""
         ];
 
-        // Formateo de comillas para coincidir con tu input
         const rowStr = row.map((v, i) => {
-            // No ponemos comillas al Nombre (i=0), Hex (i=1), Vex (i=2), ni Vida Actual (i=9)
-            if (i === 0 || i === 1 || i === 2 || i === 9) return v;
-            return `"${v}"`;
+            if (i === 0 || i === 1 || i === 2 || i === 9) return v; // Sin comillas para números puros
+            return `"${v}"`; // Con comillas para arrays de _
         }).join(",");
 
         csv += rowStr + "\n";
@@ -95,10 +83,8 @@ export function generarCSVExportacion() {
     return csv;
 }
 
-// Transforma el texto CSV en un archivo descargable para el navegador
 export function descargarArchivoCSV(contenido, nombreArchivo) {
     const link = document.createElement('a');
-    // Mantenemos el \uFEFF aquí para que Excel lea los tildes sin corromper tu lector original
     const blob = new Blob(["\uFEFF" + contenido], { type: 'text/csv;charset=utf-8;' });
     link.href = URL.createObjectURL(blob);
     link.download = nombreArchivo;
