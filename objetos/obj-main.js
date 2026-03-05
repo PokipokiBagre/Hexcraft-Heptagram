@@ -1,6 +1,6 @@
 import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
 import { cargarTodoDesdeCSV } from './obj-data.js';
-import { modificar, modificarMulti, transferir, descargarLog, descargarEstadoCSV, agregarObjetoManual } from './obj-logic.js';
+import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetoManual } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
 
 // MODO SINCRONIZADO AUTO (10 SEGUNDOS)
@@ -22,7 +22,6 @@ window.toggleSync = () => {
     guardar();
 };
 
-// La función de descargar JPGs ahora vive directamente en el main para evitar el Uncaught SyntaxError
 window.descargarInventariosJPG = async () => {
     const jugadores = Object.keys(invGlobal);
     for (const j of jugadores) {
@@ -91,7 +90,6 @@ async function iniciar() {
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
     
-    // NAVEGACIÓN Y MENÚS
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
@@ -114,7 +112,7 @@ async function iniciar() {
     window.abrirInventario = (j) => { estadoUI.jugadorInv = j; window.mostrarPagina('inventario'); };
     window.volverAGrilla = () => { estadoUI.jugadorInv = null; window.mostrarPagina('grilla'); };
 
-    // CONTROL Y MULTIPLICADORES (EDICIÓN IN-SITU)
+    // CONTROL Y MULTIPLICADORES
     window.setEditMult = (val) => { estadoUI.editMult = val; refrescarUI(); };
     window.setEditModo = (val) => { estadoUI.editModo = val; refrescarUI(); };
     window.hexMod = (j, o, c) => {
@@ -161,7 +159,6 @@ async function iniciar() {
         transferir(origen, dest, item, cantToPass, refrescarUI);
     };
 
-    // BUSCADORES Y CREADOR
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
@@ -184,10 +181,9 @@ async function iniciar() {
         agregarObjetoManual(d, rep, () => { alert("Objeto Creado"); window.mostrarPagina('op-menu'); });
     };
 
-    window.descargarEstadoCSV = descargarEstadoCSV; 
-    window.descargarLog = descargarLog;
+    window.descargarEstadoExcel = descargarEstadoExcel; 
+    window.descargarLogExcel = descargarLogExcel;
     
     window.mostrarPagina('grilla'); 
 }
 iniciar();
-
