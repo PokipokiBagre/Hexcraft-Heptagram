@@ -13,7 +13,7 @@ export function calcularVidaRojaMax(p) {
 export function calcularVexMax(p) {
     if (!p) return 0;
     
-    // Si es Jugador, el VEX es calculado y dinámico
+    // Si es Jugador, el VEX es calculado dinámicamente y redondeado en múltiplos de 50
     if (p.isPlayer) {
         const oscBase = p.afinidades?.oscura || 0;
         const oscSpell = p.hechizos?.oscura || 0;
@@ -21,7 +21,10 @@ export function calcularVexMax(p) {
         const oscBuff = p.buffs?.oscura || 0;
         
         const totalOscura = oscBase + oscSpell + oscEff + oscBuff;
-        return Math.floor((totalOscura * 300) / 4);
+        const vexCrudo = (totalOscura * 300) / 4;
+        
+        // Redondeo exacto a saltos de 50
+        return Math.round(vexCrudo / 50) * 50;
     }
     
     // Si es NPC, devuelve el valor fijo guardado en el CSV
@@ -63,7 +66,7 @@ export function generarCSVExportacion() {
         const hexCompound = `${p.hex || 0}_${p.asistencia || 1}`;
         const identityStr = `${p.isPlayer ? 1 : 0}_${p.isActive ? 1 : 0}`;
         
-        // Nos aseguramos que el Vex de jugadores siempre se exporte como 0
+        // Nos aseguramos que el Vex de jugadores siempre se exporte como 0 (porque es autocalculado)
         const vexExport = p.isPlayer ? 0 : (p.vex || 0);
 
         const row = [
@@ -89,7 +92,8 @@ export function generarCSVExportacion() {
         ];
 
         const rowStr = row.map((v, i) => {
-            if (i === 0 || i === 2 || i === 9) return v; 
+            // Sin comillas para Nombre, Hex (Compuesto), Vex y Vida Roja Actual
+            if (i === 0 || i === 1 || i === 2 || i === 9) return v; 
             return `"${v}"`;
         }).join(",");
 
