@@ -191,17 +191,17 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
             </div>
             
-            ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (BASE)', val: p.vidaRojaMax }, 'baseTop')}
+            ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (TOTAL)', val: p.vidaRojaMax }, 'baseTop')}
             
             <div class="edit-card" style="grid-column: 1 / -1; background:#1a1a00; border-color:#b8860b;">
                 <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
                 <button type="button" onclick="window.recalcularBases()" style="background:#b8860b; color:#000; font-weight:bold; width:100%; padding:15px; font-size:1.1em; border-radius:4px; transition:0.2s;">RECALCULAR CORAZONES (Salud Máxima y Fórmulas Base)</button>
-                <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física/2], la Vida Azul a [Magia/4] y curará al personaje al máximo.</p>
+                <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física Total/2], la Vida Azul a [Magia Total/4] y curará al personaje al máximo.</p>
             </div>
         </div>
     </div>`;
 
-    const pVidaDanoE = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo Extra', val: p.buffs.vidaRojaMaxExtra }, { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
+    const pVidaDanoE = [ { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
     const pAfinidadesE = [ { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } ];
 
     html += `
@@ -426,13 +426,11 @@ export function dibujarFormularioEditar() {
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
     asegurarEstructuras(p);
     
-    const pVidaDanoBase = [ { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax }, { id: 'baseVidaAzul', label: 'C. Azules Base', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada Base', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
+    // CORRECCIÓN: Se eliminó el parámetro confuso de vidaRojaMax de este panel.
+    const pVidaDanoBase = [ { id: 'baseVidaAzul', label: 'C. Azules Base', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada Base', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
-    const pVitalidadSpell = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Conteo)', val: p.hechizos.vidaRojaMaxExtra } ];
     const pAfinidadesSpell = [ { id: 'fisica', label: 'Física (Conteo)', val: p.hechizos.fisica }, { id: 'energetica', label: 'Energética (Conteo)', val: p.hechizos.energetica }, { id: 'espiritual', label: 'Espiritual (Conteo)', val: p.hechizos.espiritual }, { id: 'mando', label: 'Mando (Conteo)', val: p.hechizos.mando }, { id: 'psiquica', label: 'Psíquica (Conteo)', val: p.hechizos.psiquica }, { id: 'oscura', label: 'Oscura (Conteo)', val: p.hechizos.oscura } ];
-
-    const pVitalidadSpellEff = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Efecto)', val: p.hechizosEfecto.vidaRojaMaxExtra } ];
     const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (Efecto)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (Efecto)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (Efecto)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (Efecto)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (Efecto)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (Efecto)', val: p.hechizosEfecto.oscura } ];
 
     let normalAzul = Math.max(0, p.vidaAzul || 0); 
@@ -507,16 +505,12 @@ export function dibujarFormularioEditar() {
              
              <div style="border:1px solid #d4af37; padding:15px; margin-bottom:20px; border-radius:8px;">
                 <h2 style="color:#d4af37; margin-top:0;">Cambiar Cantidad por Hechizos (Conteo)</h2>
-                <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-align:left;">Vitalidad por Conteo</h3>
-                <div class="edit-grid" style="margin-bottom: 20px;">${pVitalidadSpell.map(f => genCard(f, 'spellTop')).join('')}</div>
                 <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-align:left;">Afinidades por Conteo</h3>
                 <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidadesSpell.map(f => genCard(f, 'spellAfin')).join('')}</div>
              </div>
 
              <div style="border:1px solid #4a90e2; padding:15px; margin-bottom:20px; border-radius:8px;">
                 <h2 style="color:#4a90e2; margin-top:0;">Cambiar Efectos de Hechizos (Habilidades)</h2>
-                <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-align:left;">Vitalidad por Efecto</h3>
-                <div class="edit-grid" style="margin-bottom: 20px;">${pVitalidadSpellEff.map(f => genCard(f, 'spellEffTop')).join('')}</div>
                 <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-align:left;">Afinidades por Efecto</h3>
                 <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidadesSpellEff.map(f => genCard(f, 'spellEffAfin')).join('')}</div>
              </div>
@@ -524,3 +518,30 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
+
+// CORRECCIÓN DE CÁLCULOS: La función RecalcularVidas en UI para que escuche tu Física Total
+window.recalcularBases = () => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado];
+    if(!p) return;
+    if(confirm(`¿Seguro que deseas RECALCULAR las vidas bases de ${estadoUI.personajeSeleccionado}?\n\nEsto pondrá el Límite Rojo a [10 + Física Total/2], la Vida Azul a [Magia Total/4] y curará al personaje al máximo.`)) {
+        
+        // Sumamos TODA la Física
+        const totalFis = calcTotal(p.afinidades?.fisica, p.hechizos?.fisica, p.hechizosEfecto?.fisica, p.buffs?.fisica);
+        p.vidaRojaMax = 10 + Math.floor(totalFis / 2);
+        
+        // Como hemos eliminado los extras de Rojo, la Vida Actual puede curarse exactamente a p.vidaRojaMax
+        p.vidaRojaActual = calcularVidaRojaMax(p); 
+        
+        // Sumamos TODA la Magia
+        const totalEne = calcTotal(p.afinidades?.energetica, p.hechizos?.energetica, p.hechizosEfecto?.energetica, p.buffs?.energetica);
+        const totalEsp = calcTotal(p.afinidades?.espiritual, p.hechizos?.espiritual, p.hechizosEfecto?.espiritual, p.buffs?.espiritual);
+        const totalMan = calcTotal(p.afinidades?.mando, p.hechizos?.mando, p.hechizosEfecto?.mando, p.buffs?.mando);
+        const totalPsi = calcTotal(p.afinidades?.psiquica, p.hechizos?.psiquica, p.hechizosEfecto?.psiquica, p.buffs?.psiquica);
+        
+        p.vidaAzul = Math.floor((totalEne + totalEsp + totalMan + totalPsi) / 4);
+        p.baseVidaAzul = p.vidaAzul;
+        
+        guardar();
+        repintarConScroll('detalle');
+    }
+};
