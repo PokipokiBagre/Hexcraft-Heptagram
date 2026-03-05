@@ -46,26 +46,27 @@ export function agregarObjetoManual(datos, reparticion, callback) {
     guardar(); callback();
 }
 
-export function descargarEstadoCSV() {
-    let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
+// Descargar Excel de Estado Actual
+export function descargarEstadoExcel() {
+    let data = [["Objeto", "Tipo", "Material", "Efecto", "Rareza", "Dueños", "Cantidades"]];
     Object.keys(objGlobal).sort().forEach(o => {
         const info = objGlobal[o]; let d = [], c = [];
         Object.keys(invGlobal).forEach(jug => { if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); } });
-        if(d.length > 0) {
-            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
-        } else {
-            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","Nadie","0"\n`;
-        }
+        if(d.length > 0) data.push([o, info.tipo, info.mat, info.eff, info.rar, d.join(', '), c.join(', ')]);
+        else data.push([o, info.tipo, info.mat, info.eff, info.rar, "Nadie", 0]);
     });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    link.download = `HEX_OBJ_ESTADO.csv`; link.click();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Inventarios");
+    XLSX.writeFile(wb, "HEX_OBJ_ESTADO.xlsx");
 }
 
-export function descargarLog() {
-    let csv = "Fecha,Jugador,Objeto,Cambio,Total\n";
-    historial.forEach(h => csv += `"${h.fecha}","${h.jugador}","${h.objeto}",${h.cambio},${h.total}\n`);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = 'log_objetos.csv'; link.click();
+// Descargar Excel de Log Histórico
+export function descargarLogExcel() {
+    let data = [["Fecha", "Jugador", "Objeto", "Cambio", "Total"]];
+    historial.forEach(h => data.push([h.fecha, h.jugador, h.objeto, h.cambio, h.total]));
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Historial");
+    XLSX.writeFile(wb, "HEX_LOG_OBJETOS.xlsx");
 }
