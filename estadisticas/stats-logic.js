@@ -66,7 +66,6 @@ export function generarCSVExportacion() {
         const hexCompound = `${p.hex || 0}_${p.asistencia || 1}`;
         const identityStr = `${p.isPlayer ? 1 : 0}_${p.isActive ? 1 : 0}`;
         
-        // Nos aseguramos que el Vex de jugadores siempre se exporte como 0 (porque es autocalculado)
         const vexExport = p.isPlayer ? 0 : (p.vex || 0);
 
         const row = [
@@ -79,10 +78,13 @@ export function generarCSVExportacion() {
             fStr(af.mando, hz.mando, he.mando, bf.mando), 
             fStr(af.psiquica, hz.psiquica, he.psiquica, bf.psiquica), 
             fStr(af.oscura, hz.oscura, he.oscura, bf.oscura), 
-            p.vidaRojaActual || 0, 
+            p.vidaRojaActual !== undefined ? p.vidaRojaActual : 0, 
             fStr(p.vidaRojaMax, hz.vidaRojaMaxExtra, he.vidaRojaMaxExtra, bf.vidaRojaMaxExtra), 
-            fStr(p.baseVidaAzul !== undefined ? p.baseVidaAzul : (p.vidaAzul || 0), hz.vidaAzulExtra, he.vidaAzulExtra, bf.vidaAzulExtra), 
-            fStr(p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : (p.guardaDorada || 0), hz.guardaDoradaExtra, he.guardaDoradaExtra, bf.guardaDoradaExtra), 
+            
+            // CORRECCIÓN AQUÍ: Exporta la vida azul actual y la guarda dorada actual, no la "base" original
+            fStr(p.vidaAzul !== undefined ? p.vidaAzul : 0, hz.vidaAzulExtra, he.vidaAzulExtra, bf.vidaAzulExtra), 
+            fStr(p.guardaDorada !== undefined ? p.guardaDorada : 0, hz.guardaDoradaExtra, he.guardaDoradaExtra, bf.guardaDoradaExtra), 
+            
             fStr(p.danoRojo, hz.danoRojo, he.danoRojo, bf.danoRojo), 
             fStr(p.danoAzul, hz.danoAzul, he.danoAzul, bf.danoAzul), 
             fStr(p.elimDorada, hz.elimDorada, he.elimDorada, bf.elimDorada), 
@@ -92,8 +94,7 @@ export function generarCSVExportacion() {
         ];
 
         const rowStr = row.map((v, i) => {
-            // Sin comillas para Nombre, Hex (Compuesto), Vex y Vida Roja Actual
-            if (i === 0 || i === 1 || i === 2 || i === 9) return v; 
+            if (i === 0 || i === 1 || i === 2 || i === 9) return String(v); 
             return `"${v}"`;
         }).join(",");
 
