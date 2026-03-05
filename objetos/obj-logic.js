@@ -46,14 +46,37 @@ export function agregarObjetoManual(datos, reparticion, callback) {
     guardar(); callback();
 }
 
-// Descargar Excel de Estado Actual
+// Descargar CSV de Estado Actual (Celdas Vacías si no hay dueños)
+export function descargarEstadoCSV() {
+    let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
+    Object.keys(objGlobal).sort().forEach(o => {
+        const info = objGlobal[o]; let d = [], c = [];
+        Object.keys(invGlobal).forEach(jug => { if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); } });
+        if(d.length > 0) {
+            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
+        } else {
+            // Se dejan vacías las últimas dos celdas
+            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","",""\n`;
+        }
+    });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    link.download = `HEX_OBJ_ESTADO.csv`; link.click();
+}
+
+// Descargar Excel de Estado Actual (Celdas Vacías si no hay dueños)
 export function descargarEstadoExcel() {
     let data = [["Objeto", "Tipo", "Material", "Efecto", "Rareza", "Dueños", "Cantidades"]];
     Object.keys(objGlobal).sort().forEach(o => {
         const info = objGlobal[o]; let d = [], c = [];
         Object.keys(invGlobal).forEach(jug => { if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); } });
-        if(d.length > 0) data.push([o, info.tipo, info.mat, info.eff, info.rar, d.join(', '), c.join(', ')]);
-        else data.push([o, info.tipo, info.mat, info.eff, info.rar, "Nadie", 0]);
+        
+        if(d.length > 0) {
+            data.push([o, info.tipo, info.mat, info.eff, info.rar, d.join(', '), c.join(', ')]);
+        } else {
+            // Se añaden strings vacíos en Dueños y Cantidades
+            data.push([o, info.tipo, info.mat, info.eff, info.rar, "", ""]);
+        }
     });
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
