@@ -3,7 +3,6 @@ import { cargarTodoDesdeCSV } from './obj-data.js';
 import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetoManual } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
 
-// MODO SINCRONIZADO AUTO (10 SEGUNDOS)
 setInterval(async () => {
     if (estadoUI.modoSincronizado) {
         console.log("Sincronizando inventarios con la nube...");
@@ -160,7 +159,6 @@ async function iniciar() {
         transferir(origen, dest, item, cantToPass, refrescarUI);
     };
 
-    // BUSCADORES Y CREADOR
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
@@ -183,10 +181,10 @@ async function iniciar() {
         agregarObjetoManual(d, rep, () => { alert("Objeto Creado"); window.mostrarPagina('op-menu'); });
     };
 
+    // EXPORTS MÁGICOS DE EXCEL
     window.descargarEstadoExcel = descargarEstadoExcel; 
     window.descargarLogExcel = descargarLogExcel;
     
     window.mostrarPagina('grilla'); 
 }
 iniciar();
-
