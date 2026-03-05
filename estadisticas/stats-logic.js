@@ -2,27 +2,35 @@ import { statsGlobal, listaEstados } from './stats-state.js';
 
 export function calcularVidaRojaMax(p) {
     if (!p) return 0;
+    // La base pura (sacada del CSV)
     const base = p.vidaRojaMax || 10;
-    const hechizos = p.hechizos?.vidaRojaMaxExtra || 0;
-    const efectos = p.hechizosEfecto?.vidaRojaMaxExtra || 0;
-    const buffs = p.buffs?.vidaRojaMaxExtra || 0;
     
-    return base + hechizos + efectos + buffs;
+    // Extras añadidos de forma directa
+    const extraDirecto = (p.hechizos?.vidaRojaMaxExtra || 0) + (p.hechizosEfecto?.vidaRojaMaxExtra || 0) + (p.buffs?.vidaRojaMaxExtra || 0);
+
+    // Extras derivados SOLO de alteraciones temporales de Física
+    const fisBase = p.afinidades?.fisica || 0;
+    const fisSpells = p.hechizos?.fisica || 0;
+    const fisEff = p.hechizosEfecto?.fisica || 0;
+    const fisBuffs = p.buffs?.fisica || 0;
+    
+    const fisTotal = fisBase + fisSpells + fisEff + fisBuffs;
+    
+    // Se extrae la diferencia: (Corazones por Física Total) - (Corazones por Física Base)
+    const bonusFisica = Math.floor(fisTotal / 2) - Math.floor(fisBase / 2);
+
+    return base + extraDirecto + bonusFisica;
 }
 
 export function calcularVexMax(p) {
     if (!p) return 0;
-    
     if (p.isPlayer) {
         const oscBase = p.afinidades?.oscura || 0;
         const oscSpell = p.hechizos?.oscura || 0;
         const oscEff = p.hechizosEfecto?.oscura || 0;
         const oscBuff = p.buffs?.oscura || 0;
-        
         const totalOscura = oscBase + oscSpell + oscEff + oscBuff;
-        const vexCrudo = (totalOscura * 300) / 4;
-        
-        return Math.round(vexCrudo / 50) * 50;
+        return Math.round(((totalOscura * 300) / 4) / 50) * 50;
     }
     return p.vex || 0;
 }
