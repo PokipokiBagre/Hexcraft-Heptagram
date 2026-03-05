@@ -18,6 +18,7 @@ body {
 h1, h2, h3 { color: var(--gold); text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); }
 .container-hex { width: 95%; margin: 0 auto; max-width: 1600px; }
 
+/* NAVEGACIÓN Y FILTROS */
 nav, .filter-group { display: flex !important; justify-content: center !important; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; width: 100%; }
 button { 
     background: linear-gradient(145deg, #2e004f, #1a0033); color: var(--gold); border: 1px solid var(--gold); 
@@ -28,6 +29,7 @@ button:hover { filter: brightness(1.3); transform: translateY(-2px); }
 button:active { transform: translateY(1px); }
 .btn-active { background: var(--gold) !important; color: var(--bg-dark) !important; border: 2px solid var(--gold-light); }
 
+/* GRILLA DE PERSONAJES */
 .catalogo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
 .char-card { 
     background: rgba(21, 0, 41, 0.8); border: 1px solid var(--gold-dim); 
@@ -40,43 +42,97 @@ button:active { transform: translateY(1px); }
 
 .player-header { display: flex; align-items: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 20px; border: 1px solid var(--gold); border-radius: 8px; margin-bottom: 20px; text-align: left; }
 .player-icon { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; background: #000; }
-.top-items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
 
+/* ================================================= */
+/* IMÁGENES DESTACADAS (ARRIBA)                      */
+/* ================================================= */
+.top-items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
 .top-item-card { background: linear-gradient(180deg, #111, #000); border: 1px solid var(--gold-dim); padding: 8px; text-align: center; border-radius: 6px; overflow: hidden; transition: 0.3s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.6); }
-.top-item-card img, .cat-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; opacity: 0.85; transition: 0.4s ease; cursor: pointer; border-radius: 4px; }
-.top-item-card img:hover, .cat-img:hover { opacity: 1; filter: brightness(1.2); transform: scale(1.05); }
+
+.top-item-card img { 
+    width: 100%; 
+    aspect-ratio: 1/1; 
+    object-fit: cover; 
+    opacity: 0.85; 
+    transition: 0.4s ease; 
+    cursor: pointer; 
+    border-radius: 4px; 
+}
+.top-item-card img:hover { opacity: 1; filter: brightness(1.2); transform: scale(1.05); }
 
 .rarity-comun { border: 1px solid #777 !important; }
 .rarity-raro { border: 2px solid var(--purple-magic) !important; box-shadow: 0 0 15px rgba(138, 43, 226, 0.5), inset 0 0 10px rgba(138, 43, 226, 0.2) !important; }
 .rarity-legendario { border: 2px solid var(--gold-light) !important; box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(212, 175, 55, 0.3) !important; }
 
-/* EDICIÓN POR IMÁGENES (TAMAÑOS CORREGIDOS) */
+/* ================================================= */
+/* EDICIÓN Y TRANSFERENCIA (MENÚS OP)                */
+/* ================================================= */
 .grid-control { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 20px; }
 .control-card { background: rgba(30, 0, 60, 0.9); border: 1px solid var(--gold-dim); padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.4); transition: 0.2s; }
 .control-card:hover { border-color: var(--gold); }
-.control-card img { width: 60px !important; height: 60px !important; object-fit: cover; cursor: pointer; border-radius: 8px; transition: 0.2s; }
 .item-con-stock { background: linear-gradient(145deg, rgba(74, 0, 74, 0.8), rgba(40, 0, 40, 0.9)) !important; border: 2px solid var(--gold) !important; box-shadow: inset 0 0 15px rgba(212,175,55,0.1); }
 .item-name { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; display: block; color: var(--gold); text-shadow: 1px 1px 2px #000; }
 
-.op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; max-width: 900px; margin: 30px auto; }
-.op-grid button { padding: 20px; font-size: 1.1em; }
-.cant-input { width: 55px; float: right; background: #000; color: var(--gold-light); border: 1px dashed var(--gold); text-align: center; font-weight: bold; font-size: 1.1em; border-radius: 4px; padding: 2px; }
+/* Constreñir tamaño de las imágenes en OP */
+.control-card img { 
+    width: 60px !important; 
+    height: 60px !important; 
+    min-width: 60px !important;
+    min-height: 60px !important;
+    object-fit: cover; 
+    cursor: pointer; 
+    border-radius: 8px; 
+    transition: 0.2s; 
+    margin: 0 auto; 
+    display: block; 
+}
 
-.hex-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-.hex-modal img { max-width: 80vw; max-height: 75vh; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.3); background: #000; cursor: grab; position: absolute; border-radius: 8px; }
-
+/* ================================================= */
+/* TABLAS Y BUSCADOR (ABAJO)                         */
+/* ================================================= */
 .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
 table { width: 100%; border-collapse: collapse; background: rgba(20, 0, 40, 0.9); border: 1px solid var(--gold); min-width: 650px; }
 th { background: linear-gradient(180deg, var(--gold-light), var(--gold-dark)); color: var(--bg-dark); padding: 14px; border: 1px solid #000; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
 td { padding: 12px; border: 1px solid rgba(212, 175, 55, 0.2); text-align: center; color: #f0f0f0; }
 tr:hover td { background: rgba(212, 175, 55, 0.1); }
+
+/* EVITAR QUE LA COLUMNA DE IMAGEN CREZCA DESPROPORCIONADAMENTE */
+th:first-child, td:first-child { width: 70px; text-align: center; }
+
+/* IMAGEN DE LA TABLA ESTRICTAMENTE FIJADA */
+.cat-img { 
+    width: 50px !important; 
+    height: 50px !important; 
+    min-width: 50px !important;
+    max-width: 50px !important;
+    object-fit: cover; 
+    border: 1px solid var(--gold); 
+    border-radius: 4px; 
+    background: #000; 
+    display: block;
+    margin: 0 auto;
+}
+
 .search-bar { width: 85%; max-width: 600px; display: block; margin: 0 auto 20px auto; padding: 15px; border: 1px solid var(--gold); background: rgba(0,0,0,0.5); color: white; text-align: center; border-radius: 6px; font-family: 'Cinzel'; font-size: 1.1em; transition: 0.3s; }
 .search-bar:focus { outline: none; box-shadow: 0 0 15px rgba(212, 175, 55, 0.5); background: #000; }
 
+.op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; max-width: 900px; margin: 30px auto; }
+.op-grid button { padding: 20px; font-size: 1.1em; }
+.cant-input { width: 55px; float: right; background: #000; color: var(--gold-light); border: 1px dashed var(--gold); text-align: center; font-weight: bold; font-size: 1.1em; border-radius: 4px; padding: 2px; }
+
+/* POP-UP MOVIBLE */
+.hex-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+.hex-modal img { max-width: 80vw; max-height: 75vh; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.3); background: #000; cursor: grab; position: absolute; border-radius: 8px; }
+.hex-modal img:active { cursor: grabbing; }
+
+/* Ocultador Lógico */
 .pagina { display: none; }
 .pagina.activa { display: block; animation: fadeIn 0.4s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* =======================================================
+   📱 ADAPTACIÓN PARA TELÉFONOS
+   ======================================================= */
 @media (max-width: 768px) {
     body { padding-bottom: 90px !important; padding-left: 10px !important; padding-right: 10px !important; }
     nav {
