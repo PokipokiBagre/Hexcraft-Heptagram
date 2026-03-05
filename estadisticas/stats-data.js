@@ -65,10 +65,9 @@ export function procesarTextoCSV(texto) {
         const fVRM = parseCell(cols[10]); const fVA = parseCell(cols[11]); const fGD = parseCell(cols[12]);
         const fDR = parseCell(cols[13]); const fDA = parseCell(cols[14]); const fED = parseCell(cols[15]);
 
-        // SOLUCIÓN: Tomamos el Límite Total directamente del primer número del CSV. 
-        // Nada de restar matemáticas falsas.
-        let baseVRM = fVRM.total; 
-        let baseVA = fVA.total;
+        // Carga estricta de la base. Así se evitan multiplicaciones infinitas al exportar.
+        let baseVRM = fVRM.base; 
+        let baseVA = fVA.base;
 
         let estadosPers = {};
         listaEstados.forEach((estadoInfo, i) => {
@@ -97,4 +96,3 @@ export function procesarTextoCSV(texto) {
     });
     guardar();
 }
-
