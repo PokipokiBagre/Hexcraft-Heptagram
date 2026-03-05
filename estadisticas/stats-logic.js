@@ -1,6 +1,5 @@
 import { statsGlobal, listaEstados } from './stats-state.js';
 
-// Ahora esta función simplemente SUMA lo que los botones ya calcularon.
 export function calcularVidaRojaMax(p) {
     if (!p) return 0;
     const base = p.vidaRojaMax || 10;
@@ -8,7 +7,14 @@ export function calcularVidaRojaMax(p) {
     const efectos = p.hechizosEfecto?.vidaRojaMaxExtra || 0;
     const buffs = p.buffs?.vidaRojaMaxExtra || 0;
     
-    return base + hechizos + efectos + buffs;
+    // FÍSICA DINÁMICA: Calcula si tienes alteraciones temporales
+    const fisBase = p.afinidades?.fisica || 0;
+    const fisTotal = fisBase + (p.hechizos?.fisica || 0) + (p.hechizosEfecto?.fisica || 0) + (p.buffs?.fisica || 0);
+    
+    // Solo sumará corazones extra si la física Total es mayor a la Base (modificación temporal)
+    const bonusFisica = Math.floor(fisTotal / 2) - Math.floor(fisBase / 2);
+
+    return base + hechizos + efectos + buffs + bonusFisica;
 }
 
 export function calcularVexMax(p) {
@@ -18,10 +24,8 @@ export function calcularVexMax(p) {
         const oscSpell = p.hechizos?.oscura || 0;
         const oscEff = p.hechizosEfecto?.oscura || 0;
         const oscBuff = p.buffs?.oscura || 0;
-        
         const totalOscura = oscBase + oscSpell + oscEff + oscBuff;
         const vexCrudo = (totalOscura * 300) / 4;
-        
         return Math.round(vexCrudo / 50) * 50;
     }
     return p.vex || 0;
@@ -33,7 +37,6 @@ export function getMysticBonus(p) {
     const esp = p.afinidades?.espiritual || 0;
     const man = p.afinidades?.mando || 0;
     const psi = p.afinidades?.psiquica || 0;
-    
     return Math.floor((ene + esp + man + psi) / 4);
 }
 
