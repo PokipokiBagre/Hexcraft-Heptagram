@@ -3,7 +3,6 @@ export let objGlobal = {};
 export let historial = []; 
 export let estadoUI = {
     vistaActual: 'grilla',
-    jugadorControl: null, 
     jugadorInv: null, 
     filtroRar: 'Todos', 
     filtroMat: 'Todos',
@@ -21,7 +20,7 @@ export let estadoUI = {
     transDestino: null,
     transMult: 1,
     editMult: 1,
-    editModo: 1
+    editModo: 1 // 1 para sumar, -1 para restar
 };
 
 export function guardar() { 
