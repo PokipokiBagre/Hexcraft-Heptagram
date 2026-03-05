@@ -53,7 +53,6 @@ export function procesarTextoCSV(texto) {
         const esActivo = idenParts[1] === '1';
         const copiaOverride = cols[18].trim();
 
-        // LECTURA COMPUESTA DE HEX_ASISTENCIA
         const hexRaw = cols[1] || '0';
         const hexParts = hexRaw.toString().split('_');
         const hexVal = parseInt(hexParts[0]) || 0;
@@ -66,8 +65,10 @@ export function procesarTextoCSV(texto) {
         const fVRM = parseCell(cols[10]); const fVA = parseCell(cols[11]); const fGD = parseCell(cols[12]);
         const fDR = parseCell(cols[13]); const fDA = parseCell(cols[14]); const fED = parseCell(cols[15]);
 
-        let baseVRM = fVRM.base; if (!cols[10].includes('_')) baseVRM = Math.max(10, fVRM.base - Math.floor(fFis.base / 2));
-        let baseVA = fVA.base; if (!cols[11].includes('_')) baseVA = Math.max(0, fVA.base - Math.floor((fEsp.base + fEne.base + fPsi.base + fMan.base) / 4));
+        // SOLUCIÓN: Tomamos el Límite Total directamente del primer número del CSV. 
+        // Nada de restar matemáticas falsas.
+        let baseVRM = fVRM.total; 
+        let baseVA = fVA.total;
 
         let estadosPers = {};
         listaEstados.forEach((estadoInfo, i) => {
@@ -86,8 +87,10 @@ export function procesarTextoCSV(texto) {
             hechizosEfecto: { fisica: fFis.spellEff, energetica: fEne.spellEff, espiritual: fEsp.spellEff, mando: fMan.spellEff, psiquica: fPsi.spellEff, oscura: fOsc.spellEff, danoRojo: fDR.spellEff, danoAzul: fDA.spellEff, elimDorada: fED.spellEff, vidaRojaMaxExtra: fVRM.spellEff, vidaAzulExtra: fVA.spellEff, guardaDoradaExtra: fGD.spellEff },
             buffs: { fisica: fFis.extra, energetica: fEne.extra, espiritual: fEsp.extra, mando: fMan.extra, psiquica: fPsi.extra, oscura: fOsc.extra, danoRojo: fDR.extra, danoAzul: fDA.extra, elimDorada: fED.extra, vidaRojaMaxExtra: fVRM.extra, vidaAzulExtra: fVA.extra, guardaDoradaExtra: fGD.extra },
             
-            vidaRojaActual: parseInt(cols[9]) || 0, vidaRojaMax: baseVRM,
-            vidaAzul: baseVA, baseVidaAzul: baseVA, guardaDorada: fGD.base, baseGuardaDorada: fGD.base,
+            vidaRojaActual: parseInt(cols[9]) || 0, 
+            vidaRojaMax: baseVRM || 10,
+            vidaAzul: baseVA || 0, baseVidaAzul: baseVA || 0, 
+            guardaDorada: fGD.base || 0, baseGuardaDorada: fGD.base || 0,
             danoRojo: fDR.base, danoAzul: fDA.base, elimDorada: fED.base,
             estados: estadosPers 
         };
