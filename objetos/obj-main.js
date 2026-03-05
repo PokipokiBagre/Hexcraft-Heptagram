@@ -2,7 +2,6 @@ import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.
 import { cargarTodoDesdeCSV } from './obj-data.js';
 import { modificar, modificarMulti, transferir, descargarLog, descargarEstadoCSV, agregarObjetoManual } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
-import { toggleLibre } from './libre.js';
 
 // MODO SINCRONIZADO AUTO (10 SEGUNDOS)
 setInterval(async () => {
@@ -23,6 +22,7 @@ window.toggleSync = () => {
     guardar();
 };
 
+// La función de descargar JPGs ahora vive directamente en el main para evitar el Uncaught SyntaxError
 window.descargarInventariosJPG = async () => {
     const jugadores = Object.keys(invGlobal);
     for (const j of jugadores) {
@@ -186,8 +186,8 @@ async function iniciar() {
 
     window.descargarEstadoCSV = descargarEstadoCSV; 
     window.descargarLog = descargarLog;
-    window.toggleLibre = toggleLibre;
     
     window.mostrarPagina('grilla'); 
 }
 iniciar();
+
