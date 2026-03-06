@@ -97,35 +97,41 @@ details[open].spell-details summary::after { content: ' ▲'; }
    ======================================================= */
 @media (max-width: 768px) {
     body { padding-bottom: 90px !important; padding-left: 10px !important; padding-right: 10px !important; }
-    
-    /* Arreglo vital: Asegurar que los elementos ocultos desaparezcan de verdad */
     .oculto { display: none !important; }
     
     .nav-bar {
         position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100vw !important;
         background: rgba(10, 0, 20, 0.98) !important; border-top: 2px solid var(--gold) !important;
         padding: 10px !important; margin: 0 !important;
-        display: flex !important; gap: 8px !important;
+        display: flex !important; gap: 8px !important; align-items: stretch !important;
         box-sizing: border-box !important; z-index: 9999 !important; box-shadow: 0 -5px 20px rgba(0,0,0,0.9);
     }
     
+    /* El contenedor izquierdo tomará el espacio necesario de forma simétrica */
     .nav-bar > div { display: flex !important; flex: 1 !important; gap: 8px !important; }
     
-    /* Botones grandes para dedos humanos */
+    /* Estilo robusto para que los botones tengan buen tamaño y se centren */
     .btn-nav { 
-        font-size: 0.9em !important; 
-        padding: 12px 5px !important; 
+        font-size: 0.85em !important; 
+        padding: 12px 10px !important; 
         flex: 1; 
         text-align: center; 
         border-radius: 6px !important;
-        white-space: nowrap !important;
+        white-space: normal !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    /* Ajuste de ancho del Botón OP */
-    .nav-bar > button.btn-op { flex: 0.6 !important; margin: 0 !important; }
+    /* El botón de Acceso OP será igual de ancho que el de Inicio */
+    .nav-bar > button.btn-op { flex: 0.8 !important; margin: 0 !important; }
 
-    /* Hacer el botón Verde (Conectado) un cuadradito fijo de 45px para no estorbar */
-    .nav-bar > div > button:nth-child(3) { flex: 0 0 45px !important; padding: 12px 0 !important; min-width: 45px !important; }
+    /* El botón Verde de conexión será un cuadro perfecto que no estorba (es el tercer hijo) */
+    .nav-bar > div > button:nth-child(3) { 
+        flex: 0 0 45px !important; 
+        padding: 0 !important; 
+        min-width: 45px !important; 
+    }
 
     .player-header { flex-direction: column !important; text-align: center !important; gap: 15px !important; }
     .player-header > div { flex-direction: column !important; text-align: center !important; }
@@ -141,6 +147,5 @@ details[open].spell-details summary::after { content: ' ▲'; }
     
     .grid-inventario { grid-template-columns: 1fr !important; gap: 15px !important; margin-bottom: 20px !important;}
     
-    /* Botón gigante de Guardar Sincronización */
     .btn-sync-float { bottom: 85px !important; padding: 14px 20px !important; font-size: 1em !important; width: calc(100% - 40px); left: 20px; text-align: center; box-sizing: border-box; border-radius: 8px !important;}
 }
