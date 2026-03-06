@@ -1,19 +1,22 @@
 export let db = {
-    personajes: {}, // Se llenará con el CSV público
+    personajes: {}, // Formato: { Nombre: { isActive, isPlayer, hex, cantHechizos, mayorAfinidad, icono, rawRow } }
+    csvHeadersPersonajes: [], // Guardamos la cabecera para poder exportar el CSV
     hechizos: {
         nodos: [],
         nodosOcultos: [],
         inventario: [],
-        string: [] // Relaciones Source -> Target
+        string: []
     }
 };
 
 export let estadoUI = {
-    vistaActual: 'catalogo', // catalogo, grimorio, gestion, aprendizaje
+    vistaActual: 'catalogo', 
     personajeSeleccionado: null,
     esAdmin: false,
     filtroRol: 'Todos',
     filtroAct: 'Todos',
-    filtrosGestion: { afinidad: 'Todos', clase: 'Todos', busqueda: '' },
-    colaCambios: { agregar: [], quitar: [] } // Almacena lo que se subirá al Sheet
+    filtrosGrimorio: { afinidad: 'Todos', busqueda: '' }, // Filtros dentro del inventario de un Pj
+    filtrosGestion: { afinidad: 'Todos', busqueda: '' },
+    restarHexAsignacion: true, // Switch para restar HEX al asignar en OP
+    colaCambios: { agregar: [], quitar: [] }
 };
