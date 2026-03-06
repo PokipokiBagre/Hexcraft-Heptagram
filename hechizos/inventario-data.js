@@ -3,12 +3,17 @@ import { db } from './inventario-state.js';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbx-v0BEMVBw4r0p7mY9m0eyBcA75prv2Ru1XEcixIeKnw9DviBCmCA9mHLuybb-skamCw/exec';
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
-export async function inicializarDatos() {
+export async function inicializarDatos(barraProgreso) {
     try {
+        if(barraProgreso) barraProgreso.style.width = '30%';
         const resPj = await fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime());
         parsearCSVPersonajes(await resPj.text());
+
+        if(barraProgreso) barraProgreso.style.width = '60%';
         const resHz = await fetch(API_HECHIZOS);
         db.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
+
+        if(barraProgreso) barraProgreso.style.width = '100%';
         return true;
     } catch (e) { return false; }
 }
