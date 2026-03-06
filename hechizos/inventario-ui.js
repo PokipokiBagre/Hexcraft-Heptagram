@@ -1,5 +1,5 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario-logic.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores, getInventarioVisible } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
@@ -19,7 +19,8 @@ const getSortValue = (p) => {
     if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
 };
 
-function getValInfo(info, possibleKeys) {
+// Exportado para que inventario-main.js también lo use al conjurar
+export function getValInfo(info, possibleKeys) {
     if(!info) return null;
     const actualKeys = Object.keys(info);
     for(let pk of possibleKeys) {
@@ -64,7 +65,7 @@ export function dibujarCatalogo() {
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
                     <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
-                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioVisible(nombre).length} Hechizos</p>
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
@@ -75,7 +76,7 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    const inv = getInventarioCombinado(pj);
+    const inv = getInventarioVisible(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
     
@@ -95,6 +96,8 @@ export function renderHeaders() {
     statsHTML += `</div>`;
 
     const btnArbol = char.isPlayer ? `<button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>` : '';
+    // Nuevo Botón de Casteo
+    const btnCastear = `<button onclick="window.cambiarVista('casteo')" class="btn-nav" style="background:#3a005a; border-color:#ff00ff; color:white;">🎲 Castear Hechizo</button>`;
 
     document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
@@ -102,8 +105,9 @@ export function renderHeaders() {
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                 <div><h2 style="margin:0;">${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p>${statsHTML}</div>
             </div>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 ${btnArbol}
+                ${btnCastear}
                 ${estadoUI.esAdmin ? `<button onclick="window.cambiarVista('gestion')" class="btn-nav" style="background:#4a004a; border-color:var(--purple-magic);">⚙️ Asignar/Quitar (OP)</button>` : ''}
             </div>
         </div>`;
@@ -114,6 +118,15 @@ export function renderHeaders() {
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                 <div><h2 style="margin:0;">ÁRBOL DE APRENDIZAJE</h2></div>
+            </div>
+        </div>`;
+
+    document.getElementById('header-casteo').innerHTML = `
+        <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
+        <div class="player-header">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                <div><h2 style="margin:0;">ZONA DE CONJURO: ${pj.toUpperCase()}</h2></div>
             </div>
         </div>`;
 
@@ -160,7 +173,6 @@ export function dibujarGrimorioGrid() {
         const itemNorm = textNorm(item.Hechizo);
         const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
-        // LÓGICA DE ENMASCARAMIENTO BASADA EN COLUMNA O
         const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
         const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === (info.Nombre || item.Hechizo));
         const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
@@ -178,7 +190,6 @@ export function dibujarGrimorioGrid() {
         const efe = isHidden ? '' : getValInfo(info, ['efecto', 'Efecto']);
         const detailsHTML = isHidden ? '' : generarDetalles(info);
         
-        // Botón OP de visibilidad dentro del grimorio
         const btnVis = (estadoUI.esAdmin && info.Nombre) ? `<button onclick="window.accionCola('toggle_conocido', '${info.Nombre}', '', 0, '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
 
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
