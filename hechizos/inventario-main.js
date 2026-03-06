@@ -1,100 +1,115 @@
-import { dbHechizos, cargarDataHechizos } from './inventario-data.js';
+import { estadoUI } from './inventario-state.js';
+import { inicializarDatos, sincronizarColaBD } from './inventario-data.js';
+import { dibujarCatalogo, dibujarGrimorio, dibujarGestion, dibujarAprendizaje } from './inventario-ui.js';
 
-async function iniciarInventario() {
+async function arrancarApp() {
     const loader = document.getElementById('loader');
-    const selector = document.getElementById('selector-personaje');
+    const ok = await inicializarDatos();
     
-    const exito = await cargarDataHechizos();
-    
-    if (!exito || !dbHechizos || !dbHechizos.inventario) {
-        loader.innerText = "Error: Conexión rechazada o base de datos vacía.";
-        loader.style.color = "var(--red-alert)";
+    if(!ok) {
+        loader.innerHTML = "<span style='color:red;'>Fallo al cargar base de datos maestra.</span>";
         return;
     }
     
-    // Obtenemos todos los personajes que posean al menos un hechizo en el Excel
-    const personajesUnicos = [...new Set(dbHechizos.inventario.map(item => item.Personaje))].filter(Boolean).sort();
-    
-    selector.innerHTML = '<option value="" disabled selected>-- Seleccionar Personaje --</option>';
-    personajesUnicos.forEach(pj => {
-        selector.innerHTML += `<option value="${pj}">${pj}</option>`;
-    });
-    
-    selector.disabled = false;
     loader.style.display = 'none';
-
-    selector.addEventListener('change', (e) => {
-        dibujarInventarioPersonaje(e.target.value);
-    });
+    window.cambiarVista('catalogo');
 }
 
-function dibujarInventarioPersonaje(nombrePersonaje) {
-    const grid = document.getElementById('grid-inventario');
-    grid.innerHTML = ''; 
+window.cambiarVista = (vista) => {
+    estadoUI.vistaActual = vista;
+    document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('oculto'));
+    
+    if (vista === 'catalogo') {
+        document.getElementById('c-catalogo').classList.remove('oculto');
+        dibujarCatalogo();
+    } else if (vista === 'grimorio') {
+        document.getElementById('c-grimorio').classList.remove('oculto');
+        dibujarGrimorio();
+    } else if (vista === 'gestion') {
+        document.getElementById('c-gestion').classList.remove('oculto');
+        dibujarGestion();
+    } else if (vista === 'aprendizaje') {
+        document.getElementById('c-aprendizaje').classList.remove('oculto');
+        dibujarAprendizaje();
+    }
+    
+    actualizarBotonSync();
+    window.scrollTo(0,0);
+};
 
-    // Filtramos solo las filas del inventario que le correspondan al personaje
-    const hechizosDelPersonaje = dbHechizos.inventario.filter(item => item.Personaje === nombrePersonaje);
+window.abrirGrimorio = (pj) => {
+    estadoUI.personajeSeleccionado = pj;
+    window.cambiarVista('grimorio');
+};
 
-    if (hechizosDelPersonaje.length === 0) {
-        grid.innerHTML = `<p style="text-align:center; grid-column: 1/-1; color:#aaa; font-family:sans-serif;">El registro de ${nombrePersonaje} está vacío.</p>`;
+window.abrirMenuOP = () => {
+    if(estadoUI.esAdmin) {
+        estadoUI.esAdmin = false;
+        alert("Modo OP Desactivado.");
+        window.cambiarVista('catalogo');
         return;
     }
+    const pass = prompt("Contraseña de Operador:");
+    if (pass === atob('Y2FuZXk=')) {
+        estadoUI.esAdmin = true;
+        alert("Modo OP Activado. Controles de gestión desbloqueados.");
+        window.cambiarVista(estadoUI.vistaActual); // Redibujar
+    } else if (pass !== null) alert("Acceso denegado.");
+};
 
-    // Juntamos ambos diccionarios para que el código pueda buscar tanto hechizos públicos como ocultos
-    const todosLosNodos = [...(dbHechizos.nodos || []), ...(dbHechizos.nodosOcultos || [])];
+// --- GESTIÓN DE LA COLA ---
+window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
+    const pj = estadoUI.personajeSeleccionado;
+    
+    if(accion === 'agregar') {
+        estadoUI.colaCambios.agregar.push({
+            Personaje: pj, Hechizo: nombreHechizo, "Hechizo Afinidad": afinidad, "Hechizo Hex": hex, Tipo: "Normal", Origen: "Panel OP"
+        });
+    } else if (accion === 'quitar') {
+        estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
+    }
+    
+    if(estadoUI.vistaActual === 'gestion') dibujarGestion();
+    actualizarBotonSync();
+};
 
-    hechizosDelPersonaje.forEach(itemInv => {
-        const nombreHechizo = itemInv.Hechizo || 'Desconocido';
-        
-        // Cruzamos la data buscando el nombre del hechizo en los Nodos
-        const infoNodo = todosLosNodos.find(n => n.Nombre === nombreHechizo) || {};
+window.aplicarFiltroGestion = () => {
+    estadoUI.filtrosGestion.afinidad = document.getElementById('filtro-afinidad').value;
+    estadoUI.filtrosGestion.clase = document.getElementById('filtro-clase').value;
+    estadoUI.filtrosGestion.busqueda = document.getElementById('filtro-texto').value;
+    dibujarGestion();
+};
 
-        const afinidad = itemInv["Hechizo Afinidad"] || infoNodo.Afinidad || 'Ninguna';
-        const hexCosto = itemInv["Hechizo Hex"] || infoNodo.HEX || '0';
-        const tipo = itemInv.Tipo || 'Normal';
-        const origen = itemInv.Origen || '-';
-        
-        // Filtro para ignorar celdas basura de la base de datos (0, null, vacíos o Desconocido)
-        const esValido = (val) => val && val !== '0' && val !== 0 && val !== 'Desconocido' && val !== 'null';
-        
-        const resumenHTML = esValido(infoNodo.resumen) ? `<div class="spell-desc">${infoNodo.resumen}</div>` : '';
-        const efectoHTML = esValido(infoNodo.efecto) ? `<div class="spell-efecto">⚡ Efecto: ${infoNodo.efecto}</div>` : '';
-        const overcastHTML = esValido(infoNodo['overcast 100%']) ? `<div class="spell-extra"><strong>Overcast:</strong> ${infoNodo['overcast 100%']}</div>` : '';
-        const undercastHTML = esValido(infoNodo['undercast 50%']) ? `<div class="spell-extra"><strong>Undercast:</strong> ${infoNodo['undercast 50%']}</div>` : '';
-        const especialHTML = esValido(infoNodo.especial) ? `<div class="spell-extra"><strong>Especial:</strong> ${infoNodo.especial}</div>` : '';
-
-        // Estética: Asignamos el color temático del borde de la carta según su Afinidad
-        let borderColor = '#555'; 
-        let textColor = '#fff';
-        if(afinidad === 'Física') { borderColor = '#8b4513'; textColor = '#e2a673'; }
-        else if(afinidad === 'Energética') { borderColor = '#e67e22'; textColor = '#f3b67a'; }
-        else if(afinidad === 'Espiritual') { borderColor = '#2ecc71'; textColor = '#7df0a7'; }
-        else if(afinidad === 'Mando') { borderColor = '#3498db'; textColor = '#a4d3f2'; }
-        else if(afinidad === 'Psíquica') { borderColor = '#9b59b6'; textColor = '#dcb1f0'; }
-        else if(afinidad === 'Oscura') { borderColor = 'var(--purple-magic)'; textColor = '#c285ff'; }
-
-        const tarjetaHTML = `
-            <div class="spell-card" style="border-top: 3px solid ${borderColor};">
-                <h3 style="color: ${textColor}">${nombreHechizo}</h3>
-                
-                <div class="spell-tags">
-                    <span class="spell-tag tag-hex">HEX: ${hexCosto}</span>
-                    <span class="spell-tag" style="border-color:${borderColor}; color:${textColor};">${afinidad}</span>
-                    <span class="spell-tag tag-tipo">${tipo}</span>
-                </div>
-                
-                ${resumenHTML}
-                ${efectoHTML}
-                ${overcastHTML}
-                ${undercastHTML}
-                ${especialHTML}
-                
-                <div class="tag-origen">Origen: ${origen}</div>
-            </div>
-        `;
-
-        grid.innerHTML += tarjetaHTML;
-    });
+function actualizarBotonSync() {
+    const btn = document.getElementById('btn-sync-global');
+    const hayCambios = estadoUI.colaCambios.agregar.length > 0 || estadoUI.colaCambios.quitar.length > 0;
+    
+    if (hayCambios && estadoUI.esAdmin) {
+        btn.classList.remove('oculto');
+        btn.innerText = `🔥 GUARDAR CAMBIOS (${estadoUI.colaCambios.agregar.length} add / ${estadoUI.colaCambios.quitar.length} rem) 🔥`;
+    } else {
+        btn.classList.add('oculto');
+    }
 }
 
-window.onload = iniciarInventario;
+window.ejecutarSincronizacion = async () => {
+    const btn = document.getElementById('btn-sync-global');
+    btn.innerText = "Sincronizando..."; btn.disabled = true;
+    
+    const exito = await sincronizarColaBD(estadoUI.colaCambios);
+    if(exito) {
+        alert("Datos guardados (Simulado). \n*Nota: La API actual de Google necesita actualización para procesar eliminaciones.");
+        estadoUI.colaCambios = { agregar: [], quitar: [] };
+        window.cambiarVista('grimorio');
+    }
+    btn.disabled = false;
+};
+
+// Inicialización de filtros para el Catálogo
+window.setFiltro = (tipo, valor) => {
+    if(tipo === 'rol') estadoUI.filtroRol = valor;
+    if(tipo === 'act') estadoUI.filtroAct = valor;
+    dibujarCatalogo();
+};
+
+window.onload = arrancarApp;
