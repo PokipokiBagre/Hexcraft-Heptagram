@@ -1,7 +1,10 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores } from './inventario-logic.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores, getInventarioVisible } from './inventario-logic.js';
 
+// Para imágenes (Reemplaza espacios por _)
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
+// Para lógica de datos (Mantiene los textos exactos para que hagan Match)
+const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
 
 function getColorAfinidad(af) {
     if(af === 'Física') return { b: '#8b4513', t: '#e2a673' };
@@ -63,7 +66,7 @@ export function dibujarCatalogo() {
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
                     <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
-                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioVisible(nombre).length} Hechizos</p>
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
@@ -74,19 +77,18 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    // Contadores exactos para el Header
-    const inv = getInventarioCombinado(pj);
+    // Contadores exactos usando textNorm para no perder coincidencias
+    const inv = getInventarioVisible(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
     
     inv.forEach(item => {
-        const itemNorm = normalizar(item.Hechizo);
-        const info = todosNodos.find(n => normalizar(n.Nombre) === itemNorm || normalizar(n.ID) === itemNorm) || {};
+        const itemNorm = textNorm(item.Hechizo);
+        const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         const af = item["Hechizo Afinidad"] || info.Afinidad;
         if(conteo[af] !== undefined) conteo[af]++;
     });
 
-    // Se añadió el texto "CANTIDAD DE HECHIZOS:" antes de las afinidades
     let statsHTML = `<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:0.75em; margin-top:8px; background:rgba(0,0,0,0.5); padding:6px 12px; border-radius:4px; border:1px solid #333; align-items:center;">`;
     statsHTML += `<span style="color:#aaa; font-weight:bold; letter-spacing:1px; margin-right:5px;">CANTIDAD DE HECHIZOS:</span>`;
     Object.keys(conteo).forEach(af => {
@@ -95,7 +97,7 @@ export function renderHeaders() {
     });
     statsHTML += `</div>`;
 
-    // Lógica para mostrar el botón del Árbol SOLO si el personaje es un Jugador
+    // Bloqueo de Botón Árbol para NPCs
     const btnArbol = char.isPlayer ? `<button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>` : '';
 
     document.getElementById('header-grimorio').innerHTML = `
@@ -155,7 +157,8 @@ export function dibujarGrimorioGrid() {
     const pj = estadoUI.personajeSeleccionado; 
     const inv = getInventarioCombinado(pj); 
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
-    const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
+    const fAf = estadoUI.filtrosGrimorio.afinidad; 
+    const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
     
     const isNPC = !db.personajes[pj]?.isPlayer;
     const descubiertosPlayers = getHechizosDeJugadores();
@@ -163,18 +166,20 @@ export function dibujarGrimorioGrid() {
     let html = ``;
     inv.filter(item => (fAf === 'Todos' || item["Hechizo Afinidad"] === fAf) && (!fTx || item.Hechizo.toLowerCase().includes(fTx)))
        .forEach(item => {
-        const itemNorm = normalizar(item.Hechizo);
-        // MATCH TOTAL: Busca por el Nombre ("HEX (50)") o el ID ("Hechizo 1")
-        const info = todosNodos.find(n => normalizar(n.Nombre) === itemNorm || normalizar(n.ID) === itemNorm) || {};
+        // Uso de textNorm para evitar que los guiones bajos rompan el match
+        const itemNorm = textNorm(item.Hechizo);
+        const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
-        // CENSURA: Si el jugador NO tiene ni el nombre ni el ID, se enmascara para los NPCs
-        const isHidden = isNPC && !estadoUI.esAdmin && !descubiertosPlayers.has(itemNorm) && !(info.ID && descubiertosPlayers.has(normalizar(info.ID)));
+        // Ahora descubiertosPlayers también tiene textos limpios, sin guiones bajos
+        const isHidden = isNPC && !estadoUI.esAdmin && 
+                         !descubiertosPlayers.has(itemNorm) && 
+                         !(info.ID && descubiertosPlayers.has(textNorm(info.ID))) &&
+                         !(info.Nombre && descubiertosPlayers.has(textNorm(info.Nombre)));
 
         const col = getColorAfinidad(item["Hechizo Afinidad"] || info.Afinidad);
         const clase = info.Clase || 'Clase -';
         const isTemporal = item.Tipo && item.Tipo !== 'Normal' ? `<br><i>Hechizo ${item.Tipo}</i>` : '';
 
-        // TÍTULOS MAGISTRALES: Si lo descubrieron, saca el nombre real. Si está oculto, pon el ID aburrido.
         const tituloReal = (info.Nombre && info.Nombre.trim() !== '') ? info.Nombre : item.Hechizo;
         const titulo = isHidden ? (info.ID || item.Hechizo) : tituloReal;
 
@@ -200,7 +205,7 @@ export function dibujarGrimorioGrid() {
 
 export function dibujarGestionGrid() {
     const pj = estadoUI.personajeSeleccionado;
-    const invNombres = getInventarioCombinado(pj).map(i => i.Hechizo.toLowerCase().trim());
+    const invNombres = getInventarioCombinado(pj).map(i => textNorm(i.Hechizo));
     let nodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const fAf = estadoUI.filtrosGestion.afinidad; const fCl = estadoUI.filtrosGestion.clase; const fTx = estadoUI.filtrosGestion.busqueda.toLowerCase();
     
@@ -210,7 +215,8 @@ export function dibujarGestionGrid() {
     
     let html = ``;
     nodos.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(h => {
-        const isOwned = invNombres.includes(h.Nombre.toLowerCase().trim());
+        // Reconoce tanto si el PJ lo tiene por su Nombre real como por su ID (Hechizo 1)
+        const isOwned = invNombres.includes(textNorm(h.Nombre)) || invNombres.includes(textNorm(h.ID));
         const isPublic = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
         
         const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === h.Nombre);
