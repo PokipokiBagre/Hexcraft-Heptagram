@@ -5,29 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Hechizos | HEX RPG</title>
     <link rel="stylesheet" href="../stylehechizos.css">
-    <style>
-        /* Botones de navegación base */
-        .btn-nav { background: #1a0033; border: 1px solid var(--gold); color: var(--gold); padding: 10px; cursor: pointer; }
-        .btn-nav:hover { background: var(--gold); color: #000; }
-        .btn-sync-float { position: fixed; bottom: 20px; right: 20px; background: #800000; color: #fff; padding: 15px 30px; border: 2px solid #ff0000; border-radius: 30px; font-weight: bold; font-size: 1.2em; box-shadow: 0 0 20px rgba(255,0,0,0.5); z-index: 1000; cursor: pointer; }
-    </style>
 </head>
 <body>
 
-    <div style="display:flex; justify-content:space-between; margin-bottom: 20px;">
-        <button class="btn-nav" onclick="window.cambiarVista('catalogo')">🏠 Volver al Catálogo</button>
-        <button class="btn-nav" onclick="window.abrirMenuOP()">⚙️ Modo OP</button>
-    </div>
-
     <div class="container-hex">
-        <h1 id="main-title">Sistema de Hechizos</h1>
-        <div id="loader" class="loading">Sincronizando con Servidores Centrales...</div>
+        <div class="nav-bar">
+            <div>
+                <button class="btn-nav" onclick="window.location.href='../index.html'">⬅ Volver al Inicio</button>
+                <button class="btn-nav" style="border-color:#00ff00; color:#00ff00;" disabled id="estado-conexion">🟢 CONECTADO</button>
+            </div>
+            <button class="btn-nav btn-op" onclick="window.abrirMenuOP()">⚙️ Acceso OP</button>
+        </div>
+
+        <h1 id="main-title">Directorio de Grimorios</h1>
+        <div id="loader" class="loading">Sincronizando Hechizos y Personajes...</div>
 
         <div id="c-catalogo" class="vista-seccion oculto">
-            <div class="top-bar">
-                <button onclick="window.setFiltro('rol', 'Todos')">Todos</button>
-                <button onclick="window.setFiltro('rol', 'Jugador')">Jugadores</button>
-                <button onclick="window.setFiltro('rol', 'NPC')">NPCs</button>
+            <div class="filter-group">
+                <button onclick="window.setFiltro('rol', 'Todos')" id="btn-rol-Todos" class="btn-active">Todos</button>
+                <button onclick="window.setFiltro('rol', 'Jugador')" id="btn-rol-Jugador">Jugadores</button>
+                <button onclick="window.setFiltro('rol', 'NPC')" id="btn-rol-NPC">NPCs</button>
+            </div>
+            <div class="filter-group">
+                <button onclick="window.setFiltro('act', 'Todos')" id="btn-act-Todos" class="btn-active">Ambos</button>
+                <button onclick="window.setFiltro('act', 'Activo')" id="btn-act-Activo">Vivos / Activos</button>
+                <button onclick="window.setFiltro('act', 'Inactivo')" id="btn-act-Inactivo">Muertos / Inactivos</button>
             </div>
             <div id="vista-catalogo"></div>
         </div>
@@ -36,13 +38,14 @@
             <div id="vista-grimorio"></div>
         </div>
 
+        <div id="c-aprendizaje" class="vista-seccion oculto">
+            <div id="vista-aprendizaje"></div>
+        </div>
+
         <div id="c-gestion" class="vista-seccion oculto">
             <div id="vista-gestion"></div>
         </div>
 
-        <div id="c-aprendizaje" class="vista-seccion oculto">
-            <div id="vista-aprendizaje"></div>
-        </div>
     </div>
 
     <button id="btn-sync-global" class="btn-sync-float oculto" onclick="window.ejecutarSincronizacion()"></button>
