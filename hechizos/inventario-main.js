@@ -1,142 +1,244 @@
-import { estadoUI, db } from './inventario-state.js';
-import { inicializarDatos, sincronizarColaBD, exportarCSVPersonajes } from './inventario-data.js';
-import { dibujarCatalogo, renderHeaders, dibujarGrimorioGrid, dibujarGestionGrid, dibujarAprendizajeGrid } from './inventario-ui.js';
+import { db, estadoUI } from './inventario-state.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario-logic.js';
 
-window.onload = async () => {
-    const ok = await inicializarDatos();
-    if(!ok) return document.getElementById('loader').innerHTML = "<span style='color:red'>Fallo Crítico al cargar Servidores.</span>";
-    document.getElementById('loader').style.display = 'none';
-    window.cambiarVista('catalogo');
-};
+const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 
-window.cambiarVista = (vista) => {
-    estadoUI.vistaActual = vista;
-    document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('oculto'));
-    document.getElementById(`c-${vista}`).classList.remove('oculto');
-    
-    if (vista === 'catalogo') { dibujarCatalogo(); } 
-    else {
-        renderHeaders(); 
-        if (vista === 'grimorio') dibujarGrimorioGrid();
-        if (vista === 'gestion') { actualizarTextoLogOP(); dibujarGestionGrid(); }
-        if (vista === 'aprendizaje') dibujarAprendizajeGrid();
-    }
-    actualizarBotonSync();
-};
-
-window.abrirGrimorio = (pj) => { estadoUI.personajeSeleccionado = pj; estadoUI.filtrosGrimorio = { afinidad: 'Todos', busqueda: '' }; window.cambiarVista('grimorio'); window.scrollTo(0,0); };
-window.abrirMenuOP = () => {
-    if(estadoUI.esAdmin) { estadoUI.esAdmin = false; alert("Modo OP Desactivado."); window.cambiarVista('catalogo'); return; }
-    if (prompt("Contraseña:") === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; alert("Modo OP Activado."); window.cambiarVista(estadoUI.vistaActual); }
-};
-
-window.setFiltro = (tipo, valor) => {
-    if(tipo === 'rol') { estadoUI.filtroRol = valor; ['Todos','Jugador','NPC'].forEach(k => document.getElementById('btn-rol-'+k)?.classList.remove('btn-active')); document.getElementById('btn-rol-'+valor)?.classList.add('btn-active'); }
-    if(tipo === 'act') { estadoUI.filtroAct = valor; ['Todos','Activo','Inactivo'].forEach(k => document.getElementById('btn-act-'+k)?.classList.remove('btn-active')); document.getElementById('btn-act-'+valor)?.classList.add('btn-active'); }
-    dibujarCatalogo();
-};
-
-window.aplicarFiltrosGrimorio = () => { estadoUI.filtrosGrimorio.afinidad = document.getElementById('f-grim-afinidad').value; estadoUI.filtrosGrimorio.busqueda = document.getElementById('f-grim-texto').value; dibujarGrimorioGrid(); };
-window.aplicarFiltrosGestion = () => { estadoUI.filtrosGestion.afinidad = document.getElementById('op-f-afinidad').value; estadoUI.filtrosGestion.clase = document.getElementById('op-f-clase').value; estadoUI.filtrosGestion.busqueda = document.getElementById('op-f-texto').value; dibujarGestionGrid(); };
-window.aplicarFiltrosAprendizaje = () => { estadoUI.filtrosAprendizaje.afinidad = document.getElementById('f-apr-afinidad').value; estadoUI.filtrosAprendizaje.clase = document.getElementById('f-apr-clase').value; dibujarAprendizajeGrid(); };
-
-window.toggleRestarHex = (c) => { estadoUI.restarHexAsignacion = c; };
-window.descargarCSVHex = () => { exportarCSVPersonajes(); };
-
-// --- LÓGICA DE AFINIDAD Y HEX ---
-function aplicarCambiosPersonaje(pj, hex, afinidad) {
-    const charObj = db.personajes[pj];
-    charObj.hex = Math.max(0, charObj.hex - hex); 
-    
-    const colMap = { 'Física': 3, 'Energética': 4, 'Espiritual': 5, 'Mando': 6, 'Psíquica': 7, 'Oscura': 8 };
-    if (colMap[afinidad]) {
-        const idx = colMap[afinidad];
-        let cell = charObj.rawRow[idx];
-        if (!cell || !cell.includes('_')) cell = `${cell || 0}_0_0_0_0`;
-        let parts = cell.split('_');
-        parts[0] = (parseInt(parts[0]) + 1).toString(); // +1 al Total
-        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString(); // +1 al Conteo
-        charObj.rawRow[idx] = parts.join('_');
-    }
-    const hexParts = charObj.rawRow[1].split('_'); hexParts[0] = charObj.hex.toString(); charObj.rawRow[1] = hexParts.join('_');
+function getColorAfinidad(af) {
+    if(af === 'Física') return { b: '#8b4513', t: '#e2a673' };
+    if(af === 'Energética') return { b: '#e67e22', t: '#f3b67a' };
+    if(af === 'Espiritual') return { b: '#2ecc71', t: '#7df0a7' };
+    if(af === 'Mando') return { b: '#3498db', t: '#a4d3f2' };
+    if(af === 'Psíquica') return { b: '#9b59b6', t: '#dcb1f0' };
+    if(af === 'Oscura') return { b: 'var(--purple-magic)', t: '#c285ff' };
+    return { b: '#555', t: '#fff' };
 }
 
-// --- ACTUALIZADOR DEL TEXTAREA OP ---
-function actualizarTextoLogOP() {
-    const textarea = document.getElementById('op-log-textarea');
-    if(!textarea) return;
-    const pj = estadoUI.personajeSeleccionado;
+const getSortValue = (p) => {
+    if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; 
+    if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
+};
+
+// Extractor a prueba de balas para las columnas de Excel
+function getValInfo(info, possibleKeys) {
+    if(!info) return null;
+    const actualKeys = Object.keys(info);
+    for(let pk of possibleKeys) {
+        const matched = actualKeys.find(k => k.trim().toLowerCase() === pk.toLowerCase());
+        if(matched && info[matched] && info[matched] !== '0' && info[matched] !== 0 && info[matched] !== 'Desconocido' && info[matched] !== 'null') {
+            return info[matched];
+        }
+    }
+    return null;
+}
+
+function generarDetalles(info) {
+    const ov = getValInfo(info, ['overcast 100%', 'overcast']);
+    const un = getValInfo(info, ['undercast 50%', 'undercast']);
+    const es = getValInfo(info, ['especial', 'especiales']);
+    
+    if (!ov && !un && !es) return '';
+    return `
+    <details class="spell-details">
+        <summary>Ver Detalles Adicionales</summary>
+        <div class="details-content">
+            ${ov ? `<div class="spell-extra"><strong>Overcast:</strong> ${ov}</div>` : ''}
+            ${un ? `<div class="spell-extra"><strong>Undercast:</strong> ${un}</div>` : ''}
+            ${es ? `<div class="spell-extra"><strong>Especial:</strong> ${es}</div>` : ''}
+        </div>
+    </details>`;
+}
+
+export function dibujarCatalogo() {
+    let html = `<div class="catalogo-grid">`;
+    Object.keys(db.personajes).sort((a, b) => {
+        const valA = getSortValue(db.personajes[a]); const valB = getSortValue(db.personajes[b]);
+        if (valA !== valB) return valA - valB; return a.localeCompare(b); 
+    }).forEach(nombre => {
+        const p = db.personajes[nombre];
+        if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return; if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
+        if (estadoUI.filtroAct === 'Activo' && !p.isActive) return; if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
+
+        const style = p.isPlayer && p.isActive ? 'player-active' : (p.isPlayer ? 'player-card' : '');
+        html += `<div class="char-card ${style} ${p.isActive ? '' : 'inactive-card'}" onclick="window.abrirGrimorio('${nombre}')">
+                    <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                    <h3>${nombre}</h3>
+                    <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
+                 </div>`;
+    });
+    document.getElementById('grid-catalogo').innerHTML = html + `</div>`;
+}
+
+export function renderHeaders() {
+    const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
-
-    let out = "";
-    estadoUI.logOP.descubiertos.forEach(d => { out += `Hechizo descubierto: ${d}\n`; });
-
-    if(estadoUI.logOP.aprendidos.length > 0) {
-        const list = estadoUI.logOP.aprendidos.join(", ");
-        const currentHex = char ? char.hex : 0;
-        out += `Hechizo aprendido: ${list} -${estadoUI.logOP.hexGastado} Hex (${currentHex})\n`;
-    }
-    textarea.value = out;
-    textarea.scrollTop = textarea.scrollHeight;
-}
-
-window.copiarLogOP = () => {
-    const t = document.getElementById('op-log-textarea');
-    if(t) { t.select(); document.execCommand('copy'); alert("Log copiado al portapapeles."); }
-};
-window.limpiarLogOP = () => { estadoUI.logOP = { descubiertos: [], aprendidos: [], hexGastado: 0 }; actualizarTextoLogOP(); };
-
-
-window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, targetVisibility = null) => {
-    const pj = estadoUI.personajeSeleccionado;
-    const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
-    const info = todosNodos.find(n => n.Nombre === nombreHechizo);
     
-    if(accion === 'agregar') {
-        const origen = document.getElementById('slicer-origen')?.value || 'OP Admin';
-        estadoUI.colaCambios.agregar.push([pj, nombreHechizo, afinidad, hex, "Normal", origen]);
+    document.getElementById('header-grimorio').innerHTML = `
+        <button onclick="window.cambiarVista('catalogo')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Catálogo</button>
+        <div class="player-header">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                <div><h2 style="margin:0;">${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>
+                ${estadoUI.esAdmin ? `<button onclick="window.cambiarVista('gestion')" class="btn-nav" style="background:#4a004a; border-color:var(--purple-magic);">⚙️ Asignar/Quitar (OP)</button>` : ''}
+            </div>
+        </div>`;
         
-        // 1. Lógica de Log Portapapeles (Resta HEX y Descubiertos)
-        if(estadoUI.restarHexAsignacion) {
-            aplicarCambiosPersonaje(pj, hex, afinidad);
-            estadoUI.logOP.aprendidos.push(nombreHechizo);
-            estadoUI.logOP.hexGastado += hex;
-            
-            // Si el hechizo es Oculto, forzamos su descubrimiento y lo anotamos
-            if(info && (!info.Conocido || info.Conocido.toString().trim().toLowerCase() !== 'si')) {
-                estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: 'si' });
-                info.Conocido = 'si'; // UI Temporal
-                estadoUI.logOP.descubiertos.push(`${info.ID} - ${info.Nombre}`);
-            }
-        }
-        actualizarTextoLogOP();
+    document.getElementById('header-aprendizaje').innerHTML = `
+        <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
+        <div class="player-header">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                <div><h2 style="margin:0;">ÁRBOL DE APRENDIZAJE</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p></div>
+            </div>
+        </div>`;
 
-    } else if (accion === 'quitar') {
-        estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
-    } else if (accion === 'toggle_conocido') {
-        estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: targetVisibility });
-        if(info) info.Conocido = targetVisibility; // UI temporal
-    }
-    
-    if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
-    actualizarBotonSync();
-};
-
-function actualizarBotonSync() {
-    const btn = document.getElementById('btn-sync-global');
-    const h = estadoUI.colaCambios.agregar.length + estadoUI.colaCambios.quitar.length + estadoUI.colaCambios.toggleConocido.length;
-    if (h > 0) { btn.classList.remove('oculto'); btn.innerText = `🔥 GUARDAR CAMBIOS AL SERVIDOR (${h}) 🔥`; } 
-    else btn.classList.add('oculto');
+    document.getElementById('header-gestion').innerHTML = `
+        <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
+        <div class="player-header">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                <div><h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Actual: <strong>${char.hex}</strong></p></div>
+            </div>
+            <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades y HEX)</button>
+        </div>
+        
+        <label class="toggle-hex">
+            <input type="checkbox" onchange="window.toggleRestarHex(this.checked)" ${estadoUI.restarHexAsignacion ? 'checked' : ''}>
+            RESTAR COSTE DE HEX Y SUBIR AFINIDAD (+1) AL ASIGNAR HECHIZO
+        </label>
+        
+        <div style="text-align:center; background:#1a0033; padding:15px; border:1px solid var(--gold); border-radius:8px; max-width:800px; margin:0 auto 30px auto;">
+            <div style="margin-bottom:15px;">
+                <label style="color:var(--gold); font-weight:bold; margin-right:10px;">FUENTE DEL HECHIZO (ORIGEN):</label>
+                <select id="slicer-origen" class="search-bar" style="margin:0; width:auto; display:inline-block;">
+                    <option value="Mapa Hex">Mapa Hex</option>
+                    <option value="OP Admin">OP Admin</option>
+                    ${Object.keys(db.personajes).sort().map(n => `<option value="${n}">${n}</option>`).join('')}
+                </select>
+            </div>
+            <h4 style="color:#00ffff; margin:0 0 5px 0; text-align:left;">📋 Bitácora de Aprendizaje</h4>
+            <textarea id="op-log-textarea" readonly style="width:100%; height:80px; background:#000; color:#fff; border:1px dashed var(--gold); padding:10px; font-family:monospace; box-sizing:border-box; margin-bottom:10px;"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button onclick="window.copiarLogOP()" style="flex:3; background:var(--gold); color:black; font-weight:bold; padding:8px; border:none; cursor:pointer; border-radius:4px;">COPIAR AL PORTAPAPELES</button>
+                <button onclick="window.limpiarLogOP()" style="flex:1; background:#8b0000; color:white; padding:8px; border:none; cursor:pointer; border-radius:4px;">LIMPIAR LOG</button>
+            </div>
+        </div>`;
 }
 
-window.ejecutarSincronizacion = async () => {
-    const btn = document.getElementById('btn-sync-global'); btn.innerText = "Sincronizando..."; btn.disabled = true;
-    if(await sincronizarColaBD(estadoUI.colaCambios)) {
-        alert("¡Base de datos actualizada con éxito!"); estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [] };
-        if(estadoUI.restarHexAsignacion && estadoUI.esAdmin && estadoUI.logOP.aprendidos.length > 0) {
-            if(confirm("El personaje ha modificado su HEX y Afinidad. ¿Descargar el nuevo CSV de estadísticas para tu Drive?")) exportarCSVPersonajes();
-        }
-        window.location.reload(); 
-    } else alert("Error de conexión. Reintenta.");
-    btn.disabled = false;
-};
+export function dibujarGrimorioGrid() {
+    const pj = estadoUI.personajeSeleccionado; const inv = getInventarioCombinado(pj);
+    const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
+    
+    let html = ``;
+    inv.filter(item => (fAf === 'Todos' || item["Hechizo Afinidad"] === fAf) && (!fTx || item.Hechizo.toLowerCase().includes(fTx)))
+       .forEach(item => {
+        const info = todosNodos.find(n => n.Nombre.trim().toLowerCase() === item.Hechizo.trim().toLowerCase()) || {};
+        const col = getColorAfinidad(item["Hechizo Afinidad"] || info.Afinidad);
+        const res = getValInfo(info, ['resumen', 'Resumen']);
+        const efe = getValInfo(info, ['efecto', 'Efecto']);
+        const clase = info.Clase || 'Clase -';
+        const isTemporal = item.Tipo && item.Tipo !== 'Normal' ? `<br><i>Hechizo ${item.Tipo}</i>` : '';
+
+        html += `<div class="spell-card" style="border-top-color: ${col.b};">
+                    <h3 style="color:${col.t}">${item.Hechizo}</h3>
+                    <div class="spell-tags">
+                        <span class="spell-tag tag-hex">HEX: ${item["Hechizo Hex"] || info.HEX || 0}</span>
+                        <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${item["Hechizo Afinidad"] || info.Afinidad}</span>
+                        <span class="spell-tag tag-clase">${clase}</span>
+                    </div>
+                    ${res ? `<div class="spell-desc">${res}</div>` : ''}
+                    ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
+                    ${generarDetalles(info)}
+                    <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${isTemporal}</div>
+                 </div>`;
+    });
+    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">El grimorio está vacío.</p>`;
+}
+
+export function dibujarGestionGrid() {
+    const pj = estadoUI.personajeSeleccionado;
+    const invNombres = getInventarioCombinado(pj).map(i => i.Hechizo.toLowerCase().trim());
+    let nodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    const fAf = estadoUI.filtrosGestion.afinidad; const fCl = estadoUI.filtrosGestion.clase; const fTx = estadoUI.filtrosGestion.busqueda.toLowerCase();
+    
+    if (fAf !== 'Todos') nodos = nodos.filter(n => n.Afinidad === fAf);
+    if (fCl !== 'Todos') nodos = nodos.filter(n => n.Clase && n.Clase.includes(fCl));
+    if (fTx) nodos = nodos.filter(n => n.Nombre.toLowerCase().includes(fTx));
+    
+    let html = ``;
+    nodos.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(h => {
+        const isOwned = invNombres.includes(h.Nombre.toLowerCase().trim());
+        
+        const isPublic = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
+        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === h.Nombre);
+        const currentlyPublic = checkColaVis ? (checkColaVis.Estado === 'si') : isPublic;
+
+        const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
+        
+        const btn = isOwned 
+            ? `<button onclick="window.accionCola('quitar', '${h.Nombre}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR HECHIZO</button>`
+            : `<button onclick="window.accionCola('agregar', '${h.Nombre}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
+
+        const btnVis = `<button onclick="window.accionCola('toggle_conocido', '${h.Nombre}', '', 0, '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
+
+        html += `<div class="spell-card" style="border-left:4px solid ${col.b}; ${isOwned ? 'box-shadow: inset 0 0 15px rgba(0,255,0,0.1);' : ''}">
+                    <h3 style="color:${col.t}; margin-bottom:2px;">${h.Nombre}</h3>
+                    <span style="display:block; color:#888; font-size:0.7em; font-style:italic; margin-bottom:10px;">ID: ${h.ID}</span>
+                    <div class="spell-tags">
+                        <span class="spell-tag tag-hex">HEX: ${costo}</span>
+                        <span class="spell-tag tag-clase">${h.Clase || '-'}</span>
+                    </div>
+                    ${btn}
+                    ${btnVis}
+                 </div>`;
+    });
+    document.getElementById('grid-gestion').innerHTML = html;
+}
+
+export function dibujarAprendizajeGrid() {
+    const pj = estadoUI.personajeSeleccionado; 
+    const grupos = obtenerHechizosAprendibles(pj);
+    let html = ``;
+    
+    if(Object.keys(grupos).length === 0) {
+        document.getElementById('grid-aprendizaje').innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff4444; font-size:1.2em;">No hay ramas disponibles o falta HEX.</p>`;
+        return;
+    }
+
+    Object.keys(grupos).forEach(reqStr => {
+        html += `<h3 class="req-header">PRECEDENTES: <span style="color:#ccc;">${reqStr}</span></h3><div class="grid-inventario">`;
+        
+        grupos[reqStr].forEach(h => {
+            const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
+            
+            // Evaluador de visibilidad (Verifica si está en cola para hacerse público o no)
+            const isPublicBase = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
+            const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === h.Nombre);
+            const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
+            
+            const titulo = isKnown ? h.Nombre : h.ID;
+            const res = isKnown ? getValInfo(h, ['resumen', 'Resumen']) : '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto).</i>';
+            const efe = isKnown ? getValInfo(h, ['efecto', 'Efecto']) : '';
+            const details = isKnown ? generarDetalles(h) : '';
+
+            html += `<div class="spell-card" style="border: 2px dashed ${col.b}; background:rgba(10,20,30,0.5);">
+                        <h3 style="color:${isKnown ? col.t : '#666'};">${titulo}</h3>
+                        <div class="spell-tags">
+                            <span class="spell-tag tag-hex">COSTE: ${costo}</span>
+                            <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span>
+                            <span class="spell-tag tag-clase">${h.Clase || '-'}</span>
+                        </div>
+                        <div class="spell-desc" style="${!isKnown ? 'background:#000; border-left-color:#333;' : ''}">${res}</div>
+                        ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
+                        ${details}
+                     </div>`;
+        });
+        html += `</div>`;
+    });
+    document.getElementById('grid-aprendizaje').innerHTML = html;
+}
