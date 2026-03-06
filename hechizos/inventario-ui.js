@@ -1,5 +1,5 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, obtenerHechizosAprendibles, getInventarioVisible } from './inventario-logic.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
@@ -64,7 +64,7 @@ export function dibujarCatalogo() {
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
                     <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
-                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioVisible(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
@@ -75,7 +75,8 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    const inv = getInventarioVisible(pj);
+    // Aquí se reemplazó el getInventarioVisible erróneo por getInventarioCombinado
+    const inv = getInventarioCombinado(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
     
@@ -97,11 +98,9 @@ export function renderHeaders() {
     const btnArbol = char.isPlayer ? `<button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>` : '';
     const btnCastear = `<button onclick="window.cambiarVista('casteo')" class="btn-nav" style="background:#3a005a; border-color:#ff00ff; color:white;">🎲 Castear Hechizo</button>`;
 
-    // --- CÁLCULO DE VEX PARA LA CABECERA ---
     const afOscura = char.rawRow ? (parseInt((char.rawRow[8] || '0').split('_')[0]) || 0) : 0;
     const maxVex = Math.round(((afOscura * 300) / 4) / 50) * 50;
 
-    // --- PANEL OP DE CONSUMO DE CASTEO ---
     let checkboxConsumoHTML = '';
     if (estadoUI.esAdmin) {
         checkboxConsumoHTML = `
@@ -113,7 +112,6 @@ export function renderHeaders() {
         </div>`;
     }
 
-    // CAJA DE LOG DISPONIBLE PARA TODOS
     const logCasteoGlobalHTML = `
         <div style="background:#1a0033; border:1px solid var(--gold); border-radius:8px; padding:15px; margin-top:15px;">
             <h4 style="color:#00ffff; margin:0 0 5px 0;">📋 Log de Conjuros (Para copiar al foro)</h4>
@@ -195,7 +193,9 @@ export function renderHeaders() {
 
 export function dibujarGrimorioGrid() {
     const pj = estadoUI.personajeSeleccionado; 
-    const inv = getInventarioVisible(pj); 
+    
+    // También se corrigió aquí para usar el inventario completo y aplicar máscara nativa
+    const inv = getInventarioCombinado(pj); 
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
 
@@ -205,6 +205,7 @@ export function dibujarGrimorioGrid() {
         const itemNorm = textNorm(item.Hechizo);
         const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
+        // Enmascaramiento regido exclusivamente por la Columna O y el panel de Admin
         const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
         const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === (info.Nombre || item.Hechizo));
         const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
