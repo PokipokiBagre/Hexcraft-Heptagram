@@ -10,23 +10,47 @@ export function getInventarioCombinado(nombrePj) {
     return [...invReal, ...enColaAdd].filter(item => !nQuitar.includes(item.Hechizo));
 }
 
+// NUEVO: Obtiene set de todos los hechizos que poseen los JUGADORES activos o inactivos
+export function getHechizosDeJugadores() {
+    const jugadores = Object.keys(db.personajes).filter(k => db.personajes[k].isPlayer);
+    const hechizosJugadores = new Set();
+    jugadores.forEach(pj => {
+        const inv = getInventarioCombinado(pj);
+        inv.forEach(item => hechizosJugadores.add(norm(item.Hechizo)));
+    });
+    return hechizosJugadores;
+}
+
+// NUEVO: Filtra el inventario de un NPC para que NO muestre hechizos que ningún jugador tiene.
+export function getInventarioVisible(nombrePj) {
+    const inv = getInventarioCombinado(nombrePj);
+    const isPjPlayer = db.personajes[nombrePj]?.isPlayer;
+
+    // Si es jugador o si tienes Modo OP activo, ves todo.
+    if (isPjPlayer || estadoUI.esAdmin) return inv;
+
+    // Si es NPC y no eres OP, censuramos lo que los jugadores no hayan descubierto.
+    const hechizosPlayers = getHechizosDeJugadores();
+    return inv.filter(item => hechizosPlayers.has(norm(item.Hechizo)));
+}
+
 export function obtenerHechizosAprendibles(nombrePj) {
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const nameToId = {}; 
     const idToName = {};
     
     todosNodos.forEach(n => { 
-        if(n.Nombre && n.ID) {
-            const idNorm = norm(n.ID);
-            const nombreNorm = norm(n.Nombre);
-            const isPlaceholder = n.Nombre.trim().toLowerCase().startsWith("hechizo");
+        const idNorm = norm(n.ID);
+        const nom = n.Nombre ? n.Nombre.trim() : '';
+        const nomNorm = norm(nom);
+
+        if(nomNorm && idNorm) {
+            nameToId[nomNorm] = idNorm;
             
-            nameToId[nombreNorm] = idNorm;
-            
-            // LA MAGIA AQUÍ: Solo guarda el nombre en idToName si no existe, 
-            // o si el que estaba guardado era "Hechizo X" y el nuevo es un nombre real "HEX (50)".
-            if (!idToName[idNorm] || (!isPlaceholder && idToName[idNorm].toLowerCase().startsWith("hechizo"))) {
-                idToName[idNorm] = n.Nombre.trim();
+            // BLINDAJE: Solo mapea el Nombre Real si no empieza por "hechizo"
+            // Esto evita que "Hechizo 1" de la tabla oculta sobrescriba a "HEX (50)"
+            if (!nom.toLowerCase().startsWith('hechizo')) {
+                idToName[idNorm] = nom;
             }
         } 
     });
@@ -59,10 +83,9 @@ export function obtenerHechizosAprendibles(nombrePj) {
 
                 const reqStrArray = sources.map(s => {
                     const isOwned = invIDs.has(s);
-                    // Busca el nombre real (ej. "HEX (50)"), si no lo encuentra usa "Hechizo 1"
+                    // Saca el nombre real ("HEX (50)") o el ID base si no lo encuentra.
                     const realName = idToName[s] || formatearID(s);
                     
-                    // Si lo tiene, muestra su nombre real + EN POSESIÓN. Si no, muestra su ID/Placeholder.
                     return isOwned ? `${realName.toUpperCase()} (EN POSESIÓN)` : formatearID(s).toUpperCase();
                 });
                 
