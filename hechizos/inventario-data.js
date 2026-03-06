@@ -1,6 +1,6 @@
 import { db } from './inventario-state.js';
 
-const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbx-v0BEMVBw4r0p7mY9m0eyBcA75prv2Ru1XEcixIeKnw9DviBCmCA9mHLuybb-skamCw/exec';
+const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbyp-hLbZnjh2_r_0X7diffLulJvh38yMr1DjRLu-Kf43NAarRhTfITMeeSAiluM1Nalmg/exec';
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
 export async function inicializarDatos(barraProgreso) {
@@ -30,7 +30,10 @@ function parsearCSVPersonajes(texto) {
         if(!f[0]) return;
         const nombre = f[0]; const idenParts = (f[17] || '0_1').split('_');
         const getBase = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
+        
+        // Extracción pasiva de afinidades reales para el Casteo
         const afis = { 'Física': getBase(3), 'Energética': getBase(4), 'Espiritual': getBase(5), 'Mando': getBase(6), 'Psíquica': getBase(7), 'Oscura': getBase(8) };
+        
         let mayorAfinidad = 'Ninguna'; let maxVal = -1;
         for (const [key, val] of Object.entries(afis)) { if(val > maxVal && val > 0) { maxVal = val; mayorAfinidad = key; } }
 
@@ -38,7 +41,9 @@ function parsearCSVPersonajes(texto) {
             isPlayer: idenParts[0] === '1', isActive: idenParts[1] === '1',
             iconoOverride: f[18] !== '' ? f[18] : nombre,
             hex: f[1] ? parseInt(f[1].split('_')[0]) || 0 : 0,
-            mayorAfinidad: mayorAfinidad, rawRow: f 
+            mayorAfinidad: mayorAfinidad, 
+            afinidades: afis, // Guardado para usar en la calculadora
+            rawRow: f 
         };
     });
 }
