@@ -1,5 +1,4 @@
 import { db, estadoUI } from './inventario-state.js';
-// IMPORTACIÓN CORREGIDA: Ya no llama a las funciones eliminadas
 import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
@@ -20,7 +19,6 @@ const getSortValue = (p) => {
     if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
 };
 
-// Exportado para que inventario-main.js también lo use al conjurar
 export function getValInfo(info, possibleKeys) {
     if(!info) return null;
     const actualKeys = Object.keys(info);
@@ -77,7 +75,6 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    // Contadores arreglados para usar getInventarioCombinado
     const inv = getInventarioCombinado(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
@@ -98,8 +95,25 @@ export function renderHeaders() {
     statsHTML += `</div>`;
 
     const btnArbol = char.isPlayer ? `<button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>` : '';
-    // Nuevo Botón de Casteo
     const btnCastear = `<button onclick="window.cambiarVista('casteo')" class="btn-nav" style="background:#3a005a; border-color:#ff00ff; color:white;">🎲 Castear Hechizo</button>`;
+
+    // --- PANEL OP EXCLUSIVO DE CASTEO ---
+    let opCasteoHTML = '';
+    if (estadoUI.esAdmin) {
+        opCasteoHTML = `
+        <div style="background:#1a0033; border:1px solid var(--gold); border-radius:8px; padding:15px; margin-top:15px;">
+            <label class="toggle-hex">
+                <input type="checkbox" id="toggle-cast-consumo" checked>
+                CONSUMIR VEX/HEX AL CONJURAR Y REGISTRAR EN PORTAPAPELES
+            </label>
+            <h4 style="color:#00ffff; margin:10px 0 5px 0;">📋 Log de Conjuros</h4>
+            <textarea id="log-casteo-textarea" readonly style="width:100%; height:100px; background:#000; color:#fff; border:1px dashed var(--gold); padding:10px; font-family:monospace; box-sizing:border-box;"></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="window.copiarLogCasteo()" style="flex:3; background:var(--gold); color:black; font-weight:bold; padding:8px; border:none; cursor:pointer; border-radius:4px;">COPIAR LOG</button>
+                <button onclick="window.limpiarLogCasteo()" style="flex:1; background:#8b0000; color:white; padding:8px; border:none; cursor:pointer; border-radius:4px;">LIMPIAR LOG</button>
+            </div>
+        </div>`;
+    }
 
     document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
@@ -125,11 +139,12 @@ export function renderHeaders() {
 
     document.getElementById('header-casteo').innerHTML = `
         <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
-        <div class="player-header">
+        <div class="player-header" style="flex-direction:column; align-items:stretch;">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                 <div><h2 style="margin:0;">ZONA DE CONJURO: ${pj.toUpperCase()}</h2></div>
             </div>
+            ${opCasteoHTML}
         </div>`;
 
     document.getElementById('header-gestion').innerHTML = `
@@ -175,7 +190,6 @@ export function dibujarGrimorioGrid() {
         const itemNorm = textNorm(item.Hechizo);
         const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
-        // LÓGICA DE ENMASCARAMIENTO BASADA EN COLUMNA O (Pura, sin revisar Jugadores)
         const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
         const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === (info.Nombre || item.Hechizo));
         const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
@@ -291,5 +305,7 @@ export function dibujarAprendizajeGrid() {
         });
         html += `</div>`;
     });
+    document.getElementById('grid-aprendizaje').innerHTML = html;
+}
     document.getElementById('grid-aprendizaje').innerHTML = html;
 }
