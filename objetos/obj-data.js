@@ -1,5 +1,7 @@
 import { invGlobal, objGlobal, guardar } from './obj-state.js';
 
+const API_OBJETOS = 'https://script.google.com/macros/s/AKfycbzPv0e8nKY8hTX7_rIJixL4EmFLDHaX-QHjNTNFonMz7hamiJfn__GAH1PtZeFFG5eU/exec'; 
+
 export async function cargarTodoDesdeCSV() {
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv&cachebust=" + new Date().getTime();
     try {
@@ -28,4 +30,31 @@ export async function cargarTodoDesdeCSV() {
         });
         guardar();
     } catch (e) { console.error("Error cargando CSV:", e); }
+}
+
+export async function sincronizarObjetosBD(cola) {
+    try {
+        const actualizaciones = Object.values(cola);
+        if(actualizaciones.length === 0) return true;
+
+        const response = await fetch(API_OBJETOS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ accion: 'sync_objetos', actualizaciones })
+        });
+        
+        const resText = await response.text();
+        try {
+            const result = JSON.parse(resText);
+            if(result.status === 'success') return true;
+            alert("Error en Apps Script:\n" + result.message);
+            return false;
+        } catch(e) {
+            alert("Google bloqueó la solicitud o el código crashó.");
+            return false;
+        }
+    } catch (e) { 
+        alert("Fallo crítico de Red. Revisa el link de API_OBJETOS.");
+        return false; 
+    }
 }
