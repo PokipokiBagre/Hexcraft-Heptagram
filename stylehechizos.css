@@ -20,18 +20,22 @@ body {
     padding: 20px; 
     min-height: 100vh;
     background-image: radial-gradient(circle at top, #1a0033 0%, #05000a 100%);
+    text-align: center;
 }
 
 h1, h2, h3 { 
     color: var(--gold); 
     text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); 
-    text-align: center;
 }
 
 .container-hex { 
     width: 95%; 
     margin: 0 auto; 
     max-width: 1600px; 
+}
+
+.oculto { 
+    display: none !important; 
 }
 
 /* =======================================================
@@ -47,7 +51,7 @@ h1, h2, h3 {
     padding-bottom: 20px; 
 }
 
-select { 
+select.main-select { 
     background: #111; 
     color: var(--gold); 
     border: 1px solid var(--gold); 
@@ -59,13 +63,13 @@ select {
     transition: 0.3s ease;
 }
 
-select:focus { 
+select.main-select:focus { 
     outline: none; 
     box-shadow: 0 0 15px rgba(212, 175, 55, 0.5); 
     background: #000; 
 }
 
-select:disabled {
+select.main-select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -104,7 +108,7 @@ select:disabled {
     flex-direction: column; 
     transition: 0.3s ease; 
     box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-    text-align: left; /* El texto interno se lee mejor alineado a la izquierda */
+    text-align: left;
 }
 
 .spell-card:hover { 
@@ -120,7 +124,6 @@ select:disabled {
     padding-bottom: 5px; 
     font-size: 1.3em; 
     font-family: 'Cinzel', serif; 
-    text-align: left;
     text-transform: uppercase;
 }
 
@@ -178,9 +181,82 @@ select:disabled {
     font-family: sans-serif; 
     color: #888; 
     font-style: italic; 
-    margin-top: auto; /* Empuja el origen hasta el fondo de la carta */
+    margin-top: auto; 
     font-size: 0.8em; 
     text-align: right; 
     padding-top: 10px; 
     border-top: 1px dashed #333;
+}
+
+/* =======================================================
+   PANEL OP Y SINCRONIZACIÓN (INVENTARIO)
+   ======================================================= */
+.btn-op { 
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    background: #1a0033; 
+    border: 1px solid var(--gold); 
+    color: var(--gold); 
+    padding: 8px 15px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    border-radius: 4px; 
+    font-family: 'Cinzel', serif;
+    transition: 0.3s;
+}
+
+.btn-op:hover { 
+    background: var(--gold); 
+    color: #000; 
+}
+
+.op-panel { 
+    background: rgba(20, 0, 40, 0.9); 
+    border: 1px solid var(--gold); 
+    padding: 20px; 
+    border-radius: 8px; 
+    max-width: 800px; 
+    margin: 0 auto; 
+    text-align: center; 
+}
+
+.op-form { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 15px; 
+    margin-bottom: 20px; 
+    text-align: left; 
+}
+
+.op-form label {
+    color: var(--gold);
+    font-size: 0.9em;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.op-form select, 
+.op-form input { 
+    width: 100%; 
+    padding: 10px; 
+    background: #000; 
+    color: var(--gold); 
+    border: 1px dashed var(--gold); 
+    border-radius: 4px; 
+    box-sizing: border-box;
+    font-family: sans-serif;
+}
+
+.queue-box { 
+    background: #000; 
+    border: 1px solid #444; 
+    padding: 15px; 
+    border-radius: 4px; 
+    max-height: 200px; 
+    overflow-y: auto; 
+    margin-bottom: 20px; 
+    text-align: left; 
+    font-family: monospace; 
+    color: #00ffff;
 }
