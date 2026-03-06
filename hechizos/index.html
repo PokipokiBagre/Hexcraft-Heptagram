@@ -39,7 +39,7 @@
             <div id="header-grimorio"></div>
             <div class="filter-group">
                 <select id="f-grim-afinidad" class="search-bar" onchange="window.aplicarFiltrosGrimorio()"><option value="Todos">Todas las Afinidades</option><option>Física</option><option>Energética</option><option>Espiritual</option><option>Mando</option><option>Psíquica</option><option>Oscura</option></select>
-                <input type="text" id="f-grim-texto" class="search-bar" placeholder="Buscar en grimorio..." oninput="window.aplicarFiltrosGrimorio()">
+                <input type="text" id="f-grim-texto" class="search-bar" placeholder="Buscar en grimorio..." onkeyup="window.aplicarFiltrosGrimorio()">
             </div>
             <div id="grid-grimorio" class="grid-inventario"></div>
         </div>
@@ -49,7 +49,7 @@
             <div class="filter-group" style="gap:20px;">
                 <select id="op-f-afinidad" class="search-bar" onchange="window.aplicarFiltrosGestion()"><option value="Todos">Todas Afinidades</option><option>Física</option><option>Energética</option><option>Espiritual</option><option>Mando</option><option>Psíquica</option><option>Oscura</option></select>
                 <select id="op-f-clase" class="search-bar" onchange="window.aplicarFiltrosGestion()"><option value="Todos">Todas Clases</option><option value="Clase 1">Clase 1</option><option value="Clase 2">Clase 2</option><option value="Clase 3">Clase 3</option><option value="Clase 4">Clase 4</option><option value="Clase 5">Clase 5</option></select>
-                <input type="text" id="op-f-texto" class="search-bar" placeholder="Buscar hechizo..." oninput="window.aplicarFiltrosGestion()">
+                <input type="text" id="op-f-texto" class="search-bar" placeholder="Buscar hechizo..." onkeyup="window.aplicarFiltrosGestion()">
             </div>
             <div id="grid-gestion" class="grid-inventario"></div>
         </div>
@@ -59,6 +59,7 @@
             <div class="filter-group">
                 <select id="f-apr-afinidad" class="search-bar" onchange="window.aplicarFiltrosAprendizaje()"><option value="Todos">Todas Afinidades</option><option>Física</option><option>Energética</option><option>Espiritual</option><option>Mando</option><option>Psíquica</option><option>Oscura</option></select>
                 <select id="f-apr-clase" class="search-bar" onchange="window.aplicarFiltrosAprendizaje()"><option value="Todos">Todas Clases</option><option value="Clase 1">Clase 1</option><option value="Clase 2">Clase 2</option><option value="Clase 3">Clase 3</option><option value="Clase 4">Clase 4</option><option value="Clase 5">Clase 5</option></select>
+                <input type="text" id="f-apr-texto" class="search-bar" placeholder="Buscar en el árbol..." onkeyup="window.aplicarFiltrosAprendizaje()">
             </div>
             <div id="grid-aprendizaje"></div>
         </div>
