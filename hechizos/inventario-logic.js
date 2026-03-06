@@ -24,7 +24,7 @@ export function obtenerHechizosAprendibles(nombrePj) {
     const invNombres = getInventarioCombinado(nombrePj).map(i => norm(i.Hechizo));
     const invIDs = new Set(invNombres.map(n => nameToId[n]).filter(Boolean));
     
-    const reqs = {}; // { TargetID: [SourceID_1, SourceID_2] }
+    const reqs = {};
     db.hechizos.string.forEach(rel => {
         const src = norm(rel.Source); const tgt = norm(rel.Target);
         if(!src || !tgt) return; 
@@ -34,23 +34,27 @@ export function obtenerHechizosAprendibles(nombrePj) {
     const grupos = {};
     const fAf = estadoUI.filtrosAprendizaje.afinidad;
     const fCl = estadoUI.filtrosAprendizaje.clase;
+    const fTx = estadoUI.filtrosAprendizaje.busqueda.toLowerCase();
     
     for (const [tgtID, sources] of Object.entries(reqs)) {
-        if (invIDs.has(tgtID)) continue; // Ya lo tiene, lo ignoramos
+        if (invIDs.has(tgtID)) continue; 
         
-        // Mostrar si tiene AL MENOS UN precedente
+        // Si posee AL MENOS UNO de los precedentes
         if (sources.some(s => invIDs.has(s))) {
             const info = todosNodos.find(n => norm(n.ID) === tgtID);
             if(info) {
-                // Aplicar Filtros de Aprendizaje
                 if(fAf !== 'Todos' && info.Afinidad !== fAf) continue;
                 if(fCl !== 'Todos' && (!info.Clase || !info.Clase.includes(fCl))) continue;
+                if(fTx && !info.Nombre.toLowerCase().includes(fTx) && !info.ID.toLowerCase().includes(fTx)) continue;
 
-                const reqStr = sources.map(s => {
-                    if(invIDs.has(s)) return `${idToName[s] || formatearID(s)} (En posesión)`;
-                    return formatearID(s); // Si no lo tiene, muestra ID puro
-                }).join(" + ");
-
+                // Formateo del título del grupo: Ej: "MENTALISMO (EN POSESIÓN) + HECHIZO 143"
+                const reqStrArray = sources.map(s => {
+                    const isOwned = invIDs.has(s);
+                    const displayName = isOwned ? (idToName[s] || formatearID(s)) : formatearID(s);
+                    return isOwned ? `${displayName.toUpperCase()} (EN POSESIÓN)` : displayName.toUpperCase();
+                });
+                
+                const reqStr = reqStrArray.join(" + ");
                 if(!grupos[reqStr]) grupos[reqStr] = [];
                 grupos[reqStr].push(info);
             }
