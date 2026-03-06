@@ -7,60 +7,62 @@
 }
 
 body { font-family: 'Cinzel', serif; background-color: var(--bg-dark); color: #ffffff; margin: 0; padding: 20px; min-height: 100vh; background-image: radial-gradient(circle at top, #1a0033 0%, #05000a 100%); text-align: center; }
-h1, h2, h3 { color: var(--gold); text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); }
+h1, h2, h3 { color: var(--gold); text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
 .container-hex { width: 95%; margin: 0 auto; max-width: 1600px; }
 .oculto { display: none !important; }
 
-/* NAV BAR */
-.nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--gold-dim); flex-wrap: wrap; gap: 10px; }
-.btn-nav { background: #1a0033; border: 1px solid var(--gold); color: var(--gold); padding: 10px 20px; cursor: pointer; font-family: 'Cinzel'; font-weight: bold; border-radius: 4px; transition: 0.2s; }
-.btn-nav:hover { background: var(--gold); color: #000; }
-.btn-op { border-color: var(--purple-magic); color: #e0b0ff; }
-.btn-op:hover { background: var(--purple-magic); color: #fff; }
-.btn-volver { border-color: #888; color: #ccc; } .btn-volver:hover { background: #888; color: #000; }
-
-/* FILTROS */
+/* NAVEGACIÓN Y FILTROS */
+.nav-bar { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--gold-dim); }
 .filter-group { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; width: 100%; }
-.filter-group button { background: linear-gradient(145deg, #2e004f, #1a0033); color: var(--gold); border: 1px solid var(--gold); padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; border-radius: 4px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
-.filter-group button:hover { filter: brightness(1.3); transform: translateY(-2px); }
-.btn-active { background: var(--gold) !important; color: var(--bg-dark) !important; border: 2px solid var(--gold-light) !important; }
+button { background: linear-gradient(145deg, #2e004f, #1a0033); color: var(--gold); border: 1px solid var(--gold); padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.2s ease; border-radius: 4px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
+button:hover { filter: brightness(1.3); transform: translateY(-2px); }
+.btn-active { background: var(--gold) !important; color: var(--bg-dark) !important; border: 2px solid var(--gold-light); }
 
-.search-bar { background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--gold); padding: 15px; font-size: 1.1em; font-family: 'Cinzel', serif; border-radius: 6px; text-align: center; width: 100%; max-width: 400px; margin-bottom: 20px; transition: 0.3s; }
+.search-bar { width: 85%; max-width: 600px; display: block; margin: 0 auto 20px auto; padding: 15px; border: 1px solid var(--gold); background: rgba(0,0,0,0.5); color: white; text-align: center; border-radius: 6px; font-family: 'Cinzel'; font-size: 1.1em; transition: 0.3s; }
 .search-bar:focus { outline: none; box-shadow: 0 0 15px rgba(212, 175, 55, 0.5); background: #000; }
-select.search-bar { cursor: pointer; appearance: none; text-align: center; }
+select.search-bar { cursor: pointer; appearance: none; text-align: center; width: auto; display: inline-block; margin-right: 10px; }
 
-/* GRILLA PERSONAJES (CATÁLOGO) */
+/* GRILLA PERSONAJES */
 .catalogo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
 .char-card { background: rgba(21, 0, 41, 0.8); border: 1px solid var(--gold-dim); border-radius: 8px; padding: 15px; cursor: pointer; transition: 0.3s; }
 .char-card:hover { transform: scale(1.05); border-color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
 .char-card img { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; }
 .char-card h3 { margin: 10px 0 5px 0; font-size: 1.2em; text-transform: uppercase; }
 .char-stats { font-size: 0.85em; color: #ccc; margin: 2px 0; font-family: sans-serif;}
-.player-active { border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); background: #1e0535; }
+.player-card { border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); background: #1e0535; }
 .inactive-card { opacity: 0.4; filter: grayscale(1); }
 
-/* ENCABEZADOS Y UI OP */
-.player-header { display: flex; align-items: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 20px; border: 1px solid var(--gold); border-radius: 8px; margin-bottom: 20px; text-align: left; justify-content: space-between; flex-wrap: wrap; }
+/* HEADER JUGADOR Y OP */
+.player-header { display: flex; align-items: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 20px; border: 1px solid var(--gold); border-radius: 8px; margin-bottom: 20px; text-align: left; }
 .player-icon { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; background: #000; }
-.toggle-hex { display: flex; align-items: center; justify-content: center; gap: 10px; background: #1a1a00; border: 1px dashed var(--gold); padding: 10px; border-radius: 4px; color: var(--gold); cursor: pointer; margin-bottom: 20px; width: 100%; max-width: 800px; margin: 0 auto 20px auto; font-weight: bold;}
+.toggle-hex { display: flex; align-items: center; justify-content: center; gap: 10px; background: #1a1a00; border: 1px dashed var(--gold); padding: 10px; border-radius: 4px; color: var(--gold); cursor: pointer; margin-bottom: 20px; font-weight: bold;}
 .toggle-hex input { transform: scale(1.5); cursor: pointer; }
 
-/* TARJETAS DE HECHIZOS (4 POR FILA) */
-.grid-inventario { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto 40px auto; }
-.spell-card { background: #0a0014; border: 1px solid #333; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; transition: 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.6); text-align: left; }
+/* TARJETAS HECHIZOS (Grid de 4) */
+.grid-inventario { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; max-width: 1300px; margin: 0 auto 40px auto; }
+.spell-card { background: rgba(15, 0, 30, 0.9); border: 1px solid #333; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; transition: 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.6); text-align: left; border-top: 3px solid var(--gold); }
 .spell-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.8); }
-.spell-card h3 { margin: 0 0 10px 0; border-bottom: 1px dashed #444; padding-bottom: 5px; font-size: 1.2em; text-transform: uppercase; }
+.spell-card h3 { margin: 0 0 10px 0; border-bottom: 1px dashed #444; padding-bottom: 5px; font-size: 1.1em; text-transform: uppercase; }
 
-.spell-tags { margin-bottom: 15px; }
-.spell-tag { display: inline-block; padding: 2px 6px; border-radius: 2px; font-size: 0.75em; font-weight: bold; margin-right: 5px; margin-bottom: 5px; background: transparent; border: 1px solid #555; font-family: sans-serif; text-transform: uppercase; }
+.spell-tags { margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+.spell-tag { padding: 2px 6px; border-radius: 2px; font-size: 0.7em; font-weight: bold; background: transparent; border: 1px solid #555; font-family: sans-serif; text-transform: uppercase; }
 .tag-hex { color: var(--gold-light); border-color: var(--gold-light); }
+.tag-clase { color: #aaa; border-color: #888; }
 
 .spell-desc { font-family: sans-serif; font-size: 0.85em; color: #ccc; line-height: 1.4; background: #111; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
-.spell-efecto { font-family: sans-serif; font-size: 0.85em; color: var(--cyan-magic); margin-bottom: 5px; }
-.tag-origen { font-family: sans-serif; color: #888; margin-top: auto; font-size: 0.75em; text-align: right; padding-top: 10px; border-top: 1px dashed #333; }
+.spell-efecto { font-family: sans-serif; font-size: 0.85em; color: var(--cyan-magic); margin-bottom: 10px; }
 
-/* FLOTANTE SYNC */
-.btn-sync-float { position: fixed; bottom: 20px; right: 20px; background: #4a0000; color: #fff; padding: 15px 30px; border: 2px solid #ff4444; border-radius: 30px; font-weight: bold; font-size: 1.1em; box-shadow: 0 0 20px rgba(255,0,0,0.8); z-index: 1000; cursor: pointer; transition: 0.3s; font-family: 'Cinzel'; }
+/* BOTÓN DETALLES NATIVO */
+details.spell-details { background: #0a0a0a; border: 1px solid #333; border-radius: 4px; margin-bottom: 10px; }
+details.spell-details summary { padding: 8px; font-size: 0.8em; font-weight: bold; color: var(--gold); cursor: pointer; outline: none; list-style: none; text-align: center; font-family: sans-serif; }
+details.spell-details summary::-webkit-details-marker { display: none; }
+details.spell-details summary::after { content: ' ▼'; font-size: 0.8em; }
+details[open].spell-details summary::after { content: ' ▲'; }
+.details-content { padding: 10px; font-family: sans-serif; font-size: 0.8em; color: #bbb; border-top: 1px solid #333; background: #000; }
+.details-content strong { color: var(--purple-magic); }
+
+.tag-origen { font-family: sans-serif; color: #777; margin-top: auto; font-size: 0.75em; text-align: right; padding-top: 10px; border-top: 1px dashed #333; }
+
+.btn-sync-float { position: fixed; bottom: 20px; right: 20px; background: #4a0000; color: #fff; padding: 15px 30px; border: 2px solid #ff4444; border-radius: 30px; font-weight: bold; font-size: 1.1em; z-index: 1000; cursor: pointer; transition: 0.3s; font-family: 'Cinzel'; }
 .btn-sync-float:hover { background: #ff0000; transform: scale(1.05); }
-.loading { text-align: center; color: var(--gold); font-size: 1.2em; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+.req-header { text-align: left; border-bottom: 1px solid var(--gold); margin: 30px 0 10px 0; padding-bottom: 5px; color: var(--gold); font-size: 1.1em; max-width: 1300px; margin-left: auto; margin-right: auto; }
