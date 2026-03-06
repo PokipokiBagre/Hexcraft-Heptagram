@@ -1,5 +1,5 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores, getInventarioVisible } from './inventario-logic.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
@@ -64,7 +64,7 @@ export function dibujarCatalogo() {
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
                     <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
-                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioVisible(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
@@ -75,8 +75,7 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    // Contadores exactos usando getInventarioVisible
-    const inv = getInventarioVisible(pj);
+    const inv = getInventarioCombinado(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
     
@@ -95,11 +94,9 @@ export function renderHeaders() {
     });
     statsHTML += `</div>`;
 
-    // Bloqueo del Árbol para NPCs
     const btnArbol = char.isPlayer ? `<button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>` : '';
 
     document.getElementById('header-grimorio').innerHTML = `
-        <button onclick="window.cambiarVista('catalogo')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Catálogo</button>
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
@@ -153,12 +150,9 @@ export function renderHeaders() {
 
 export function dibujarGrimorioGrid() {
     const pj = estadoUI.personajeSeleccionado; 
-    const inv = getInventarioVisible(pj); 
+    const inv = getInventarioCombinado(pj); 
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
-    
-    const isNPC = !db.personajes[pj]?.isPlayer;
-    const descubiertosPlayers = getHechizosDeJugadores();
 
     let html = ``;
     inv.filter(item => (fAf === 'Todos' || item["Hechizo Afinidad"] === fAf) && (!fTx || item.Hechizo.toLowerCase().includes(fTx)))
@@ -166,11 +160,12 @@ export function dibujarGrimorioGrid() {
         const itemNorm = textNorm(item.Hechizo);
         const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
-        // CENSURA EXACTA
-        const isHidden = isNPC && !estadoUI.esAdmin && 
-                         !descubiertosPlayers.has(itemNorm) && 
-                         !(info.ID && descubiertosPlayers.has(textNorm(info.ID))) &&
-                         !(info.Nombre && descubiertosPlayers.has(textNorm(info.Nombre)));
+        // LÓGICA DE ENMASCARAMIENTO BASADA EN COLUMNA O
+        const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
+        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === (info.Nombre || item.Hechizo));
+        const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
+        
+        const isHidden = !estadoUI.esAdmin && !isKnown;
 
         const col = getColorAfinidad(item["Hechizo Afinidad"] || info.Afinidad);
         const clase = info.Clase || 'Clase -';
@@ -179,9 +174,12 @@ export function dibujarGrimorioGrid() {
         const tituloReal = (info.Nombre && info.Nombre.trim() !== '') ? info.Nombre : item.Hechizo;
         const titulo = isHidden ? (info.ID || item.Hechizo) : tituloReal;
 
-        const res = isHidden ? '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto por jugadores).</i>' : getValInfo(info, ['resumen', 'Resumen']);
+        const res = isHidden ? '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto).</i>' : getValInfo(info, ['resumen', 'Resumen']);
         const efe = isHidden ? '' : getValInfo(info, ['efecto', 'Efecto']);
         const detailsHTML = isHidden ? '' : generarDetalles(info);
+        
+        // Botón OP de visibilidad dentro del grimorio
+        const btnVis = (estadoUI.esAdmin && info.Nombre) ? `<button onclick="window.accionCola('toggle_conocido', '${info.Nombre}', '', 0, '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
 
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
                     <h3 style="color:${isHidden ? '#666' : col.t}">${titulo}</h3>
@@ -194,6 +192,7 @@ export function dibujarGrimorioGrid() {
                     ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
                     ${detailsHTML}
                     <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${isTemporal}</div>
+                    ${btnVis}
                  </div>`;
     });
     document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">El grimorio está vacío.</p>`;
