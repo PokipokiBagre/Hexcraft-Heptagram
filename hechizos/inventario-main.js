@@ -28,8 +28,16 @@ window.cambiarVista = (vista) => {
 
 window.abrirGrimorio = (pj) => { estadoUI.personajeSeleccionado = pj; estadoUI.filtrosGrimorio = { afinidad: 'Todos', busqueda: '' }; window.cambiarVista('grimorio'); window.scrollTo(0,0); };
 window.abrirMenuOP = () => {
-    if(estadoUI.esAdmin) { estadoUI.esAdmin = false; alert("Modo OP Desactivado."); window.cambiarVista('catalogo'); return; }
-    if (prompt("Contraseña:") === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; alert("Modo OP Activado."); window.cambiarVista(estadoUI.vistaActual); }
+    if(estadoUI.esAdmin) { 
+        estadoUI.esAdmin = false; 
+        alert("Modo OP Desactivado."); 
+        window.cambiarVista('catalogo'); 
+        return; 
+    }
+    if (prompt("Contraseña:") === atob('Y2FuZXk=')) { 
+        estadoUI.esAdmin = true; 
+        window.cambiarVista(estadoUI.vistaActual); 
+    }
 };
 
 window.setFiltro = (tipo, valor) => {
