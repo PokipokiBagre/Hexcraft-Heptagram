@@ -99,7 +99,21 @@ function actualizarTextoLogOP() {
 window.copiarLogOP = () => { const t = document.getElementById('op-log-textarea'); if(t) { t.select(); document.execCommand('copy'); alert("Log copiado."); } };
 window.limpiarLogOP = () => { estadoUI.logOP = { descubiertos: [], aprendidos: [], hexGastado: 0 }; actualizarTextoLogOP(); };
 
-window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, targetVisibility = null) => {
+// NUEVA FUNCIÓN: Permite que el cambio visual sea instantáneo como en tu sistema de objetos
+window.toggleVisibilidad = (idHechizo, nombreHechizo, nuevoEstado) => {
+    estadoUI.colaCambios.toggleConocido.push({ ID: idHechizo, Nombre: nombreHechizo, Estado: nuevoEstado });
+    
+    // Cambia la memoria instantáneamente para que la UI reaccione sin recargar
+    const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    const info = todosNodos.find(n => n.ID === idHechizo || n.Nombre === nombreHechizo);
+    if (info) info.Conocido = nuevoEstado;
+
+    if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
+    else if(estadoUI.vistaActual === 'grimorio') { dibujarGrimorioGrid(); }
+    actualizarBotonSync();
+};
+
+window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
     const pj = estadoUI.personajeSeleccionado;
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const info = todosNodos.find(n => n.Nombre === nombreHechizo);
@@ -110,15 +124,16 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, targetVisibi
         if(estadoUI.restarHexAsignacion) {
             aplicarCambiosPersonaje(pj, hex, afinidad);
             estadoUI.logOP.aprendidos.push(nombreHechizo); estadoUI.logOP.hexGastado += hex;
+            
+            // Si el hechizo no era público, lo hace público y lo inyecta a la cola
             if(info && (!info.Conocido || info.Conocido.toString().trim().toLowerCase() !== 'si')) {
-                estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: 'si' });
+                estadoUI.colaCambios.toggleConocido.push({ ID: info.ID, Nombre: info.Nombre, Estado: 'si' });
+                info.Conocido = 'si';
                 estadoUI.logOP.descubiertos.push(`${info.ID} - ${info.Nombre}`);
             }
         }
     } else if (accion === 'quitar') {
         estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
-    } else if (accion === 'toggle_conocido') {
-        estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: targetVisibility });
     }
     
     if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
@@ -142,7 +157,9 @@ window.ejecutarSincronizacion = async () => {
             if(confirm("Se aplicaron cambios en la memoria. ¿Descargar el nuevo CSV de estadísticas?")) exportarCSVPersonajes();
         }
         localStorage.removeItem('hex_hechizos_cache'); window.location.reload(); 
-    } 
+    } else {
+        alert("Error de conexión. Reintenta.");
+    }
     btn.disabled = false;
 };
 
@@ -398,10 +415,8 @@ window.conjurarHechizos = () => {
         }
 
         renderHeaders(); 
-        
         const newTextarea = document.getElementById('log-casteo-textarea');
         if(newTextarea) newTextarea.value = logFinal;
-        
     } else {
         renderHeaders();
     }
