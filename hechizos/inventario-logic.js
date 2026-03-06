@@ -1,23 +1,10 @@
-import { db, estadoUI } from './inventario-state.js';
-
-const norm = (s) => s ? s.toString().trim().toLowerCase() : '';
-const formatearID = (id) => id.replace(/hechizo/i, 'Hechizo').trim();
-
-export function getInventarioCombinado(nombrePj) {
-    const invReal = db.hechizos.inventario.filter(i => i.Personaje === nombrePj);
-    const enColaAdd = estadoUI.colaCambios.agregar.filter(c => c[0] === nombrePj).map(c => ({ Personaje: c[0], Hechizo: c[1], "Hechizo Afinidad": c[2], "Hechizo Hex": c[3], Tipo: c[4], Origen: c[5] }));
-    const nQuitar = estadoUI.colaCambios.quitar.filter(c => c.Personaje === nombrePj).map(c => c.Hechizo);
-    return [...invReal, ...enColaAdd].filter(item => !nQuitar.includes(item.Hechizo));
-}
-
 export function obtenerHechizosAprendibles(nombrePj) {
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
-    const nameToId = {}; const idToName = {};
+    const nameToId = {}; 
     
     todosNodos.forEach(n => { 
         if(n.Nombre && n.ID) {
             nameToId[norm(n.Nombre)] = norm(n.ID);
-            idToName[norm(n.ID)] = n.Nombre;
         } 
     });
 
@@ -47,10 +34,16 @@ export function obtenerHechizosAprendibles(nombrePj) {
                 if(fCl !== 'Todos' && (!info.Clase || !info.Clase.includes(fCl))) continue;
                 if(fTx && !info.Nombre.toLowerCase().includes(fTx) && !info.ID.toLowerCase().includes(fTx)) continue;
 
-                // Formateo del título del grupo: Ej: "MENTALISMO (EN POSESIÓN) + HECHIZO 143"
+                // Formateo del título: Busca el Nombre Real si está en posesión
                 const reqStrArray = sources.map(s => {
                     const isOwned = invIDs.has(s);
-                    const displayName = isOwned ? (idToName[s] || formatearID(s)) : formatearID(s);
+                    let displayName = formatearID(s); // "Hechizo X" por defecto
+                    
+                    if (isOwned) {
+                        const nodoReal = todosNodos.find(n => norm(n.ID) === s);
+                        if (nodoReal && nodoReal.Nombre) displayName = nodoReal.Nombre;
+                    }
+                    
                     return isOwned ? `${displayName.toUpperCase()} (EN POSESIÓN)` : displayName.toUpperCase();
                 });
                 
