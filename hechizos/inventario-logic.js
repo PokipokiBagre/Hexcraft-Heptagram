@@ -10,7 +10,7 @@ export function getInventarioCombinado(nombrePj) {
     return [...invReal, ...enColaAdd].filter(item => !nQuitar.includes(item.Hechizo));
 }
 
-// Devuelve el SET de hechizos de Jugadores (Guarda tanto el Nombre como el ID para evitar bloqueos falsos)
+// Devuelve el SET de hechizos que tienen TODOS los Jugadores
 export function getHechizosDeJugadores() {
     const jugadores = Object.keys(db.personajes).filter(k => db.personajes[k].isPlayer);
     const descubiertos = new Set();
@@ -30,6 +30,23 @@ export function getHechizosDeJugadores() {
         });
     });
     return descubiertos;
+}
+
+// ¡ESTA ES LA FUNCIÓN QUE FALTABA! Filtra lo que un NPC puede mostrar públicamente
+export function getInventarioVisible(nombrePj) {
+    const inv = getInventarioCombinado(nombrePj);
+    const isPjPlayer = db.personajes[nombrePj]?.isPlayer;
+
+    if (isPjPlayer || estadoUI.esAdmin) return inv;
+
+    const hechizosPlayers = getHechizosDeJugadores();
+    return inv.filter(item => {
+        const hNorm = norm(item.Hechizo);
+        const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+        const info = todosNodos.find(n => norm(n.Nombre) === hNorm || norm(n.ID) === hNorm);
+
+        return hechizosPlayers.has(hNorm) || (info && info.ID && hechizosPlayers.has(norm(info.ID))) || (info && info.Nombre && hechizosPlayers.has(norm(info.Nombre)));
+    });
 }
 
 export function obtenerHechizosAprendibles(nombrePj) {
