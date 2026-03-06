@@ -12,9 +12,10 @@
 
     <div class="container-hex">
         <div class="nav-bar">
-            <div>
-                <button class="btn-nav btn-volver" onclick="window.location.href='../index.html'">⬅ Volver al Inicio</button>
-                <button class="btn-nav" style="border-color:#00ff00; color:#00ff00; background:#001a00; cursor:default;" disabled>🟢 CONECTADO</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-nav btn-volver" onclick="window.location.href='../index.html'">⬅ Inicio</button>
+                <button id="btn-nav-catalogo" class="btn-nav btn-volver oculto" onclick="window.cambiarVista('catalogo')">⬅ Catálogo</button>
+                <button class="btn-nav" style="border-color:#00ff00; background:#001a00; padding:10px 15px; cursor:default;" disabled title="Conectado a la Base de Datos">🟢</button>
             </div>
             <button class="btn-nav btn-op" onclick="window.abrirMenuOP()">⚙️ Acceso OP</button>
         </div>
