@@ -115,8 +115,11 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, targetVisibi
                 estadoUI.logOP.descubiertos.push(`${info.ID} - ${info.Nombre}`);
             }
         }
-    } else if (accion === 'quitar') estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
-    else if (accion === 'toggle_conocido') estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: targetVisibility });
+    } else if (accion === 'quitar') {
+        estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
+    } else if (accion === 'toggle_conocido') {
+        estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: targetVisibility });
+    }
     
     if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
     else if(estadoUI.vistaActual === 'grimorio') { dibujarGrimorioGrid(); }
@@ -139,7 +142,7 @@ window.ejecutarSincronizacion = async () => {
             if(confirm("Se aplicaron cambios en la memoria. ¿Descargar el nuevo CSV de estadísticas?")) exportarCSVPersonajes();
         }
         localStorage.removeItem('hex_hechizos_cache'); window.location.reload(); 
-    } else alert("Error de conexión. Reintenta.");
+    } 
     btn.disabled = false;
 };
 
@@ -260,7 +263,6 @@ window.conjurarHechizos = () => {
     const afOscura = charData.rawRow ? (parseInt((charData.rawRow[8] || '0').split('_')[0]) || 0) : 0;
     const maxVex = Math.round(((afOscura * 300) / 4) / 50) * 50;
     
-    // Variables de energía en tiempo real para verificar casteo múltiple secuencial
     let availableVex = maxVex;
     let availableHex = charData.hex || 0;
 
@@ -301,15 +303,12 @@ window.conjurarHechizos = () => {
         let logExtra = "";
         let isSuccess = false;
 
-        // Regla 1: Validar si tiene energía suficiente ANTES de castear
         if ((availableVex + availableHex) < hexCost) {
-            htmlUI += `<div style="color:#ff4444; font-weight:bold; font-size:1.1em; margin-bottom:5px;">FALLO ❌ (Falta de Hex/Vex)</div>
-                       <div style="color:#888; text-decoration:line-through;">${effect}</div>`;
+            htmlUI += `<div style="color:#ff4444; font-weight:bold; font-size:1.1em; margin-bottom:5px;">FALLO ❌ (Falta de Hex/Vex)</div>`;
             rowDiv.style.borderColor = "#ff4444";
             logStatus = "FALLO (Sin energía)";
             isSuccess = false;
         } else {
-            // Regla 2: Si tiene energía, evalúa si el dado fue bueno
             if (NC >= hexCost * 2 && over) {
                 htmlUI += `<div style="color:var(--gold); font-weight:bold; font-size:1.1em; margin-bottom:5px;">¡OVERCAST! ✨</div>
                          <div style="color:var(--cyan-magic); margin-bottom:5px;">${effect}</div>
@@ -339,15 +338,12 @@ window.conjurarHechizos = () => {
                 isSuccess = true;
                 
             } else {
-                // Regla 3: Si falla el dado, NO se cobra el coste
-                htmlUI += `<div style="color:#ff4444; font-weight:bold; font-size:1.1em; margin-bottom:5px;">FALLO ❌</div>
-                         <div style="color:#888; text-decoration:line-through;">${effect}</div>`;
+                htmlUI += `<div style="color:#ff4444; font-weight:bold; font-size:1.1em; margin-bottom:5px;">FALLO ❌</div>`;
                 rowDiv.style.borderColor = "#ff4444";
                 logStatus = "FALLO";
                 isSuccess = false;
             }
 
-            // Aplicar consumo secuencial SOLO si tuvo éxito (Overcast, Exito, Undercast)
             if (isSuccess) {
                 let costoRestante = hexCost;
                 
@@ -364,7 +360,6 @@ window.conjurarHechizos = () => {
         }
         resDiv.innerHTML = htmlUI;
 
-        // Guardar para el log
         const keyGroup = `${spellName}|${logStatus}`;
         if(!agrupacionLogs[keyGroup]) {
             agrupacionLogs[keyGroup] = { spell: spellName, count: 0, status: logStatus, effect: effect, extra: logExtra };
@@ -374,14 +369,16 @@ window.conjurarHechizos = () => {
 
     if(conjurosRealizados === 0) return;
 
-    // Solo ejecuta la lógica de log y escritura en memoria si eres OP (Master)
     if (estadoUI.esAdmin) {
         let textoLog = "";
         Object.values(agrupacionLogs).forEach(g => {
-            textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status} | ${g.effect}${g.extra}\n`;
+            if (g.status.includes("FALLO")) {
+                textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status}\n`;
+            } else {
+                textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status} | ${g.effect}${g.extra}\n`;
+            }
         });
         
-        // Formato solicitado: Resta fuera, Actual/Máximo dentro.
         if(totalVexConsumed > 0 || maxVex > 0) textoLog += `Vex: -${totalVexConsumed} (${maxVex}) (Regenerable)\n`;
         textoLog += `Hex: -${totalHexConsumed} (${availableHex})\n\n`;
 
