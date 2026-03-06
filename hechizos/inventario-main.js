@@ -169,7 +169,6 @@ window.generarFilasCasteo = () => {
     }
 
     invReal.sort((a, b) => a.localeCompare(b));
-    
     let datalistHtml = `<datalist id="spells-list-${pj}">`;
     invReal.forEach(h => datalistHtml += `<option value="${h}">`);
     datalistHtml += `</datalist>`;
@@ -236,7 +235,6 @@ window.copiarPrimerHechizo = () => {
     const num = parseInt(document.getElementById('cast-num').value) || 3;
     const baseSpell = document.getElementById(`spell-0`)?.value;
     if (!baseSpell) return;
-
     for(let i=1; i<num; i++) {
         const input = document.getElementById(`spell-${i}`);
         if(input) { input.value = baseSpell; window.actualizarAfinidadCasteo(i); }
@@ -247,7 +245,6 @@ window.copiarPrimerDado = () => {
     const num = parseInt(document.getElementById('cast-num').value) || 3;
     const baseDado = document.getElementById(`dado-0`)?.value;
     if (!baseDado) return;
-
     for(let i=1; i<num; i++) {
         const input = document.getElementById(`dado-${i}`);
         if(input) input.value = baseDado;
@@ -260,7 +257,16 @@ window.conjurarHechizos = () => {
     const charData = db.personajes[pj];
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     
-    let costoTotalSesion = 0;
+    const afOscura = charData.rawRow ? (parseInt((charData.rawRow[8] || '0').split('_')[0]) || 0) : 0;
+    const maxVex = Math.round(((afOscura * 300) / 4) / 50) * 50;
+    
+    // Variables de energía en tiempo real para verificar casteo múltiple secuencial
+    let availableVex = maxVex;
+    let availableHex = charData.hex || 0;
+
+    let totalVexConsumed = 0;
+    let totalHexConsumed = 0;
+    
     let agrupacionLogs = {};
     let conjurosRealizados = 0;
 
@@ -283,7 +289,6 @@ window.conjurarHechizos = () => {
 
         const hexCost = parseInt(info.HEX) || 0;
         const NC = dadoVal * afinVal;
-        costoTotalSesion += hexCost; 
         conjurosRealizados++;
         
         const effect = getValInfo(info, ['efecto', 'Efecto']) || 'Ningún efecto base.';
@@ -294,40 +299,72 @@ window.conjurarHechizos = () => {
         let htmlUI = `<div style="margin-bottom:5px;"><strong>Nivel de Casteo: <span style="font-size:1.2em; color:white;">${NC}</span></strong> <span style="color:#aaa; font-size:0.8em;">(Costo: ${hexCost})</span></div>`;
         let logStatus = "";
         let logExtra = "";
+        let isSuccess = false;
 
-        if (NC >= hexCost * 2 && over) {
-            htmlUI += `<div style="color:var(--gold); font-weight:bold; font-size:1.1em; margin-bottom:5px;">¡OVERCAST! ✨</div>
-                     <div style="color:var(--cyan-magic); margin-bottom:5px;">${effect}</div>
-                     <div style="color:var(--gold);"><strong>Efecto Overcast:</strong> ${over}</div>`;
-            if(esp) htmlUI += `<div style="color:#dcb1f0; margin-top:5px;"><strong>Especial:</strong> ${esp}</div>`;
-            rowDiv.style.borderColor = "var(--gold)";
-            logStatus = "ÉXITO (+Overcast)";
-            logExtra = ` | Efecto Overcast: ${over}${esp ? ' | Especial: ' + esp : ''}`;
-            
-        } else if (NC >= hexCost) {
-            htmlUI += `<div style="color:var(--cyan-magic); font-weight:bold; font-size:1.1em; margin-bottom:5px;">¡ÉXITO! ✔️</div>
-                     <div style="color:var(--cyan-magic);">${effect}</div>`;
-            if(esp) htmlUI += `<div style="color:#dcb1f0; margin-top:5px;"><strong>Especial:</strong> ${esp}</div>`;
-            rowDiv.style.borderColor = "var(--cyan-magic)";
-            logStatus = "ÉXITO";
-            logExtra = esp ? ` | Especial: ${esp}` : '';
-            
-        } else if (NC >= hexCost * 0.5 && under) {
-            htmlUI += `<div style="color:#ffaa00; font-weight:bold; font-size:1.1em; margin-bottom:5px;">UNDERCAST ⚠️</div>
-                     <div style="color:#888; text-decoration:line-through; margin-bottom:5px;">${effect}</div>
-                     <div style="color:#ffaa00;"><strong>Efecto Parcial:</strong> ${under}</div>`;
-            rowDiv.style.borderColor = "#ffaa00";
-            logStatus = "ÉXITO (-Undercast)";
-            logExtra = ` | Efecto Parcial: ${under}`;
-            
-        } else {
-            htmlUI += `<div style="color:#ff4444; font-weight:bold; font-size:1.1em; margin-bottom:5px;">FALLO ❌</div>
-                     <div style="color:#888; text-decoration:line-through;">${effect}</div>`;
+        // Regla 1: Validar si tiene energía suficiente ANTES de castear
+        if ((availableVex + availableHex) < hexCost) {
+            htmlUI += `<div style="color:#ff4444; font-weight:bold; font-size:1.1em; margin-bottom:5px;">FALLO ❌ (Falta de Hex/Vex)</div>
+                       <div style="color:#888; text-decoration:line-through;">${effect}</div>`;
             rowDiv.style.borderColor = "#ff4444";
-            logStatus = "FALLO";
+            logStatus = "FALLO (Sin energía)";
+            isSuccess = false;
+        } else {
+            // Regla 2: Si tiene energía, evalúa si el dado fue bueno
+            if (NC >= hexCost * 2 && over) {
+                htmlUI += `<div style="color:var(--gold); font-weight:bold; font-size:1.1em; margin-bottom:5px;">¡OVERCAST! ✨</div>
+                         <div style="color:var(--cyan-magic); margin-bottom:5px;">${effect}</div>
+                         <div style="color:var(--gold);"><strong>Efecto Overcast:</strong> ${over}</div>`;
+                if(esp) htmlUI += `<div style="color:#dcb1f0; margin-top:5px;"><strong>Especial:</strong> ${esp}</div>`;
+                rowDiv.style.borderColor = "var(--gold)";
+                logStatus = "ÉXITO (+Overcast)";
+                logExtra = ` | Efecto Overcast: ${over}${esp ? ' | Especial: ' + esp : ''}`;
+                isSuccess = true;
+                
+            } else if (NC >= hexCost) {
+                htmlUI += `<div style="color:var(--cyan-magic); font-weight:bold; font-size:1.1em; margin-bottom:5px;">¡ÉXITO! ✔️</div>
+                         <div style="color:var(--cyan-magic);">${effect}</div>`;
+                if(esp) htmlUI += `<div style="color:#dcb1f0; margin-top:5px;"><strong>Especial:</strong> ${esp}</div>`;
+                rowDiv.style.borderColor = "var(--cyan-magic)";
+                logStatus = "ÉXITO";
+                logExtra = esp ? ` | Especial: ${esp}` : '';
+                isSuccess = true;
+                
+            } else if (NC >= hexCost * 0.5 && under) {
+                htmlUI += `<div style="color:#ffaa00; font-weight:bold; font-size:1.1em; margin-bottom:5px;">UNDERCAST ⚠️</div>
+                         <div style="color:#888; text-decoration:line-through; margin-bottom:5px;">${effect}</div>
+                         <div style="color:#ffaa00;"><strong>Efecto Parcial:</strong> ${under}</div>`;
+                rowDiv.style.borderColor = "#ffaa00";
+                logStatus = "ÉXITO (-Undercast)";
+                logExtra = ` | Efecto Parcial: ${under}`;
+                isSuccess = true;
+                
+            } else {
+                // Regla 3: Si falla el dado, NO se cobra el coste
+                htmlUI += `<div style="color:#ff4444; font-weight:bold; font-size:1.1em; margin-bottom:5px;">FALLO ❌</div>
+                         <div style="color:#888; text-decoration:line-through;">${effect}</div>`;
+                rowDiv.style.borderColor = "#ff4444";
+                logStatus = "FALLO";
+                isSuccess = false;
+            }
+
+            // Aplicar consumo secuencial SOLO si tuvo éxito (Overcast, Exito, Undercast)
+            if (isSuccess) {
+                let costoRestante = hexCost;
+                
+                let consumoVexAca = Math.min(availableVex, costoRestante);
+                availableVex -= consumoVexAca;
+                totalVexConsumed += consumoVexAca;
+                costoRestante -= consumoVexAca;
+
+                let consumoHexAca = Math.min(availableHex, costoRestante);
+                availableHex -= consumoHexAca;
+                totalHexConsumed += consumoHexAca;
+                costoRestante -= consumoHexAca; 
+            }
         }
         resDiv.innerHTML = htmlUI;
 
+        // Guardar para el log
         const keyGroup = `${spellName}|${logStatus}`;
         if(!agrupacionLogs[keyGroup]) {
             agrupacionLogs[keyGroup] = { spell: spellName, count: 0, status: logStatus, effect: effect, extra: logExtra };
@@ -337,43 +374,38 @@ window.conjurarHechizos = () => {
 
     if(conjurosRealizados === 0) return;
 
-    // --- CÁLCULO DE VEX Y LOG ---
-    const afOscura = charData.rawRow ? (parseInt((charData.rawRow[8] || '0').split('_')[0]) || 0) : 0;
-    const maxVex = Math.round(((afOscura * 300) / 4) / 50) * 50;
-    
-    const currentHex = charData.hex || 0;
-    const currentVex = maxVex; 
-
-    const consumidoVex = Math.min(currentVex, costoTotalSesion);
-    const consumidoHex = costoTotalSesion - consumidoVex;
-
-    const finalVex = currentVex - consumidoVex;
-    const finalHex = Math.max(0, currentHex - consumidoHex);
-
-    let textoLog = "";
-    Object.values(agrupacionLogs).forEach(g => {
-        textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status} | ${g.effect}${g.extra}\n`;
-    });
-    textoLog += `Vex: ${finalVex} (-${consumidoVex})\n`;
-    textoLog += `Hex: ${finalHex} (-${consumidoHex})\n\n`;
-
-    const textareaElement = document.getElementById('log-casteo-textarea');
-    const oldLog = textareaElement ? textareaElement.value : "";
-    const logFinal = textoLog + oldLog;
-
-    const toggleLog = document.getElementById('toggle-cast-consumo');
-    if (toggleLog && toggleLog.checked && costoTotalSesion > 0) {
-        charData.hex = finalHex;
-        const hexParts = charData.rawRow[1].split('_'); 
-        hexParts[0] = charData.hex.toString(); 
-        charData.rawRow[1] = hexParts.join('_');
+    // Solo ejecuta la lógica de log y escritura en memoria si eres OP (Master)
+    if (estadoUI.esAdmin) {
+        let textoLog = "";
+        Object.values(agrupacionLogs).forEach(g => {
+            textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status} | ${g.effect}${g.extra}\n`;
+        });
         
-        estadoUI.colaCambios.hexCasts.push(1); 
-        actualizarBotonSync();
-    }
+        // Formato solicitado: Resta fuera, Actual/Máximo dentro.
+        if(totalVexConsumed > 0 || maxVex > 0) textoLog += `Vex: -${totalVexConsumed} (${maxVex}) (Regenerable)\n`;
+        textoLog += `Hex: -${totalHexConsumed} (${availableHex})\n\n`;
 
-    renderHeaders(); 
-    
-    const newTextarea = document.getElementById('log-casteo-textarea');
-    if(newTextarea) newTextarea.value = logFinal;
+        const textareaElement = document.getElementById('log-casteo-textarea');
+        const oldLog = textareaElement ? textareaElement.value : "";
+        const logFinal = textoLog + oldLog;
+
+        const toggleLog = document.getElementById('toggle-cast-consumo');
+        if (toggleLog && toggleLog.checked && (totalVexConsumed > 0 || totalHexConsumed > 0)) {
+            charData.hex = availableHex;
+            const hexParts = charData.rawRow[1].split('_'); 
+            hexParts[0] = charData.hex.toString(); 
+            charData.rawRow[1] = hexParts.join('_');
+            
+            estadoUI.colaCambios.hexCasts.push(1); 
+            actualizarBotonSync();
+        }
+
+        renderHeaders(); 
+        
+        const newTextarea = document.getElementById('log-casteo-textarea');
+        if(newTextarea) newTextarea.value = logFinal;
+        
+    } else {
+        renderHeaders();
+    }
 };
