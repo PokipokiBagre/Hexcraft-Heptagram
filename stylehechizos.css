@@ -66,3 +66,51 @@ details[open].spell-details summary::after { content: ' ▲'; }
 .btn-sync-float { position: fixed; bottom: 20px; right: 20px; background: #4a0000; color: #fff; padding: 15px 30px; border: 2px solid #ff4444; border-radius: 30px; font-weight: bold; font-size: 1.1em; z-index: 1000; cursor: pointer; transition: 0.3s; font-family: 'Cinzel'; }
 .btn-sync-float:hover { background: #ff0000; transform: scale(1.05); }
 .req-header { text-align: left; border-bottom: 1px solid var(--gold); margin: 30px 0 10px 0; padding-bottom: 5px; color: var(--gold); font-size: 1.1em; max-width: 1300px; margin-left: auto; margin-right: auto; }
+
+/* =======================================================
+   📱 ADAPTACIÓN PARA TELÉFONOS (HECHIZOS)
+   ======================================================= */
+@media (max-width: 768px) {
+    body { 
+        padding-bottom: 90px !important; 
+        padding-left: 10px !important; 
+        padding-right: 10px !important; 
+    }
+    
+    /* Barra de navegación inferior fija */
+    .nav-bar {
+        position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important;
+        background: rgba(10, 0, 20, 0.98) !important; border-top: 2px solid var(--gold) !important;
+        border-bottom: none !important; padding: 10px 5px !important; margin: 0 !important; 
+        justify-content: space-between !important; z-index: 9999 !important; 
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.9); display: flex !important; flex-wrap: nowrap !important;
+    }
+    
+    .nav-bar > div { display: flex; width: 100%; justify-content: space-around; gap: 5px; }
+    
+    .btn-nav { 
+        font-size: 0.65em !important; padding: 12px 2px !important; 
+        flex: 1; margin: 0 2px !important; text-align: center; white-space: normal;
+    }
+
+    /* Cabecera del Jugador y OP apilada */
+    .player-header { flex-direction: column !important; text-align: center !important; gap: 15px !important; }
+    .player-header > div { flex-direction: column !important; text-align: center !important; }
+    
+    /* Filtros ocupando todo el ancho */
+    .filter-group { flex-direction: column !important; align-items: stretch !important; gap: 5px !important; }
+    .filter-group button { width: 100%; padding: 12px !important; }
+    .search-bar { max-width: 100% !important; width: 100% !important; box-sizing: border-box; }
+
+    /* Grillas */
+    .catalogo-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .char-card img { width: 70px !important; height: 70px !important; }
+    .char-card h3 { font-size: 1em !important; }
+    .char-stats { font-size: 0.75em !important; }
+    
+    /* Tarjetas de Hechizos en 1 sola columna para que se lea bien el texto */
+    .grid-inventario { grid-template-columns: 1fr !important; gap: 15px !important; margin-bottom: 20px !important;}
+    
+    /* Botón flotante de guardar alineado para no estorbar con la nav-bar */
+    .btn-sync-float { bottom: 85px !important; padding: 10px 20px !important; font-size: 0.9em !important; width: calc(100% - 40px); left: 20px; text-align: center; box-sizing: border-box;}
+}
