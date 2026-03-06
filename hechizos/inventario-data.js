@@ -40,7 +40,7 @@ function parsearCSVPersonajes(texto) {
 
 export async function sincronizarColaBD(cola) {
     try {
-        const response = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify({ accion: 'sincronizar_inventario', agregar: cola.agregar, quitar: cola.quitar }) });
+        const response = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify({ accion: 'sincronizar_inventario', agregar: cola.agregar, quitar: cola.quitar, toggleConocido: cola.toggleConocido }) });
         return (await response.json()).status === 'success';
     } catch (e) { return false; }
 }
