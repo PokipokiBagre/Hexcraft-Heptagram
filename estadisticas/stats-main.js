@@ -39,14 +39,26 @@ window.addHexLogEntry = (nombre, amount, isExtra = false) => {
 };
 
 window.limpiarHexLog = () => { estadoUI.hexLog = {}; updateHexLogText(); };
-window.copiarHexLog = () => { const textarea = document.getElementById('hex-log-textarea'); if (textarea) { textarea.select(); document.execCommand('copy'); alert("Log copiado al portapapeles."); } };
+window.copiarHexLog = () => { const textarea = document.getElementById('hex-log-textarea'); if (textarea) { textarea.select(); document.execCommand('copy'); } };
 
-// COPIADO SILENCIOSO CON TOOLTIP
-window.copySilently = (texto, btnElement) => {
-    navigator.clipboard.writeText(texto).then(() => {
-        btnElement.classList.add('copied');
-        setTimeout(() => btnElement.classList.remove('copied'), 500);
-    }).catch(e => console.log("Fallo al copiar: ", e));
+// COPIADO SILENCIOSO CON TOOLTIP EN EL RATÓN
+window.copySilently = (texto, event) => {
+    try {
+        navigator.clipboard.writeText(texto);
+        
+        // Crear div flotante temporal en la posición del clic
+        const tooltip = document.createElement('div');
+        tooltip.innerText = "✨ Copiado!";
+        tooltip.className = 'floating-tooltip';
+        tooltip.style.left = event.pageX + 'px';
+        tooltip.style.top = (event.pageY - 20) + 'px';
+        document.body.appendChild(tooltip);
+        
+        // Removerlo después de medio segundo
+        setTimeout(() => tooltip.remove(), 600);
+    } catch (e) {
+        console.log("Fallo al copiar.", e);
+    }
 };
 
 // --- GESTIÓN DE LA COLA PARA LA API ---
@@ -63,33 +75,42 @@ window.actualizarBotonSync = () => {
     }
 };
 
+// Esta función arma la cadena de texto exacta para que el backend la inserte en Google Sheets
 window.encolarCambio = (nombre) => {
-    if (!estadoUI.colaCambios.stats[nombre]) estadoUI.colaCambios.stats[nombre] = {};
-    const p = statsGlobal[nombre];
-    const fStr = (t, b, s, se, bf) => `${t||0}_${b||0}_${s||0}_${se||0}_${bf||0}`;
-    
-    const s = estadoUI.colaCambios.stats[nombre];
-    s['Hex'] = `${p.hex||0}_${p.asistencia||1}`;
-    s['Vex'] = p.isPlayer ? 0 : (p.vex || 0);
-    s['Fisica'] = fStr(p.afinidades.fisica, p.afinidadesBase.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica);
-    s['Energetica'] = fStr(p.afinidades.energetica, p.afinidadesBase.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica);
-    s['Espiritual'] = fStr(p.afinidades.espiritual, p.afinidadesBase.espiritual, p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual);
-    s['Mando'] = fStr(p.afinidades.mando, p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando);
-    s['Psiquica'] = fStr(p.afinidades.psiquica, p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica);
-    s['Oscura'] = fStr(p.afinidades.oscura, p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura);
-    s['Corazones Rojo'] = p.vidaRojaActual || 0;
-    s['Corazones Rojos Max'] = fStr(p.vidaRojaMax, p.baseVidaRojaMax, p.hechizos.vidaRojaMaxExtra, p.hechizosEfecto.vidaRojaMaxExtra, p.buffs.vidaRojaMaxExtra);
-    s['Corazones Azules'] = fStr(p.vidaAzul, p.baseVidaAzul, p.hechizos.vidaAzulExtra, p.hechizosEfecto.vidaAzulExtra, p.buffs.vidaAzulExtra);
-    s['Guarda Dorada'] = fStr(p.guardaDorada, p.baseGuardaDorada, p.hechizos.guardaDoradaExtra, p.hechizosEfecto.guardaDoradaExtra, p.buffs.guardaDoradaExtra);
-    s['Daño Rojo'] = fStr(p.danoRojo, p.baseDanoRojo, p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo);
-    s['Daño Azul'] = fStr(p.danoAzul, p.baseDanoAzul, p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul);
-    s['Eliminacion Dorada'] = fStr(p.elimDorada, p.baseElimDorada, p.hechizos.elimDorada, p.hechizosEfecto.elimDorada, p.buffs.elimDorada);
-    
-    const estadoStr = listaEstados.map(e => { let v = p.estados[e.id]; if(e.tipo === 'booleano') return v ? '1' : '0'; return v || '0'; }).join('-');
-    s['Estado'] = estadoStr;
-    s['Jugador_Activo'] = `${p.isPlayer ? 1 : 0}_${p.isActive ? 1 : 0}`;
+    try {
+        if (!estadoUI.colaCambios.stats[nombre]) estadoUI.colaCambios.stats[nombre] = {};
+        const p = statsGlobal[nombre];
+        
+        const fStr = (t, b, s, se, bf) => `${t||0}_${b||0}_${s||0}_${se||0}_${bf||0}`;
+        
+        const s = estadoUI.colaCambios.stats[nombre];
+        s['Hex'] = `${p.hex||0}_${p.asistencia||1}`;
+        s['Vex'] = p.isPlayer ? 0 : (p.vex || 0);
+        
+        s['Fisica'] = fStr(p.afinidades.fisica, p.afinidadesBase.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica);
+        s['Energetica'] = fStr(p.afinidades.energetica, p.afinidadesBase.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica);
+        s['Espiritual'] = fStr(p.afinidades.espiritual, p.afinidadesBase.espiritual, p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual);
+        s['Mando'] = fStr(p.afinidades.mando, p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando);
+        s['Psiquica'] = fStr(p.afinidades.psiquica, p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica);
+        s['Oscura'] = fStr(p.afinidades.oscura, p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura);
+        
+        s['Corazones Rojo'] = p.vidaRojaActual || 0;
+        s['Corazones Rojos Max'] = fStr(p.vidaRojaMax, p.baseVidaRojaMax, p.hechizos.vidaRojaMaxExtra, p.hechizosEfecto.vidaRojaMaxExtra, p.buffs.vidaRojaMaxExtra);
+        s['Corazones Azules'] = fStr(p.vidaAzul, p.baseVidaAzul, p.hechizos.vidaAzulExtra, p.hechizosEfecto.vidaAzulExtra, p.buffs.vidaAzulExtra);
+        s['Guarda Dorada'] = fStr(p.guardaDorada, p.baseGuardaDorada, p.hechizos.guardaDoradaExtra, p.hechizosEfecto.guardaDoradaExtra, p.buffs.guardaDoradaExtra);
+        
+        s['Daño Rojo'] = fStr(p.danoRojo, p.baseDanoRojo, p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo);
+        s['Daño Azul'] = fStr(p.danoAzul, p.baseDanoAzul, p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul);
+        s['Eliminacion Dorada'] = fStr(p.elimDorada, p.baseElimDorada, p.hechizos.elimDorada, p.hechizosEfecto.elimDorada, p.buffs.elimDorada);
+        
+        const estadoStr = listaEstados.map(e => { let v = p.estados[e.id]; if(e.tipo === 'booleano') return v ? '1' : '0'; return v || '0'; }).join('-');
+        s['Estado'] = estadoStr;
+        s['Jugador_Activo'] = `${p.isPlayer ? 1 : 0}_${p.isActive ? 1 : 0}`;
 
-    window.actualizarBotonSync();
+        window.actualizarBotonSync();
+    } catch(e) {
+        console.error("Error al encolar el cambio para la API:", e);
+    }
 };
 
 window.ejecutarSincronizacion = async () => {
@@ -153,8 +174,12 @@ window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; est
 
 window.abrirMenuOP = () => { 
     const enrutarOP = () => { 
-        if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) repintarConScroll('detalle'); 
-        else { estadoUI.vistaActual = 'hex'; refrescarVistas(); }
+        if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) {
+            repintarConScroll('detalle'); // Se queda en la ficha donde estaba
+        } else { 
+            estadoUI.vistaActual = 'hex'; 
+            refrescarVistas(); 
+        }
     };
     if (estadoUI.esAdmin) { enrutarOP(); return; }
     const pass = prompt("Acceso Restringido MÁSTER. Contraseña:");
@@ -178,12 +203,28 @@ window.establecerPartyActiva = () => {
     estadoUI.party.forEach(n => { if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; window.encolarCambio(n); } });
     guardar(); repintarConScroll('hex'); alert("Party actualizada.");
 };
-window.modHexInd = (nombre, amount) => { const p = statsGlobal[nombre]; if(!p) return; p.hex = Math.max(0, p.hex + amount); window.addHexLogEntry(nombre, amount, false); window.encolarCambio(nombre); guardar(); repintarConScroll('hex'); };
+
+window.modHexInd = (nombre, amount) => { 
+    const p = statsGlobal[nombre]; if(!p) return; 
+    p.hex = Math.max(0, p.hex + amount); 
+    window.addHexLogEntry(nombre, amount, false); 
+    window.encolarCambio(nombre); 
+    guardar(); repintarConScroll('hex'); 
+};
+
 window.modHexGlobal = (amount) => {
     if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
-    estadoUI.party.forEach(nombre => { if (nombre && statsGlobal[nombre]) { const p = statsGlobal[nombre]; p.hex = Math.max(0, p.hex + amount); window.addHexLogEntry(nombre, amount, false); window.encolarCambio(nombre); } });
+    estadoUI.party.forEach(nombre => { 
+        if (nombre && statsGlobal[nombre]) { 
+            const p = statsGlobal[nombre]; 
+            p.hex = Math.max(0, p.hex + amount); 
+            window.addHexLogEntry(nombre, amount, false); 
+            window.encolarCambio(nombre); 
+        } 
+    });
     guardar(); repintarConScroll('hex');
 };
+
 window.addAsistenciaGlobal = () => {
     if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
     let leveledUp = [];
@@ -206,13 +247,12 @@ window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','ps
 window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 
 function recalcularVidas(p, accion) {
-    // Calculamos si sube la vida solo por la diferencia del cambio actual, como lo tenías.
     const calcFisT = () => (p.afinidades.fisica||0) + (p.hechizos.fisica||0) + (p.hechizosEfecto.fisica||0) + (p.buffs.fisica||0);
     const preFisBase = p.afinidadesBase.fisica || 0; const preFis = calcFisT();
     const calcMagT = () => ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidades[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
     const preMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const preMag = calcMagT();
 
-    accion(); // Ejecuta el +1 o -1 a la variable específica (Buffs, SpellEff, Base)
+    accion(); // Ejecuta el +1 o -1
 
     const postFisBase = p.afinidadesBase.fisica || 0; const postFis = calcFisT();
     const postMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const postMag = calcMagT();
@@ -227,12 +267,12 @@ function recalcularVidas(p, accion) {
 
 window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.vidaRojaMax = 10; p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.vidaAzul = getMysticBonus(p); p.baseVidaAzul = p.vidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
 
+// BOTONES DE EDICIÓN: Alteran y Encolan
 window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { p[`base${statId.charAt(0).toUpperCase() + statId.slice(1)}`] = Math.max(0, (p[`base${statId.charAt(0).toUpperCase() + statId.slice(1)}`]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modificarDirecto = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
 
 window.modBlueExtra = (cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra||0)+cantidad); p.vidaAzul = Math.max(0, (p.vidaAzul||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
@@ -286,7 +326,7 @@ async function iniciar() {
             const parsed = JSON.parse(cache); 
             Object.assign(statsGlobal, parsed.stats); 
             if(parsed.party) estadoUI.party = parsed.party;
-            cargarTodoDesdeCSV(); // Background fetch de obj y hz
+            cargarTodoDesdeCSV(); // Fetch background para actualizar objetos/hechizos de ser posible
         } 
     } 
     catch (error) { console.error("Error crítico:", error); } 
