@@ -289,7 +289,7 @@ export function dibujarGestionGrid() {
         // Ordenamiento seguro usando el Título Real
         const tituloA = a.Nombre && a.Nombre.trim() !== "" ? a.Nombre : a.ID;
         const tituloB = b.Nombre && b.Nombre.trim() !== "" ? b.Nombre : b.ID;
-        return tituloA.localeCompare(tituloB);
+        return (tituloA || "").localeCompare(tituloB || "");
     }).forEach(h => {
         // Definición de Títulos
         const tituloPrincipal = h.Nombre && h.Nombre.trim() !== "" ? h.Nombre : h.ID;
@@ -322,4 +322,46 @@ export function dibujarGestionGrid() {
                  </div>`;
     });
     document.getElementById('grid-gestion').innerHTML = html;
+}
+
+export function dibujarAprendizajeGrid() {
+    const pj = estadoUI.personajeSeleccionado; 
+    const grupos = obtenerHechizosAprendibles(pj);
+    let html = ``;
+    
+    if(Object.keys(grupos).length === 0) {
+        document.getElementById('grid-aprendizaje').innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff4444; font-size:1.2em;">No hay hechizos que cumplan con los precedentes actuales.</p>`;
+        return;
+    }
+
+    Object.keys(grupos).forEach(reqStr => {
+        html += `<h3 class="req-header">PRECEDENTES: <span style="color:#ccc;">${reqStr}</span></h3><div class="grid-inventario">`;
+        
+        grupos[reqStr].forEach(h => {
+            const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
+            
+            const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === h.ID || c.Nombre === h.Nombre);
+            const isPublicBase = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
+            const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
+            
+            const titulo = isKnown ? h.Nombre : h.ID;
+            const res = isKnown ? getValInfo(h, ['resumen', 'Resumen']) : '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto).</i>';
+            const efe = isKnown ? getValInfo(h, ['efecto', 'Efecto']) : '';
+            const details = isKnown ? generarDetalles(h) : '';
+
+            html += `<div class="spell-card" style="border: 2px dashed ${col.b}; background:rgba(10,20,30,0.5);">
+                        <h3 style="color:${isKnown ? col.t : '#666'};">${titulo}</h3>
+                        <div class="spell-tags">
+                            <span class="spell-tag tag-hex">COSTE: ${costo}</span>
+                            <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span>
+                            <span class="spell-tag tag-clase">${h.Clase || '-'}</span>
+                        </div>
+                        <div class="spell-desc" style="${!isKnown ? 'background:#000; border-left-color:#333;' : ''}">${res}</div>
+                        ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
+                        ${details}
+                     </div>`;
+        });
+        html += `</div>`;
+    });
+    document.getElementById('grid-aprendizaje').innerHTML = html;
 }
