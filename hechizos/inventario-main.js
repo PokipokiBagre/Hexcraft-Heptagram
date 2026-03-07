@@ -74,6 +74,10 @@ window.aplicarFiltrosAll = () => { estadoUI.filtrosAll.afinidad = document.getEl
 window.toggleRestarHex = (c) => { estadoUI.restarHexAsignacion = c; };
 window.descargarCSVHex = () => { exportarCSVPersonajes(); };
 
+// Guardado de configuración de checkboxes para que no se reseteen
+window.toggleCastConsumo = (val) => { estadoUI.consumoCast = val; };
+window.toggleCastEfectos = (val) => { estadoUI.efectosCast = val; };
+
 function recalcularEstadisticasPersonaje(pj) {
     const charData = db.personajes[pj];
     if (!charData) return;
@@ -131,17 +135,14 @@ function actualizarTextoLogOP() {
     
     estadoUI.logOP.descubiertos.forEach(d => { out += `Hechizo descubierto: ${d}\n`; });
 
-    // Separar los hechizos en cobrados y gratuitos
     const cobrados = estadoUI.logOP.aprendidos.filter(a => a.cobrado);
     const gratuitos = estadoUI.logOP.aprendidos.filter(a => !a.cobrado);
 
-    // Lógica para hechizos con cobro (formato anterior)
     if(cobrados.length > 0) {
         const list = cobrados.map(c => c.spell).join(", ");
         out += `Hechizo aprendido: ${list} -${estadoUI.logOP.hexGastado} Hex (${char ? char.hex : 0})\n`;
     }
 
-    // Lógica para hechizos sin cobro (nuevo formato solicitado)
     gratuitos.forEach(g => {
         out += `${pj} | Hechizo aprendido | ${g.spell} (${g.cost})\n`;
     });
@@ -149,7 +150,7 @@ function actualizarTextoLogOP() {
     textarea.value = out; textarea.scrollTop = textarea.scrollHeight;
 }
 
-// BOTONES DE COPIAR TOTALMENTE SILENCIOSOS (Cero alertas)
+// TOTALMENTE SILENCIOSOS (Cero alertas)
 window.copiarLogOP = () => { 
     const t = document.getElementById('op-log-textarea'); 
     if(t) { t.select(); document.execCommand('copy'); } 
@@ -178,7 +179,6 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
         const origen = document.getElementById('slicer-origen')?.value || 'OP Admin';
         estadoUI.colaCambios.agregar.push([pj, nombreHechizo, afinidad, hex, "Normal", origen]);
         
-        // Guardamos el hechizo indicando si fue cobrado o no para el Log
         estadoUI.logOP.aprendidos.push({ spell: nombreHechizo, cost: hex, cobrado: estadoUI.restarHexAsignacion });
         
         if(estadoUI.restarHexAsignacion) {
@@ -186,7 +186,6 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
             estadoUI.logOP.hexGastado += hex;
         }
 
-        // El descubrimiento se da independientemente de si se cobra
         if(info && (!info.Conocido || info.Conocido.toString().trim().toLowerCase() !== 'si')) {
             estadoUI.colaCambios.toggleConocido.push({ ID: info.ID, Nombre: info.Nombre, Estado: 'si' });
             info.Conocido = 'si';
@@ -220,7 +219,6 @@ window.ejecutarSincronizacion = async () => {
     if(await sincronizarColaBD(estadoUI.colaCambios)) {
         estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [], hexCasts: [], stats: {} };
         
-        // Cartel flotante elegante (Toast) que no requiere clics
         const cartelito = document.createElement('div');
         cartelito.innerHTML = "¡Guardado Exitoso! ✅";
         cartelito.style.cssText = "position:fixed; top:30px; left:50%; transform:translateX(-50%); background:var(--gold); color:#000; padding:15px 40px; border-radius:8px; font-weight:bold; font-size:1.2em; z-index:9999; box-shadow:0 0 20px var(--gold); font-family:'Cinzel', serif; text-align:center;";
@@ -243,6 +241,7 @@ window.ejecutarSincronizacion = async () => {
 // MOTOR DE CASTEO DE HECHIZOS (VEX/HEX)
 // =========================================================================
 
+// TOTALMENTE SILENCIOSO
 window.copiarLogCasteo = () => { 
     const t = document.getElementById('log-casteo-textarea'); 
     if(t) { t.select(); document.execCommand('copy'); } 
@@ -472,8 +471,11 @@ window.conjurarHechizos = () => {
 
     if (estadoUI.esAdmin) {
         let textoLog = "";
+        const mostrarEfectos = estadoUI.efectosCast !== false; // Evalúa el checkbox de efectos
+
         Object.values(agrupacionLogs).forEach(g => {
-            if (g.status.includes("FALLO")) {
+            // Si es un Fallo O si desmarcaste "Mostrar Efectos", corta el texto en el estatus
+            if (g.status.includes("FALLO") || !mostrarEfectos) {
                 textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status}\n`;
             } else {
                 textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status} | ${g.effect}${g.extra}\n`;
