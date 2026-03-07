@@ -24,8 +24,8 @@ export let estadoUI = {
     
     // Variables para congelar el orden visual
     resetCacheOrder: true,
-    cachedSortKeys: null,
-    cachedInvKeys: null
+    cachedSortKeys: null, // Para el panel de Control OP
+    cachedInvOrders: {}   // Para las tablas y resumen de cada jugador
 };
 
 export function guardar() { 
