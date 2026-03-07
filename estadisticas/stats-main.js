@@ -88,25 +88,30 @@ window.copiarHexLog = () => {
 // --- NAVEGACIÓN Y RENDERIZADO SEGURO ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
+    // Si la vista es detalle, usa su contenedor, sino el sub-vista de OP
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
     const container = document.getElementById(containerId);
     
     if (container) {
+        // Fijar altura para evitar saltos de scroll
         const h = container.getBoundingClientRect().height;
         container.style.minHeight = h + 'px';
         
         if (vista === 'detalle') {
             dibujarDetalle();
         } else {
+            // Subvistas de OP
             if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
             else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
             else container.innerHTML = dibujarFormularioEditar();
         }
         
+        // Actualizar logs si aplica
         if (estadoUI.vistaActual === 'hex') {
             updateHexLogText();
         }
         
+        // Restaurar scroll y liberar altura
         window.scrollTo(0, scrollY);
         requestAnimationFrame(() => container.style.minHeight = '');
     } else {
@@ -115,11 +120,13 @@ function repintarConScroll(vista) {
 }
 
 function refrescarVistas() {
+    // Ocultar todo
     document.getElementById('vista-catalogo').classList.add('oculto'); 
     document.getElementById('vista-resumen').classList.add('oculto'); 
     document.getElementById('vista-detalle').classList.add('oculto'); 
     document.getElementById('vista-op').classList.add('oculto');
     
+    // Mostrar vista actual
     if (estadoUI.vistaActual === 'catalogo') { 
         document.getElementById('vista-catalogo').classList.remove('oculto'); 
         dibujarCatalogo(); 
@@ -133,6 +140,7 @@ function refrescarVistas() {
         dibujarDetalle(); 
     }
     else { 
+        // Vistas de OP
         document.getElementById('vista-op').classList.remove('oculto'); 
         document.getElementById('vista-op').innerHTML = dibujarMenuOP();
         const sub = document.getElementById('sub-vista-op');
@@ -152,12 +160,18 @@ window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; est
 
 window.abrirMenuOP = () => { 
     const enrutarOP = () => { 
-        estadoUI.vistaActual = 'hex'; 
-        refrescarVistas(); 
+        // FIXED: Si ya está Admin y en detalle, NO lo patés al menú HEX. Quédese en detalle.
+        if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) {
+            repintarConScroll('detalle'); // Simplemente repinta para mostrar botones OP
+        } else {
+            estadoUI.vistaActual = 'hex'; // Ruta por defecto si está en catálogo
+            refrescarVistas(); 
+        }
     };
     if (estadoUI.esAdmin) { enrutarOP(); return; }
-    const pass = prompt("Acceso Restringido. Contraseña:");
+    const pass = prompt("Acceso Restringido MÁSTER. Contraseña:");
     if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } 
+    else { if(pass !== null) alert("Acceso denegado."); }
 };
 
 window.mostrarPaginaOP = (subvista) => {
@@ -545,9 +559,9 @@ window.ejecutarCreacionNPC = () => {
     const fis = parseInt(document.getElementById('npc-fis').value) || 0;
     const ene = parseInt(document.getElementById('npc-ene').value) || 0;
     const esp = parseInt(document.getElementById('npc-esp').value) || 0;
-    const man = parseInt(document.getElementById('npc-man').value) || 0;
-    const psi = parseInt(document.getElementById('npc-psi').value) || 0;
-    const osc = parseInt(document.getElementById('npc-osc').value) || 0;
+    const man = parseInt(document.getElementById('npc-man')).value || 0;
+    const psi = parseInt(document.getElementById('npc-psi')).value || 0;
+    const osc = parseInt(document.getElementById('npc-osc')).value || 0;
 
     const inputVrm = parseInt(document.getElementById('npc-vrm').value) || 0;
     const inputVa = parseInt(document.getElementById('npc-va').value) || 0;
@@ -586,6 +600,16 @@ window.triggerSubirCSV = () => {
     }; input.click();
 };
 
+// NUEVO: Función para copiar hechizo al portapapeles sin molestar
+window.copySpellSilently = async (spellName) => {
+    try {
+        await navigator.clipboard.writeText(spellName);
+        // Su éxito es silencioso como pediste
+    } catch (err) {
+        console.error('Error Máster: No se pudo copiar el hechizo. Permisos de portapapeles denegados.', err);
+    }
+};
+
 async function iniciar() {
     try { 
         await cargarDiccionarioEstados(); 
@@ -597,7 +621,7 @@ async function iniciar() {
             Object.assign(statsGlobal, parsed.stats); 
             if(parsed.party) estadoUI.party = parsed.party;
             
-            // Carga silenciosa en background de Hechizos y Objetos para cruzar datos
+            // Carga silenciosa de APIs en background para Resumen
             cargarTodoDesdeCSV();
         } 
     } 
