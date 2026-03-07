@@ -74,7 +74,6 @@ window.aplicarFiltrosAll = () => { estadoUI.filtrosAll.afinidad = document.getEl
 window.toggleRestarHex = (c) => { estadoUI.restarHexAsignacion = c; };
 window.descargarCSVHex = () => { exportarCSVPersonajes(); };
 
-// NUEVO MOTOR: Actualiza el valor Z de X_Y_Z_W según el conteo real de hechizos en el inventario actual
 function recalcularEstadisticasPersonaje(pj) {
     const charData = db.personajes[pj];
     if (!charData) return;
@@ -82,7 +81,6 @@ function recalcularEstadisticasPersonaje(pj) {
     const inv = getInventarioCombinado(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     
-    // Cuenta cuántos hechizos hay de cada afinidad
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
     inv.forEach(item => {
         const itemNorm = item.Hechizo.trim().toLowerCase();
@@ -97,7 +95,6 @@ function recalcularEstadisticasPersonaje(pj) {
     if(!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
     if(!estadoUI.colaCambios.stats[pj]) estadoUI.colaCambios.stats[pj] = {};
 
-    // Actualiza la memoria y prepara el paquete para la nube
     for (const [af, count] of Object.entries(conteo)) {
         const idx = mapAfinCSV[af];
         if (idx !== undefined && charData.rawRow[idx]) {
@@ -105,7 +102,6 @@ function recalcularEstadisticasPersonaje(pj) {
             if (!cell.includes('_')) cell = `${cell}_0_0_0_0`;
             let parts = cell.split('_');
             
-            // EL VALOR Z (Índice 2) AHORA ES SIEMPRE EL CONTEO
             parts[2] = count.toString();
             const newVal = parts.join('_');
             
@@ -115,7 +111,6 @@ function recalcularEstadisticasPersonaje(pj) {
     }
 }
 
-// Ya no suma +1 en Z. Solo resta el Hex al asignar
 function restarHexPersonaje(pj, hex) {
     const charObj = db.personajes[pj];
     charObj.hex = Math.max(0, charObj.hex - hex); 
@@ -133,15 +128,32 @@ function actualizarTextoLogOP() {
     const textarea = document.getElementById('op-log-textarea'); if(!textarea) return;
     const pj = estadoUI.personajeSeleccionado; const char = db.personajes[pj];
     let out = "";
+    
     estadoUI.logOP.descubiertos.forEach(d => { out += `Hechizo descubierto: ${d}\n`; });
-    if(estadoUI.logOP.aprendidos.length > 0) {
-        const list = estadoUI.logOP.aprendidos.join(", ");
+
+    // Separar los hechizos en cobrados y gratuitos
+    const cobrados = estadoUI.logOP.aprendidos.filter(a => a.cobrado);
+    const gratuitos = estadoUI.logOP.aprendidos.filter(a => !a.cobrado);
+
+    // Lógica para hechizos con cobro (formato anterior)
+    if(cobrados.length > 0) {
+        const list = cobrados.map(c => c.spell).join(", ");
         out += `Hechizo aprendido: ${list} -${estadoUI.logOP.hexGastado} Hex (${char ? char.hex : 0})\n`;
     }
+
+    // Lógica para hechizos sin cobro (nuevo formato solicitado)
+    gratuitos.forEach(g => {
+        out += `${pj} | Hechizo aprendido | ${g.spell} (${g.cost})\n`;
+    });
+
     textarea.value = out; textarea.scrollTop = textarea.scrollHeight;
 }
 
-window.copiarLogOP = () => { const t = document.getElementById('op-log-textarea'); if(t) { t.select(); document.execCommand('copy'); alert("Log copiado."); } };
+// BOTONES DE COPIAR TOTALMENTE SILENCIOSOS (Cero alertas)
+window.copiarLogOP = () => { 
+    const t = document.getElementById('op-log-textarea'); 
+    if(t) { t.select(); document.execCommand('copy'); } 
+};
 window.limpiarLogOP = () => { estadoUI.logOP = { descubiertos: [], aprendidos: [], hexGastado: 0 }; actualizarTextoLogOP(); };
 
 window.toggleVisibilidad = (idHechizo, nombreHechizo, nuevoEstado) => {
@@ -166,21 +178,26 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
         const origen = document.getElementById('slicer-origen')?.value || 'OP Admin';
         estadoUI.colaCambios.agregar.push([pj, nombreHechizo, afinidad, hex, "Normal", origen]);
         
+        // Guardamos el hechizo indicando si fue cobrado o no para el Log
+        estadoUI.logOP.aprendidos.push({ spell: nombreHechizo, cost: hex, cobrado: estadoUI.restarHexAsignacion });
+        
         if(estadoUI.restarHexAsignacion) {
             restarHexPersonaje(pj, hex);
-            estadoUI.logOP.aprendidos.push(nombreHechizo); estadoUI.logOP.hexGastado += hex;
-            
-            if(info && (!info.Conocido || info.Conocido.toString().trim().toLowerCase() !== 'si')) {
-                estadoUI.colaCambios.toggleConocido.push({ ID: info.ID, Nombre: info.Nombre, Estado: 'si' });
-                info.Conocido = 'si';
-                estadoUI.logOP.descubiertos.push(`${info.ID} - ${info.Nombre}`);
-            }
+            estadoUI.logOP.hexGastado += hex;
         }
+
+        // El descubrimiento se da independientemente de si se cobra
+        if(info && (!info.Conocido || info.Conocido.toString().trim().toLowerCase() !== 'si')) {
+            estadoUI.colaCambios.toggleConocido.push({ ID: info.ID, Nombre: info.Nombre, Estado: 'si' });
+            info.Conocido = 'si';
+            estadoUI.logOP.descubiertos.push(`${info.ID} - ${info.Nombre}`);
+        }
+
     } else if (accion === 'quitar') {
         estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
     }
     
-    recalcularEstadisticasPersonaje(pj); // Al agregar/quitar, recalcula instantáneamente los totales de afinidad
+    recalcularEstadisticasPersonaje(pj); 
     
     if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
     else if(estadoUI.vistaActual === 'grimorio') { dibujarGrimorioGrid(); }
@@ -211,7 +228,6 @@ window.ejecutarSincronizacion = async () => {
 
         localStorage.removeItem('hex_hechizos_cache'); 
         
-        // Espera 1.5 segundos exactos para que leas el mensaje y luego recarga sola
         setTimeout(() => { 
             window.location.reload(); 
         }, 500);
@@ -229,14 +245,13 @@ window.ejecutarSincronizacion = async () => {
 
 window.copiarLogCasteo = () => { 
     const t = document.getElementById('log-casteo-textarea'); 
-    if(t) { t.select(); document.execCommand('copy'); alert("Log de Casteo copiado al portapapeles."); } 
+    if(t) { t.select(); document.execCommand('copy'); } 
 };
 window.limpiarLogCasteo = () => { 
     const t = document.getElementById('log-casteo-textarea'); 
     if(t) t.value = ''; 
 };
 
-// NUEVO: Permite saltar de input en input presionando Enter
 window.onEnterJump = (e, nextId) => {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -264,7 +279,6 @@ window.generarFilasCasteo = () => {
 
     let html = datalistHtml;
     for(let i=0; i<num; i++) {
-        // En Dado, salta al spell-i. En Spell, salta al dado-(i+1)
         html += `
         <div class="casteo-row" id="row-${i}">
             <div class="casteo-input-group" style="flex: 0.5;">
