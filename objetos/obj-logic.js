@@ -1,11 +1,9 @@
 import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
 
-// Prepara la info del objeto modificado para enviarla al servidor
 export function encolarCambioObjeto(nombreObj) {
     let duenos = [];
     let cants = [];
     
-    // Recorre todos los jugadores para ver quién tiene este objeto
     Object.keys(invGlobal).forEach(j => {
         if (invGlobal[j][nombreObj] > 0) {
             duenos.push(j);
@@ -18,8 +16,8 @@ export function encolarCambioObjeto(nombreObj) {
         objeto: nombreObj,
         tipo: info.tipo || '-', mat: info.mat || '-',
         eff: info.eff || 'Sin descripción', rar: info.rar || 'Común',
-        duenos: duenos.join(", "), // Formato que tu Excel necesita: "Reize, Linda"
-        cantidades: cants.join(", ") // Formato que tu Excel necesita: "2, 5"
+        duenos: duenos.join(", "), 
+        cantidades: cants.join(", ") 
     };
 }
 
@@ -28,7 +26,7 @@ export function modificar(j, o, c, callback) {
     invGlobal[j][o] = Math.max(0, (invGlobal[j][o] || 0) + c);
     historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: o, cambio: c, total: invGlobal[j][o] });
     
-    encolarCambioObjeto(o); // Encola para la nube
+    encolarCambioObjeto(o); 
     guardar(); if(callback) callback(); 
 }
 
@@ -39,7 +37,7 @@ export function modificarMulti(jugadores, obj, cant, callback) {
         historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: obj, cambio: cant, total: invGlobal[j][obj] });
     });
     
-    encolarCambioObjeto(obj); // Encola para la nube
+    encolarCambioObjeto(obj); 
     guardar(); if(callback) callback();
 }
 
@@ -55,25 +53,35 @@ export function transferir(origen, destino, obj, cant, callback) {
     historial.push({ fecha: new Date().toLocaleString(), jugador: origen, objeto: obj, cambio: -aMover, total: invGlobal[origen][obj] });
     historial.push({ fecha: new Date().toLocaleString(), jugador: destino, objeto: obj, cambio: aMover, total: invGlobal[destino][obj] });
     
-    encolarCambioObjeto(obj); // Encola para la nube
+    encolarCambioObjeto(obj); 
     guardar(); if(callback) callback();
 }
 
-export function agregarObjetoManual(datos, reparticion, callback) {
-    const { nombre, tipo, mat, eff, rar } = datos;
-    if (!nombre) return alert("Falta nombre.");
-    objGlobal[nombre] = { tipo, mat, eff, rar };
-    Object.keys(reparticion).forEach(j => {
-        const cant = parseInt(reparticion[j]) || 0;
-        if (cant > 0) {
-            if (!invGlobal[j]) invGlobal[j] = {};
-            invGlobal[j][nombre] = (invGlobal[j][nombre] || 0) + cant;
-            historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: nombre, cambio: cant, total: invGlobal[j][nombre] });
+// Nueva función para procesar 5 objetos a la vez
+export function agregarObjetosMulti(listaDatos, destPlayer, callback) {
+    let creados = 0;
+    listaDatos.forEach(datos => {
+        const { nombre, tipo, mat, eff, rar, cant } = datos;
+        if (!nombre) return;
+        
+        objGlobal[nombre] = { tipo, mat, eff, rar };
+        
+        if (destPlayer && cant > 0) {
+            if (!invGlobal[destPlayer]) invGlobal[destPlayer] = {};
+            invGlobal[destPlayer][nombre] = (invGlobal[destPlayer][nombre] || 0) + cant;
+            historial.push({ fecha: new Date().toLocaleString(), jugador: destPlayer, objeto: nombre, cambio: cant, total: invGlobal[destPlayer][nombre] });
         }
+        
+        encolarCambioObjeto(nombre);
+        creados++;
     });
     
-    encolarCambioObjeto(nombre); // Encola para la nube
-    guardar(); callback();
+    if (creados > 0) {
+        guardar(); 
+        if(callback) callback(creados);
+    } else {
+        alert("No escribiste el nombre de ningún objeto.");
+    }
 }
 
 export function descargarEstadoCSV() {
