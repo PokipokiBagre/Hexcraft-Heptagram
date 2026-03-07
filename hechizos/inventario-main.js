@@ -1,6 +1,7 @@
 import { estadoUI, db } from './inventario-state.js';
 import { inicializarDatos, sincronizarColaBD, exportarCSVPersonajes } from './inventario-data.js';
-import { dibujarCatalogo, renderHeaders, dibujarGrimorioGrid, dibujarGestionGrid, dibujarAprendizajeGrid, getValInfo } from './inventario-ui.js';
+import { dibujarCatalogo, renderHeaders, dibujarGrimorioGrid, dibujarGestionGrid, dibujarAprendizajeGrid, dibujarCatalogoHechizos, getValInfo } from './inventario-ui.js';
+import { getInventarioCombinado } from './inventario-logic.js';
 
 estadoUI.colaCambios.hexCasts = estadoUI.colaCambios.hexCasts || [];
 
@@ -36,9 +37,13 @@ window.cambiarVista = (vista) => {
     if(sec) sec.classList.remove('oculto');
     
     const btnCat = document.getElementById('btn-nav-catalogo');
+    const btnAll = document.getElementById('btn-nav-all-hechizos');
+    
     if(btnCat) { if(vista === 'catalogo') btnCat.classList.add('oculto'); else btnCat.classList.remove('oculto'); }
+    if(btnAll) { if(vista === 'catalogo-hechizos') btnAll.classList.add('oculto'); else btnAll.classList.remove('oculto'); }
 
     if (vista === 'catalogo') { dibujarCatalogo(); } 
+    else if (vista === 'catalogo-hechizos') { dibujarCatalogoHechizos(); }
     else {
         renderHeaders(); 
         if (vista === 'grimorio') dibujarGrimorioGrid();
@@ -64,24 +69,64 @@ window.setFiltro = (tipo, valor) => {
 window.aplicarFiltrosGrimorio = () => { estadoUI.filtrosGrimorio.afinidad = document.getElementById('f-grim-afinidad').value; estadoUI.filtrosGrimorio.busqueda = document.getElementById('f-grim-texto').value; dibujarGrimorioGrid(); };
 window.aplicarFiltrosGestion = () => { estadoUI.filtrosGestion.afinidad = document.getElementById('op-f-afinidad').value; estadoUI.filtrosGestion.clase = document.getElementById('op-f-clase').value; estadoUI.filtrosGestion.busqueda = document.getElementById('op-f-texto').value; dibujarGestionGrid(); };
 window.aplicarFiltrosAprendizaje = () => { estadoUI.filtrosAprendizaje.afinidad = document.getElementById('f-apr-afinidad').value; estadoUI.filtrosAprendizaje.clase = document.getElementById('f-apr-clase').value; estadoUI.filtrosAprendizaje.busqueda = document.getElementById('f-apr-texto').value; dibujarAprendizajeGrid(); };
+window.aplicarFiltrosAll = () => { estadoUI.filtrosAll.afinidad = document.getElementById('f-all-afinidad').value; estadoUI.filtrosAll.clase = document.getElementById('f-all-clase').value; estadoUI.filtrosAll.estado = document.getElementById('f-all-estado').value; estadoUI.filtrosAll.busqueda = document.getElementById('f-all-texto').value; dibujarCatalogoHechizos(); };
 
 window.toggleRestarHex = (c) => { estadoUI.restarHexAsignacion = c; };
 window.descargarCSVHex = () => { exportarCSVPersonajes(); };
 
-function aplicarCambiosPersonaje(pj, hex, afinidad) {
+// NUEVO MOTOR: Actualiza el valor Z de X_Y_Z_W según el conteo real de hechizos en el inventario actual
+function recalcularEstadisticasPersonaje(pj) {
+    const charData = db.personajes[pj];
+    if (!charData) return;
+
+    const inv = getInventarioCombinado(pj);
+    const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    
+    // Cuenta cuántos hechizos hay de cada afinidad
+    const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
+    inv.forEach(item => {
+        const itemNorm = item.Hechizo.trim().toLowerCase();
+        const info = todosNodos.find(n => (n.Nombre||"").trim().toLowerCase() === itemNorm || (n.ID||"").trim().toLowerCase() === itemNorm) || {};
+        const af = item["Hechizo Afinidad"] || info.Afinidad;
+        if (conteo[af] !== undefined) conteo[af]++;
+    });
+
+    const mapAfinCSV = { 'Física': 3, 'Energética': 4, 'Espiritual': 5, 'Mando': 6, 'Psíquica': 7, 'Oscura': 8 };
+    const mapAfinHoja = { 'Física': 'Fisica', 'Energética': 'Energetica', 'Espiritual': 'Espiritual', 'Mando': 'Mando', 'Psíquica': 'Psiquica', 'Oscura': 'Oscura' };
+
+    if(!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
+    if(!estadoUI.colaCambios.stats[pj]) estadoUI.colaCambios.stats[pj] = {};
+
+    // Actualiza la memoria y prepara el paquete para la nube
+    for (const [af, count] of Object.entries(conteo)) {
+        const idx = mapAfinCSV[af];
+        if (idx !== undefined && charData.rawRow[idx]) {
+            let cell = charData.rawRow[idx];
+            if (!cell.includes('_')) cell = `${cell}_0_0_0_0`;
+            let parts = cell.split('_');
+            
+            // EL VALOR Z (Índice 2) AHORA ES SIEMPRE EL CONTEO
+            parts[2] = count.toString();
+            const newVal = parts.join('_');
+            
+            charData.rawRow[idx] = newVal;
+            estadoUI.colaCambios.stats[pj][mapAfinHoja[af]] = newVal; 
+        }
+    }
+}
+
+// Ya no suma +1 en Z. Solo resta el Hex al asignar
+function restarHexPersonaje(pj, hex) {
     const charObj = db.personajes[pj];
     charObj.hex = Math.max(0, charObj.hex - hex); 
-    const colMap = { 'Física': 3, 'Energética': 4, 'Espiritual': 5, 'Mando': 6, 'Psíquica': 7, 'Oscura': 8 };
-    if (colMap[afinidad]) {
-        const idx = colMap[afinidad];
-        let cell = charObj.rawRow[idx];
-        if (!cell || !cell.includes('_')) cell = `${cell || 0}_0_0_0_0`;
-        let parts = cell.split('_');
-        parts[0] = (parseInt(parts[0]) + 1).toString(); 
-        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString(); 
-        charObj.rawRow[idx] = parts.join('_');
-    }
-    const hexParts = charObj.rawRow[1].split('_'); hexParts[0] = charObj.hex.toString(); charObj.rawRow[1] = hexParts.join('_');
+    const hexParts = charObj.rawRow[1].split('_'); 
+    hexParts[0] = charObj.hex.toString(); 
+    const newHex = hexParts.join('_');
+    charObj.rawRow[1] = newHex;
+    
+    if(!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
+    if(!estadoUI.colaCambios.stats[pj]) estadoUI.colaCambios.stats[pj] = {};
+    estadoUI.colaCambios.stats[pj]['Hex'] = newHex;
 }
 
 function actualizarTextoLogOP() {
@@ -99,17 +144,16 @@ function actualizarTextoLogOP() {
 window.copiarLogOP = () => { const t = document.getElementById('op-log-textarea'); if(t) { t.select(); document.execCommand('copy'); alert("Log copiado."); } };
 window.limpiarLogOP = () => { estadoUI.logOP = { descubiertos: [], aprendidos: [], hexGastado: 0 }; actualizarTextoLogOP(); };
 
-// NUEVA FUNCIÓN: Permite que el cambio visual sea instantáneo como en tu sistema de objetos
 window.toggleVisibilidad = (idHechizo, nombreHechizo, nuevoEstado) => {
     estadoUI.colaCambios.toggleConocido.push({ ID: idHechizo, Nombre: nombreHechizo, Estado: nuevoEstado });
     
-    // Cambia la memoria instantáneamente para que la UI reaccione sin recargar
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const info = todosNodos.find(n => n.ID === idHechizo || n.Nombre === nombreHechizo);
     if (info) info.Conocido = nuevoEstado;
 
     if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
     else if(estadoUI.vistaActual === 'grimorio') { dibujarGrimorioGrid(); }
+    else if(estadoUI.vistaActual === 'catalogo-hechizos') { dibujarCatalogoHechizos(); }
     actualizarBotonSync();
 };
 
@@ -121,11 +165,11 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
     if(accion === 'agregar') {
         const origen = document.getElementById('slicer-origen')?.value || 'OP Admin';
         estadoUI.colaCambios.agregar.push([pj, nombreHechizo, afinidad, hex, "Normal", origen]);
+        
         if(estadoUI.restarHexAsignacion) {
-            aplicarCambiosPersonaje(pj, hex, afinidad);
+            restarHexPersonaje(pj, hex);
             estadoUI.logOP.aprendidos.push(nombreHechizo); estadoUI.logOP.hexGastado += hex;
             
-            // Si el hechizo no era público, lo hace público y lo inyecta a la cola
             if(info && (!info.Conocido || info.Conocido.toString().trim().toLowerCase() !== 'si')) {
                 estadoUI.colaCambios.toggleConocido.push({ ID: info.ID, Nombre: info.Nombre, Estado: 'si' });
                 info.Conocido = 'si';
@@ -136,6 +180,8 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
         estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
     }
     
+    recalcularEstadisticasPersonaje(pj); // Al agregar/quitar, recalcula instantáneamente los totales de afinidad
+    
     if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
     else if(estadoUI.vistaActual === 'grimorio') { dibujarGrimorioGrid(); }
     actualizarBotonSync();
@@ -144,7 +190,8 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
 function actualizarBotonSync() {
     const btn = document.getElementById('btn-sync-global'); if(!btn) return;
     const hexChanges = estadoUI.colaCambios.hexCasts ? estadoUI.colaCambios.hexCasts.length : 0;
-    const h = estadoUI.colaCambios.agregar.length + estadoUI.colaCambios.quitar.length + estadoUI.colaCambios.toggleConocido.length + hexChanges;
+    const statsChanges = Object.keys(estadoUI.colaCambios.stats || {}).length;
+    const h = estadoUI.colaCambios.agregar.length + estadoUI.colaCambios.quitar.length + estadoUI.colaCambios.toggleConocido.length + hexChanges + statsChanges;
     if (h > 0) { btn.classList.remove('oculto'); btn.innerText = `🔥 GUARDAR CAMBIOS AL SERVIDOR (${h}) 🔥`; } else btn.classList.add('oculto');
 }
 
@@ -152,7 +199,7 @@ window.ejecutarSincronizacion = async () => {
     const btn = document.getElementById('btn-sync-global'); btn.innerText = "Sincronizando..."; btn.disabled = true;
     if(await sincronizarColaBD(estadoUI.colaCambios)) {
         alert("¡Base de datos actualizada con éxito!"); 
-        estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [], hexCasts: [] };
+        estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [], hexCasts: [], stats: {} };
         if(estadoUI.esAdmin) {
             if(confirm("Se aplicaron cambios en la memoria. ¿Descargar el nuevo CSV de estadísticas?")) exportarCSVPersonajes();
         }
@@ -176,6 +223,15 @@ window.limpiarLogCasteo = () => {
     if(t) t.value = ''; 
 };
 
+// NUEVO: Permite saltar de input en input presionando Enter
+window.onEnterJump = (e, nextId) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const nextEl = document.getElementById(nextId);
+        if (nextEl) nextEl.focus();
+    }
+};
+
 window.generarFilasCasteo = () => {
     const contenedor = document.getElementById('casteo-filas');
     if (!contenedor) return;
@@ -195,18 +251,19 @@ window.generarFilasCasteo = () => {
 
     let html = datalistHtml;
     for(let i=0; i<num; i++) {
+        // En Dado, salta al spell-i. En Spell, salta al dado-(i+1)
         html += `
         <div class="casteo-row" id="row-${i}">
             <div class="casteo-input-group" style="flex: 0.5;">
                 <label style="color:var(--gold); font-size:0.8em;">DADO (1-100)</label>
                 <div style="display:flex; gap:5px;">
                     <button onclick="window.lanzarDado(${i})" class="dice-btn" title="Lanzar Dado">🎲</button>
-                    <input type="number" id="dado-${i}" class="input-casteo" placeholder="0" min="1" max="100">
+                    <input type="number" id="dado-${i}" class="input-casteo" placeholder="0" min="1" max="100" onkeydown="window.onEnterJump(event, 'spell-${i}')">
                 </div>
             </div>
             <div class="casteo-input-group" style="flex: 2;">
                 <label style="color:var(--gold); font-size:0.8em;">BUSCAR HECHIZO</label>
-                <input type="text" list="spells-list-${pj}" id="spell-${i}" class="input-casteo" placeholder="Escribe o selecciona..." onchange="window.actualizarAfinidadCasteo(${i})">
+                <input type="text" list="spells-list-${pj}" id="spell-${i}" class="input-casteo" placeholder="Escribe o selecciona..." onchange="window.actualizarAfinidadCasteo(${i})" onkeydown="window.onEnterJump(event, 'dado-${i+1}')">
             </div>
             <div class="casteo-input-group" style="flex: 0.8;">
                 <label style="color:var(--gold); font-size:0.8em;" id="afinidad-label-${i}">AFINIDAD</label>
@@ -408,8 +465,13 @@ window.conjurarHechizos = () => {
             charData.hex = availableHex;
             const hexParts = charData.rawRow[1].split('_'); 
             hexParts[0] = charData.hex.toString(); 
-            charData.rawRow[1] = hexParts.join('_');
+            const newHex = hexParts.join('_');
+            charData.rawRow[1] = newHex;
             
+            if(!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
+            if(!estadoUI.colaCambios.stats[pj]) estadoUI.colaCambios.stats[pj] = {};
+            estadoUI.colaCambios.stats[pj]['Hex'] = newHex;
+
             estadoUI.colaCambios.hexCasts.push(1); 
             actualizarBotonSync();
         }
