@@ -7,7 +7,6 @@ const API_ESTADISTICAS = 'https://script.google.com/macros/s/AKfycbwW4AXM9QSrPYR
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
-// Garantiza que la cola exista (Soluciona el error silencioso de los botones que no actualizaban el botón rojo)
 if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
 if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
 
@@ -49,16 +48,12 @@ window.copiarHexLog = () => { const textarea = document.getElementById('hex-log-
 window.copySilently = (texto, event) => {
     try {
         navigator.clipboard.writeText(texto);
-        
-        // Crear div flotante temporal en la posición del clic
         const tooltip = document.createElement('div');
         tooltip.innerText = "✨ Copiado!";
         tooltip.className = 'floating-tooltip';
         tooltip.style.left = event.pageX + 'px';
         tooltip.style.top = (event.pageY - 20) + 'px';
         document.body.appendChild(tooltip);
-        
-        // Removerlo después de medio segundo
         setTimeout(() => tooltip.remove(), 600);
     } catch (e) {
         console.log("Fallo al copiar.", e);
@@ -76,7 +71,7 @@ window.actualizarBotonSync = () => {
     }
 };
 
-// Esta función arma la cadena de texto exacta para que el backend la inserte en Google Sheets
+// FORMULA EXACTA PARA EXPORTAR: Total_Base_Hcz_Alt_Ext
 window.encolarCambio = (nombre) => {
     try {
         if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
@@ -143,7 +138,6 @@ window.ejecutarSincronizacion = async () => {
     }
 };
 
-// --- RENDERIZADO Y NAVEGACIÓN ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY; const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op'; const container = document.getElementById(containerId);
     if (container) {
@@ -196,7 +190,6 @@ window.abrirMenuOP = () => {
 window.mostrarPaginaOP = (subvista) => { estadoUI.vistaActual = subvista; refrescarVistas(); };
 window.setFiltro = (tipo, valor) => { if(tipo === 'rol') estadoUI.filtroRol = valor; if(tipo === 'act') estadoUI.filtroAct = valor; refrescarVistas(); };
 
-// --- PARTY Y HEX ---
 window.togglePartyMember = (nombre, isChecked) => {
     if (isChecked) { const e = estadoUI.party.indexOf(null); if (e !== -1) estadoUI.party[e] = nombre; else alert("Máximo de 6 alcanzado."); } 
     else { const c = estadoUI.party.indexOf(nombre); if (c !== -1) estadoUI.party[c] = null; }
@@ -247,7 +240,6 @@ window.addAsistenciaGlobal = () => {
     repintarConScroll('hex');
 };
 
-// --- FORMULARIOS CREACIÓN Y EDICIÓN ---
 window.toggleCrearRol = () => { const btn = document.getElementById('btn-crear-rol'); if (btn.dataset.val === 'npc') { btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } else { btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } };
 window.toggleCrearAct = () => { const btn = document.getElementById('btn-crear-act'); if (btn.dataset.val === 'activo') { btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } else { btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } };
 window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','psi','osc'].reduce((acc,id)=>acc+(parseInt(document.getElementById('npc-'+id)?.value)||0),0); const d = document.getElementById('creation-affinity-sum-display'); if(d) d.innerText = `Total Afinidades: ${s}`; };
@@ -259,7 +251,7 @@ function recalcularVidas(p, accion) {
     const calcMagT = () => ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
     const preMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const preMag = calcMagT();
 
-    accion(); // Ejecuta el +1 o -1 a la variable específica (Buffs, SpellEff, Base)
+    accion();
 
     const postFisBase = p.afinidadesBase.fisica || 0; const postFis = calcFisT();
     const postMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const postMag = calcMagT();
@@ -272,7 +264,7 @@ function recalcularVidas(p, accion) {
     const fMax = calcularVidaRojaMax(p); if (p.vidaRojaActual > fMax) p.vidaRojaActual = fMax;
 }
 
-window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.vidaRojaMax = 10; p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.vidaAzul = getMysticBonus(p); p.baseVidaAzul = p.vidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
+window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.baseVidaAzul = getMysticBonus(p); p.vidaAzul = p.baseVidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
 
 // Ediciones OP (Garantizan encolarCambio en todas)
 window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
