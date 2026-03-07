@@ -9,7 +9,8 @@ export let estadoUI = {
     filtrosGrimorio: { afinidad: 'Todos', busqueda: '' },
     filtrosGestion: { afinidad: 'Todos', clase: 'Todos', busqueda: '' },
     filtrosAprendizaje: { afinidad: 'Todos', clase: 'Todos', busqueda: '' },
+    filtrosAll: { afinidad: 'Todos', clase: 'Todos', estado: 'Todos', busqueda: '' },
     restarHexAsignacion: true,
     logOP: { descubiertos: [], aprendidos: [], hexGastado: 0 },
-    colaCambios: { agregar: [], quitar: [], toggleConocido: [] }
+    colaCambios: { agregar: [], quitar: [], toggleConocido: [], stats: {} }
 };
