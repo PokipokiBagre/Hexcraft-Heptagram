@@ -1,35 +1,50 @@
 import { statsGlobal, listaEstados, estadoUI, dbExtra } from './stats-state.js';
-import { getMayorAfinidad } from './stats-logic.js';
+import { calcularVidaRojaMax, calcularVexMax, getMayorAfinidad } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+const calcTotal = (base, spells, spellEff, buff) => (base || 0) + (spells || 0) + (spellEff || 0) + (buff || 0);
 
-// Los textos secundarios organizados y alineados correctamente
-const bTextSplit = (spellEff, buff) => {
-    let html = '<div style="font-size:0.75em; display:flex; flex-direction:column; gap:2px; align-items:center; margin-top:5px; border-top:1px dashed #333; padding-top:5px;">';
-    if (spellEff !== 0) html += `<span style="color:#4a90e2; font-weight:bold;">Alteración: (${spellEff > 0 ? '+' : ''}${spellEff})</span>`;
-    if (buff !== 0) html += `<span style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-weight:bold;">Extra: (${buff > 0 ? '+' : ''}${buff})</span>`;
-    html += '</div>';
-    return html;
+// Función ajustada a tus requerimientos (Hcz, Alt, Ext) - Oculta los que son 0
+const bTextSplit = (spells, spellEff, buff) => {
+    let parts = [];
+    if (spells !== 0) parts.push(`<span style="color:var(--cyan-magic); font-weight:bold;">Hcz: ${spells > 0 ? '+' : ''}${spells}</span>`);
+    if (spellEff !== 0) parts.push(`<span style="color:#4a90e2; font-weight:bold;">Alt: ${spellEff > 0 ? '+' : ''}${spellEff}</span>`);
+    if (buff !== 0) parts.push(`<span style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-weight:bold;">Ext: ${buff > 0 ? '+' : ''}${buff}</span>`);
+    
+    if (parts.length === 0) return '';
+    return `<div style="font-size:0.7em; display:flex; flex-direction:column; gap:2px; margin-top:5px; border-top:1px dashed #555; padding-top:5px;">${parts.join('')}</div>`;
 };
 
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
+function AsegurarGuardaD(p) { if(p.guardaDorada === undefined) p.guardaDorada = 0; if(p.baseGuardaDorada === undefined) p.baseGuardaDorada = 0; }
+
+function asegurarEstructuras(p) {
+    AsegurarGuardaD(p);
+    if(!p.buffs) p.buffs = {}; if(!p.hechizos) p.hechizos = {}; if(!p.hechizosEfecto) p.hechizosEfecto = {}; if(!p.estados) p.estados = {};
+    listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
+    const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
+    props.forEach(pr => { p.buffs[pr] = p.buffs[pr] || 0; p.hechizos[pr] = p.hechizos[pr] || 0; p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; if(p.afinidadesBase && p.afinidadesBase[pr] === undefined) p.afinidadesBase[pr] = 0;});
+    if(p.isActive === undefined) p.isActive = true;
+}
+
+// Generador universal de contenedores de vida
 function generarVidasHTML(p) {
-    let normalRojo = Math.min(p.vidaRojaActual, p.vidaRojaMax); let vaciosRojo = Math.max(0, p.vidaRojaMax - normalRojo); let extraRojo = Math.max(0, p.vidaRojaActual - p.vidaRojaMax);
+    const maxRojo = calcularVidaRojaMax(p);
+    let normalRojo = Math.min(p.vidaRojaActual, maxRojo); let vaciosRojo = Math.max(0, maxRojo - normalRojo); let extraRojo = Math.max(0, p.vidaRojaActual - maxRojo);
     let rojasHTML = ''; for(let i=0; i<normalRojo; i++) rojasHTML += `<div class="heart-red"></div>`; for(let i=0; i<vaciosRojo; i++) rojasHTML += `<div class="heart-red empty"></div>`; for(let i=0; i<extraRojo; i++) rojasHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     
     let normalAzul = p.vidaAzul || 0;
     let azulesHTML = ''; for(let i=0; i<normalAzul; i++) azulesHTML += `<div class="heart-blue"></div>`;
     
-    let normalGuarda = p.guardaDorada || 0;
-    let guardasHTML = ''; for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`;
+    const guardaTotal = (p.baseGuardaDorada||0) + (p.hechizos?.guardaDoradaExtra||0) + (p.hechizosEfecto?.guardaDoradaExtra||0) + (p.buffs?.guardaDoradaExtra||0);
+    let guardasHTML = ''; for(let i=0; i<guardaTotal; i++) guardasHTML += `<div class="guard-gold"></div>`;
     
     return { rojasHTML, azulesHTML, guardasHTML };
 }
 
 export function dibujarCatalogo() {
-    const contenedor = document.getElementById('vista-catalogo');
-    contenedor.className = ''; 
+    const contenedor = document.getElementById('vista-catalogo'); contenedor.className = ''; 
     estadoUI.filtroRol = estadoUI.filtroRol || 'Todos'; estadoUI.filtroAct = estadoUI.filtroAct || 'Todos';
 
     let html = `
@@ -47,18 +62,12 @@ export function dibujarCatalogo() {
     </div>
     <div class="catalogo-grid">`;
 
-    const getSortValue = (p) => {
-        if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; 
-        if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
-    };
+    const getSortValue = (p) => { if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5; };
 
-    const sortedNames = Object.keys(statsGlobal).sort((a, b) => {
-        const valA = getSortValue(statsGlobal[a]); const valB = getSortValue(statsGlobal[b]);
-        if (valA !== valB) return valA - valB; return a.localeCompare(b); 
-    });
+    const sortedNames = Object.keys(statsGlobal).sort((a, b) => { const valA = getSortValue(statsGlobal[a]); const valB = getSortValue(statsGlobal[b]); if (valA !== valB) return valA - valB; return a.localeCompare(b); });
 
     sortedNames.forEach(nombre => {
-        const p = statsGlobal[nombre];
+        const p = statsGlobal[nombre]; asegurarEstructuras(p);
         if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return; if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
         if (estadoUI.filtroAct === 'Activo' && !p.isActive) return; if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
 
@@ -70,16 +79,16 @@ export function dibujarCatalogo() {
         else if (p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; bgStyle = "background: #220000;"; }
 
         const claseInactiva = p.isActive ? '' : 'inactive-card';
-        html += `<div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')"><img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}"><h3>${nombre}</h3><p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${p.isPlayer ? 0 : p.vex}</strong></p></div>`;
+        html += `<div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')"><img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}"><h3>${nombre}</h3><p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p></div>`;
     }); 
     contenedor.innerHTML = html + `</div>`;
 }
 
-// RESUMEN VISUAL REDISEÑADO
+// RESUMEN VISUAL EN 2 COLUMNAS (GRID)
 export function dibujarResumenVisual() {
     const contenedor = document.getElementById('vista-resumen');
     let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px;">Resumen Global del Grupo</h2>
-                <div style="display:flex; flex-direction:column; gap:15px; max-width:1000px; margin:0 auto;">`;
+                <div class="resumen-grid">`;
 
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
@@ -92,45 +101,41 @@ export function dibujarResumenVisual() {
         const mayorAf = getMayorAfinidad(p);
         const sumAf = (p.afinidades.fisica||0) + (p.afinidades.energetica||0) + (p.afinidades.espiritual||0) + (p.afinidades.mando||0) + (p.afinidades.psiquica||0) + (p.afinidades.oscura||0);
         const vidas = generarVidasHTML(p);
+        const vexVisual = calcularVexMax(p);
 
         html += `
         <div class="resumen-row">
             <div class="resumen-left">
                 <img src="../img/imgpersonajes/${iconoGrande}icon.png" onerror="${imgError}">
                 <h3 style="margin:8px 0 0 0; font-size:1.1em; color:var(--gold); text-transform:uppercase;">${nombre}</h3>
-                <div class="copy-wrap hex-label" onclick="window.copySilently('HEX: ${p.hex}', this)">
-                    HEX: ${p.hex} <span class="copy-tooltip">✨ Copiado!</span>
+                <div class="copy-wrap hex-label" onclick="window.copySilently('HEX: ${p.hex}', event)">
+                    ${p.hex} HEX
+                </div>
+                <div class="copy-wrap vex-label" onclick="window.copySilently('VEX: ${vexVisual}', event)">
+                    ${vexVisual} VEX
                 </div>
             </div>
             
             <div class="resumen-right">
                 <div class="resumen-badges">
-                    <span class="copy-wrap" style="background:#1a1a00; border:1px solid var(--gold);" onclick="window.copySilently('Afinidad: ${mayorAf} (${p.afinidades[mayorAf.toLowerCase()]} / Suma: ${sumAf})', this)">
-                        ✨ Afinidad Primaria: <b style="color:var(--gold)">${mayorAf} (${p.afinidades[mayorAf.toLowerCase()] || 0})</b> | Suma: ${sumAf}
-                        <span class="copy-tooltip">✨ Copiado!</span>
-                    </span>
-                    <span class="copy-wrap" style="background:#001133; border:1px solid #0055ff;" onclick="window.copySilently('Vex: ${p.vex}', this)">
-                        🔮 Vex: <b style="color:#4a90e2">${p.vex}</b>
-                        <span class="copy-tooltip">✨ Copiado!</span>
+                    <span class="copy-wrap" style="background:#1a1a00; border:1px solid var(--gold);" onclick="window.copySilently('Afinidad: ${mayorAf} (${p.afinidades[mayorAf.toLowerCase()]} / Suma: ${sumAf})', event)">
+                        ✨ Afinidad: <b style="color:var(--gold)">${mayorAf} (${p.afinidades[mayorAf.toLowerCase()] || 0})</b> | Suma: ${sumAf}
                     </span>
                 </div>
                 
                 <div class="resumen-badges" style="margin-top:10px; background:#000; padding:10px; border-radius:8px; border:1px dashed #444; width:fit-content;">
-                    <div class="copy-wrap health-grid" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${p.vidaRojaMax}', this)" style="margin:0;">
-                        ${vidas.rojasHTML} <span class="copy-tooltip">✨ Copiado!</span>
+                    <div class="copy-wrap health-grid" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${calcularVidaRojaMax(p)}', event)" style="margin:0;">
+                        ${vidas.rojasHTML}
                     </div>
-                    ${vidas.azulesHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Vida Azul: ${p.vidaAzul}', this)" style="margin:0; border-left:1px solid #333; padding-left:15px;">${vidas.azulesHTML} <span class="copy-tooltip">✨ Copiado!</span></div>` : ''}
-                    ${vidas.guardasHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Guardas: ${p.guardaDorada}', this)" style="margin:0; border-left:1px solid #333; padding-left:15px;">${vidas.guardasHTML} <span class="copy-tooltip">✨ Copiado!</span></div>` : ''}
+                    ${vidas.azulesHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Vida Azul: ${p.vidaAzul}', event)" style="margin:0; border-left:1px solid #333; padding-left:15px;">${vidas.azulesHTML}</div>` : ''}
+                    ${vidas.guardasHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Guardas: ${p.guardaDorada}', event)" style="margin:0; border-left:1px solid #333; padding-left:15px;">${vidas.guardasHTML}</div>` : ''}
                 </div>
                 
                 <div class="resumen-badges" style="margin-top:5px;">
                     <span style="background:#0a1128; border:1px solid #00ffff;">🎒 Objetos: <b style="color:#00ffff">${objCount}</b></span>
                     <span style="background:#110022; border:1px solid var(--cyan-magic);">📖 Hechizos: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
+                    <button onclick="window.abrirDetalle('${nombre}')" style="background:#111; border-color:#555; padding:5px 10px; margin-left:auto;">Ficha ➡</button>
                 </div>
-            </div>
-            
-            <div style="display:flex; flex-direction:column; gap:10px; justify-content:center;">
-                <button onclick="window.abrirDetalle('${nombre}')" style="background:#111; border-color:#555; padding:15px;">Ver Ficha ➡</button>
             </div>
         </div>`;
     });
@@ -140,10 +145,11 @@ export function dibujarResumenVisual() {
 
 export function dibujarDetalle() {
     const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
-    if(!p) return; 
+    if(!p) return; asegurarEstructuras(p);
     const contenedor = document.getElementById('vista-detalle');
 
-    let hexPercent = Math.min((p.hex / 4000) * 100, 100); let vexPercent = Math.min(((p.vex||0) / 4000) * 100, 100);
+    let vidaRojaVisual = calcularVidaRojaMax(p); let vexVisual = calcularVexMax(p);
+    let hexPercent = Math.min((p.hex / 4000) * 100, 100); let vexPercent = Math.min(((vexVisual||0) / 4000) * 100, 100);
     const vidas = generarVidasHTML(p);
 
     let estadosHTML = ''; 
@@ -177,42 +183,41 @@ export function dibujarDetalle() {
                <span>✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf} (${p.afinidades[mayorAf.toLowerCase()]||0})</b></span>
             </div>
         </div>
-        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="background:#1a0033; border-color:#d4af37; padding:15px; font-size:1.1em;">⚙️ Editar Ficha OP</button>` : ''}
     </div>
 
     <div class="circle-wrap">
-        <div class="stat-circle hex-circle copy-wrap" onclick="window.copySilently('HEX: ${p.hex}', this)" style="background: conic-gradient(var(--gold-dark) 0%, var(--gold-light) ${hexPercent / 2}%, var(--gold-dark) ${hexPercent}%, #111 ${hexPercent}%); box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);">
-            <div class="inner"><strong>${p.hex}</strong><span>HEX</span></div><span class="copy-tooltip">✨ Copiado!</span>
+        <div class="stat-circle hex-circle copy-wrap" onclick="window.copySilently('HEX: ${p.hex}', event)" style="background: conic-gradient(var(--gold-dark) 0%, var(--gold-light) ${hexPercent / 2}%, var(--gold-dark) ${hexPercent}%, #111 ${hexPercent}%); box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);">
+            <div class="inner"><strong>${p.hex}</strong><span>HEX</span></div>
         </div>
-        <div class="stat-circle vex-circle copy-wrap" onclick="window.copySilently('VEX: ${p.vex}', this)" style="background: conic-gradient(var(--blue-life-dark) 0%, var(--blue-life-light) ${vexPercent / 2}%, var(--blue-life-dark) ${vexPercent}%, #111 ${vexPercent}%); box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);">
-            <div class="inner"><strong>${p.vex || 0}</strong><span>VEX</span></div><span class="copy-tooltip">✨ Copiado!</span>
+        <div class="stat-circle vex-circle copy-wrap" onclick="window.copySilently('VEX: ${vexVisual}', event)" style="background: conic-gradient(var(--blue-life-dark) 0%, var(--blue-life-light) ${vexPercent / 2}%, var(--blue-life-dark) ${vexPercent}%, #111 ${vexPercent}%); box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);">
+            <div class="inner"><strong>${vexVisual}</strong><span>VEX</span></div>
         </div>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
         <div>
             <h3 style="margin-top:0;">Vitalidad</h3>
-            <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box;" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${p.vidaRojaMax}', this)"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${p.vidaRojaMax})</label><div class="health-grid">${vidas.rojasHTML}</div><span class="copy-tooltip">✨ Copiado!</span></div>
-            <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box;" onclick="window.copySilently('Vida Azul: ${p.vidaAzul}', this)"><label style="color:var(--blue-life);">VIDA AZUL (${p.vidaAzul||0})</label><div class="health-grid">${vidas.azulesHTML}</div><span class="copy-tooltip">✨ Copiado!</span></div>
-            <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box;" onclick="window.copySilently('Guardas: ${p.guardaDorada}', this)"><label style="color:var(--gold);">GUARDA DORADA (${p.guardaDorada||0})</label><div class="health-grid">${vidas.guardasHTML}</div><span class="copy-tooltip">✨ Copiado!</span></div>
+            <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box;" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${vidaRojaVisual}', event)"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${vidaRojaVisual})</label><div class="health-grid">${vidas.rojasHTML}</div></div>
+            <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box;" onclick="window.copySilently('Vida Azul: ${p.vidaAzul}', event)"><label style="color:var(--blue-life);">VIDA AZUL (${p.vidaAzul||0})</label><div class="health-grid">${vidas.azulesHTML}</div></div>
+            <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box;" onclick="window.copySilently('Guardas: ${p.guardaDorada}', event)"><label style="color:var(--gold);">GUARDA DORADA (${p.guardaDorada||0})</label><div class="health-grid">${vidas.guardasHTML}</div></div>
             
             <h3 style="margin-top:20px;">Ofensiva Totales</h3>
             <div class="affinities-grid">
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Daño Rojo: ${p.danoRojo}', this)"><label style="color:var(--red-life)">Daño Rojo</label><span style="font-size:1.4em;">${p.danoRojo||0}</span>${bTextSplit(p.hechizosEfecto.danoRojo, p.buffs.danoRojo)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Daño Azul: ${p.danoAzul}', this)"><label style="color:var(--blue-life)">Daño Azul</label><span style="font-size:1.4em;">${p.danoAzul||0}</span>${bTextSplit(p.hechizosEfecto.danoAzul, p.buffs.danoAzul)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Elim. Dorada: ${p.elimDorada}', this)"><label style="color:var(--gold)">Elim. Dorada</label><span style="font-size:1.4em;">${p.elimDorada||0}</span>${bTextSplit(p.hechizosEfecto.elimDorada, p.buffs.elimDorada)}<span class="copy-tooltip">✨ Copiado!</span></div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Daño Rojo: ${p.danoRojo}', event)"><label style="color:var(--red-life)">Daño Rojo</label><span style="font-size:1.4em;">${p.danoRojo||0}</span>${bTextSplit(p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo)}</div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Daño Azul: ${p.danoAzul}', event)"><label style="color:var(--blue-life)">Daño Azul</label><span style="font-size:1.4em;">${p.danoAzul||0}</span>${bTextSplit(p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul)}</div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Elim. Dorada: ${p.elimDorada}', event)"><label style="color:var(--gold)">Elim. Dorada</label><span style="font-size:1.4em;">${p.elimDorada||0}</span>${bTextSplit(p.hechizos.elimDorada, p.hechizosEfecto.elimDorada, p.buffs.elimDorada)}</div>
             </div>
         </div>
         <div>
             <h3 style="margin-top:0; color:#ddd; text-align:left;">Afinidades Totales</h3>
             <div class="affinities-grid">
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Física: ${p.afinidades.fisica}', this)"><label>Física</label><span style="font-size:1.4em;">${p.afinidades.fisica||0}</span>${bTextSplit(p.hechizosEfecto.fisica, p.buffs.fisica)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Energética: ${p.afinidades.energetica}', this)"><label>Energética</label><span style="font-size:1.4em;">${p.afinidades.energetica||0}</span>${bTextSplit(p.hechizosEfecto.energetica, p.buffs.energetica)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Espiritual: ${p.afinidades.espiritual}', this)"><label>Espiritual</label><span style="font-size:1.4em;">${p.afinidades.espiritual||0}</span>${bTextSplit(p.hechizosEfecto.espiritual, p.buffs.espiritual)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Mando: ${p.afinidades.mando}', this)"><label>Mando</label><span style="font-size:1.4em;">${p.afinidades.mando||0}</span>${bTextSplit(p.hechizosEfecto.mando, p.buffs.mando)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Psíquica: ${p.afinidades.psiquica}', this)"><label>Psíquica</label><span style="font-size:1.4em;">${p.afinidades.psiquica||0}</span>${bTextSplit(p.hechizosEfecto.psiquica, p.buffs.psiquica)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="affinity-box copy-wrap" onclick="window.copySilently('Oscura: ${p.afinidades.oscura}', this)"><label>Oscura</label><span style="font-size:1.4em;">${p.afinidades.oscura||0}</span>${bTextSplit(p.hechizosEfecto.oscura, p.buffs.oscura)}<span class="copy-tooltip">✨ Copiado!</span></div>
-                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${sumAf}', this)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${sumAf}<span class="copy-tooltip">✨ Copiado!</span></div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Física: ${p.afinidades.fisica}', event)"><label>Física</label><span style="font-size:1.4em;">${p.afinidades.fisica||0}</span>${bTextSplit(p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}</div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Energética: ${p.afinidades.energetica}', event)"><label>Energética</label><span style="font-size:1.4em;">${p.afinidades.energetica||0}</span>${bTextSplit(p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}</div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Espiritual: ${p.afinidades.espiritual}', event)"><label>Espiritual</label><span style="font-size:1.4em;">${p.afinidades.espiritual||0}</span>${bTextSplit(p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual)}</div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Mando: ${p.afinidades.mando}', event)"><label>Mando</label><span style="font-size:1.4em;">${p.afinidades.mando||0}</span>${bTextSplit(p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Psíquica: ${p.afinidades.psiquica}', event)"><label>Psíquica</label><span style="font-size:1.4em;">${p.afinidades.psiquica||0}</span>${bTextSplit(p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</div>
+                <div class="affinity-box copy-wrap" onclick="window.copySilently('Oscura: ${p.afinidades.oscura}', event)"><label>Oscura</label><span style="font-size:1.4em;">${p.afinidades.oscura||0}</span>${bTextSplit(p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</div>
+                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${sumAf}', event)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${sumAf}</div>
             </div>
         </div>
     </div>`;
@@ -221,8 +226,90 @@ export function dibujarDetalle() {
     html += `
     <h3 style="margin-top:30px; color:#4a90e2; border-bottom:1px solid #4a90e2; padding-bottom:5px;">Grimorio (Hechizos Aprendidos) <span style="font-size:0.7em; color:#aaa;">- Clic para copiar</span></h3>
     <div class="spell-grid-4">
-        ${mySpells.map(s => `<button type="button" class="spell-button" onclick="window.copySilently('${s.Hechizo.replace(/'/g, "\\'")}', this)">${s.Hechizo}<span class="copy-tooltip">✨ Copiado!</span></button>`).join('') || '<div style="grid-column:1/-1; text-align:center; color:#aaa; padding:10px;">No posee hechizos registrados.</div>'}
+        ${mySpells.map(s => `<button type="button" class="spell-button" onclick="window.copySilently('${s.Hechizo.replace(/'/g, "\\'")}', event)">${s.Hechizo}</button>`).join('') || '<div style="grid-column:1/-1; text-align:center; color:#aaa; padding:10px;">No posee hechizos registrados.</div>'}
     </div>`;
+
+    // ===== SECCIÓN OP: Restaurados los botones directos de Vida/Base/Extras =====
+    if (estadoUI.esAdmin) {
+        html += `
+        <div style="margin-top:30px; background:#0a0014; border:1px solid var(--gold); padding:20px; border-radius:8px;">
+            <h3 style="margin-top:0; color:var(--gold); text-align:center;">🔧 Acciones Rápidas MÁSTER (Vida y Energía)</h3>
+            <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                <div class="edit-card">
+                    <h4>Ganancia HEX</h4>
+                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modHexInd('${nombre}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modHexInd('${nombre}', -1)">-1</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modHexInd('${nombre}', 10)">+10</button><button type="button" class="btn-minus" onclick="window.modHexInd('${nombre}', -10)">-10</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a4a;" onclick="window.modHexInd('${nombre}', 50)">+50</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modHexInd('${nombre}', -50)">-50</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00;" onclick="window.modHexInd('${nombre}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modHexInd('${nombre}', -100)">-100</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modHexInd('${nombre}', 300)">+300</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modHexInd('${nombre}', -300)">-300</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modHexInd('${nombre}', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modHexInd('${nombre}', -500)">-500</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modHexInd('${nombre}', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modHexInd('${nombre}', -1000)">-1000</button></div>
+                </div>
+                <div class="edit-card">
+                    <h4>Vida Roja (Actual)</h4>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div>
+                </div>
+                <div class="edit-card">
+                    <h4>Corazones Azules (BASE)</h4>
+                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaAzul', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaAzul', -1)">-1</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaAzul', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaAzul', -5)">-5</button></div>
+                </div>
+                <div class="edit-card">
+                    <h4>C. Azules <span style="color:#00ff00">(EXTRA)</span></h4>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaAzulExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaAzulExtra', -1)">-1</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaAzulExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaAzulExtra', -5)">-5</button></div>
+                </div>
+                <div class="edit-card">
+                    <h4>Guarda Dorada (BASE)</h4>
+                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('guardaDorada', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('guardaDorada', -1)">-1</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('guardaDorada', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('guardaDorada', -5)">-5</button></div>
+                </div>
+                <div class="edit-card">
+                    <h4>Guarda Dorada <span style="color:#00ff00">(EXTRA)</span></h4>
+                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('guardaDoradaExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('guardaDoradaExtra', -1)">-1</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('guardaDoradaExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('guardaDoradaExtra', -5)">-5</button></div>
+                </div>
+                <div class="edit-card">
+                    <h4>Límite Rojo (BASE)</h4>
+                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaRojaMax', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaRojaMax', -1)">-1</button></div>
+                    <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaRojaMax', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaRojaMax', -5)">-5</button></div>
+                </div>
+                
+                <div class="edit-card" style="grid-column: 1 / -1; background:#1a1a00; border-color:#b8860b;">
+                    <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
+                    <button type="button" onclick="window.recalcularBases()" style="background:#b8860b; color:#000; font-weight:bold; width:100%; padding:15px; font-size:1.1em; border-radius:4px; transition:0.2s;">RECALCULAR CORAZONES (Salud Máxima y Fórmulas Base)</button>
+                    <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física/2], la Vida Azul a [Magia/4] y curará al personaje al máximo.</p>
+                </div>
+            </div>
+        </div>`;
+
+        const pVidaDanoE = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Extra)', val: p.buffs.vidaRojaMaxExtra }, { id: 'danoRojo', label: 'Daño Rojo (Extra)', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (Extra)', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (Extra)', val: p.buffs.elimDorada } ];
+        const pAfinidadesE = [ { id: 'fisica', label: 'Afin. Física (Extra)', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética (Extra)', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual (Extra)', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando (Extra)', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica (Extra)', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura (Extra)', val: p.buffs.oscura } ];
+
+        html += `
+        <div style="margin-top:20px; background:#110022; border:1px solid #00ffff; padding:20px; border-radius:8px;">
+            <h3 style="margin-top:0; color:#00ffff; text-align:center;">MÁSTER: Alteraciones Temporales (Extras)</h3>
+            <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:20px;">Estos valores representan buffs aplicados sobre la base.</p>
+            <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">1. Buffs de Vida y Daño</h4>
+            <div class="edit-grid" style="margin-bottom: 30px;">${pVidaDanoE.map(f => genCard(f, 'buff')).join('')}</div>
+            <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">2. Afinidades Temporales</h4>
+            <div class="edit-grid" style="margin-bottom: 10px;">${pAfinidadesE.map(f => genCard(f, 'buff')).join('')}</div>
+        </div>`;
+
+        let opcionesPersonajes = Object.keys(statsGlobal).filter(n => n !== nombre).map(n => `<option value="${n}">${n}</option>`).join('');
+        html += `
+        <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
+            <h3 style="margin-top:0; color:var(--gold);">🛠️ MÁSTER: Clonación e Importación</h3>
+            <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
+                <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}</select>
+                <button type="button" onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados</button>
+                <button type="button" onclick="window.ejecutarClonacion('efectosExtras')" style="background:#4a90e2; border:1px solid #00ffff; padding:10px 15px; color:#111; font-weight:bold; transition:0.2s;">Copiar Efectos y Extras</button>
+                <button type="button" onclick="window.ejecutarClonacion('hex')" style="background:#b8860b; border:1px solid #ffd700; padding:10px 15px; color:#000; font-weight:bold; transition:0.2s;">Copiar HEX</button>
+                <button type="button" onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo (Inc. Imagen)</button>
+            </div>
+        </div>`;
+    } // FIN DEL BLOQUE OP
 
     contenedor.innerHTML = html;
 }
