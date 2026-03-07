@@ -5,7 +5,7 @@ const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENp
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
-// CARGA EN PARALELO PARA MÁXIMA VELOCIDAD (3x más rápido)
+// Carga simultánea
 export async function cargarTodoDesdeCSV() {
     try {
         const [resPj, resObj, resHz] = await Promise.all([
@@ -14,15 +14,9 @@ export async function cargarTodoDesdeCSV() {
             fetch(API_HECHIZOS)
         ]);
         
-        const textoPj = await resPj.text();
-        procesarTextoCSV(textoPj);
-        
-        const textoObj = await resObj.text();
-        procesarObjetos(textoObj);
-
-        const textoHz = await resHz.text();
-        dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(textoHz))));
-        
+        procesarTextoCSV(await resPj.text());
+        procesarObjetos(await resObj.text());
+        dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
     } catch (error) { console.error("Error cargando bases de datos cruzadas:", error); }
 }
 
@@ -53,7 +47,6 @@ export function procesarTextoCSV(texto) {
         const nombre = f[0];
         const hexParts = (f[1] || '0_1').split('_'); const idenParts = (f[17] || '0_1').split('_');
         
-        // Estructura: Total_Base_Spell_SpellEff_Buff
         const getTotal = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
         const getBase = (idx) => parseInt((f[idx] || '0').split('_')[1]) || 0;
         const getSpell = (idx) => parseInt((f[idx] || '0').split('_')[2]) || 0;
@@ -94,27 +87,32 @@ export function procesarTextoCSV(texto) {
     });
 }
 
-// Carga estricta y segura desde tu archivo 'estados.csv'
+// Lector blindado contra comas internas en las descripciones
 export async function cargarDiccionarioEstados() {
     try {
         const res = await fetch(CSV_ESTADOS + '?cb=' + new Date().getTime());
         if(!res.ok) throw new Error("No se encontró el archivo de estados");
         const texto = await res.text();
-        const filas = texto.split(/\r?\n/).map(l => l.split(','));
+        
+        const filas = texto.split(/\r?\n/).map(l => {
+            let matches = l.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
+            if(!matches) return []; 
+            return matches.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
+        });
         
         listaEstados.length = 0;
         filas.slice(1).forEach(f => {
             if(!f[0]) return;
             listaEstados.push({
-                id: f[0].trim(),
-                nombre: f[1] ? f[1].trim() : f[0].trim(),
-                tipo: f[2] ? f[2].trim() : 'booleano',
-                bg: f[3] ? f[3].trim() : '#000',
-                border: f[4] ? f[4].trim() : '#fff',
-                desc: f[5] ? f[5].trim() : 'Sin descripción' // Lee la columna 5
+                id: f[0],
+                nombre: f[1] || f[0],
+                tipo: f[2] || 'booleano',
+                bg: f[3] || '#000',
+                border: f[4] || '#fff',
+                desc: f[5] || 'Sin descripción'
             });
         });
     } catch(e) {
-        console.warn("Fallo al cargar estados.csv. Verifica que el archivo exista.");
+        console.warn("Fallo al cargar estados.csv. Verifica ruta.");
     }
 }
